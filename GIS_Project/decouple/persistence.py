@@ -1,17 +1,21 @@
 # persistence.py
 
-from langgraph.checkpoint.postgres import PostgresSaver
 from typing import Final, Tuple
+
+from langgraph.checkpoint.postgres import PostgresSaver
 from langgraph.store.postgres import PostgresStore
+from loguru import logger
 
 DB_URL = "postgresql://langgraph_user:123456@localhost:5432/langgraph_db?sslmode=disable"
 
-# ========= 常量移到模块顶层，外部可以import =========
 FIELDS_NS: Final[Tuple[str]] = ("fields",)
 PREFERENCES_KEY: Final[str] = "preferences"
 
-if __name__ == "__main__":
-    # 初始化记忆库，写入燃气、水务、电务领域知识库，只需要运行一次
+
+# [新增-文档版] 将原 __main__ 初始化逻辑封装为函数，便于入口按需调用。
+def init_knowledge_base():
+    """初始化记忆库，写入燃气、水务、电务领域知识库，只需要运行一次。"""
+
     with PostgresSaver.from_conn_string(DB_URL) as checkpointer, \
             PostgresStore.from_conn_string(DB_URL) as store:
         checkpointer.setup()
@@ -37,8 +41,13 @@ if __name__ == "__main__":
             "term": "燃气管线长度、泄漏隐患、燃气保护区缓冲区、管线交叉冲突",
             "skill": "管线长度统计、隐患筛查、缓冲区分析、管线叠加冲突检测"
         }
-        # 全部放入with上下文内
+
         store.put(namespace1, PREFERENCES_KEY, value1)
         store.put(namespace2, PREFERENCES_KEY, value2)
         store.put(namespace3, PREFERENCES_KEY, value3)
-    print("领域知识库初始化完成！")
+
+    logger.info("领域知识库初始化完成")
+
+
+if __name__ == "__main__":
+    init_knowledge_base()
