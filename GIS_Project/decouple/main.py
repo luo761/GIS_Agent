@@ -6,6 +6,7 @@ import os
 os.environ["GIS_TOOL_PROFILE"] = "operator"
 os.environ["GIS_TOOL_EXECUTION_MODE"] = "sequential"
 
+import psycopg
 from langgraph.checkpoint.postgres import PostgresSaver
 from langgraph.store.postgres import PostgresStore
 from langgraph.types import Command
@@ -60,9 +61,32 @@ def _get_interrupts(event, data):
     return data.get("__interrupt__")
 
 
+def _print_event_summary(event_type, data):
+    if event_type == "updates" and data:
+        updated_nodes = ", ".join(data.keys())
+        print(f"[updates] {updated_nodes}")
+    elif event_type == "values" and data:
+        visible_keys = [key for key in data.keys() if key != "messages"]
+        print(f"[values] {', '.join(visible_keys)}")
+
+
+def _thread_id_for_case(case, case_index):
+    return f"GIS_operator_test_{case_index}_{case['name']}"
+
+
+def clear_checkpoint(thread_id):
+    with psycopg.connect(DB_URL) as conn:
+        with conn.cursor() as cur:
+            cur.execute("DELETE FROM checkpoint_writes WHERE thread_id = %s", (thread_id,))
+            cur.execute("DELETE FROM checkpoint_blobs WHERE thread_id = %s", (thread_id,))
+            cur.execute("DELETE FROM checkpoints WHERE thread_id = %s", (thread_id,))
+        conn.commit()
+
+
 def run_one_case(graph, case, case_index):
+    thread_id = _thread_id_for_case(case, case_index)
     config = {
-        "configurable": {"thread_id": f"GIS_operator_test_{case_index}_{case['name']}"},
+        "configurable": {"thread_id": thread_id},
         "recursion_limit": 50,
     }
     context = UserContext(username="GIS测试用户", membership_level="普通用户")
@@ -85,8 +109,6 @@ def run_one_case(graph, case, case_index):
             context=context,
             stream_mode=["updates", "values"],
         ):
-            print(event)
-
             event_type, data = _normalize_event(event)
             interrupts = _get_interrupts(event, data)
 
@@ -101,6 +123,9 @@ def run_one_case(graph, case, case_index):
                     print("用户取消，流程终止。")
                     return final_state
                 break
+
+            # _print_event_summary(event_type, data)
+            print(event)
 
             if event_type == "values" and data:
                 final_state = data
@@ -133,6 +158,7 @@ def run_demo():
         graph = builder.compile(checkpointer=checkpointer, store=store)
 
         for index, case in enumerate(TEST_QUESTIONS, start=1):
+            clear_checkpoint(_thread_id_for_case(case, index))
             run_one_case(graph, case, index)
 
 

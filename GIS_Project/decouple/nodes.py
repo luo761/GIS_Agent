@@ -173,7 +173,10 @@ def llm_parse_node(state: OverAllState, runtime: Runtime[UserContext]) -> OverAl
         )
 
     sys_msg = SystemMessage(content=knowledge_text + system_prompt)
-    messages = [sys_msg] + history_messages + [HumanMessage(content=user_input)]
+    if history_messages:
+        messages = [sys_msg] + history_messages
+    else:
+        messages = [sys_msg, HumanMessage(content=user_input)]
     resp = model_with_gis_tools.invoke(messages)
 
     sleep(0.1)
