@@ -1,0 +1,20 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {"facility_id": "F001", "domain": "燃气", "facility_type": "阀门"},
+      "geometry": {"type": "Point", "coordinates": [250, 250]}
+    },
+    {
+      "type": "Feature",
+      "properties": {"facility_id": "F002", "domain": "燃气", "facility_type": "调压站"},
+      "geometry": {"type": "Point", "coordinates": [800, 400]}
+    },
+    {
+      "type": "Feature",
+      "properties": {"facility_id": "F003", "domain": "水务", "facility_type": "泵站"},
+      "geometry": {"type": "Point", "coordinates": [1300, 300]}
+    }
+  ]
+}

@@ -1,0 +1,25 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {"hazard_id": "H001", "domain": "燃气", "hazard_type": "泄漏", "level": "高"},
+      "geometry": {"type": "Point", "coordinates": [520, 120]}
+    },
+    {
+      "type": "Feature",
+      "properties": {"hazard_id": "H002", "domain": "燃气", "hazard_type": "腐蚀", "level": "中"},
+      "geometry": {"type": "Point", "coordinates": [300, 530]}
+    },
+    {
+      "type": "Feature",
+      "properties": {"hazard_id": "H003", "domain": "水务", "hazard_type": "破损", "level": "高"},
+      "geometry": {"type": "Point", "coordinates": [1150, 530]}
+    },
+    {
+      "type": "Feature",
+      "properties": {"hazard_id": "H004", "domain": "水务", "hazard_type": "淤积", "level": "低"},
+      "geometry": {"type": "Point", "coordinates": [1600, 650]}
+    }
+  ]
+}

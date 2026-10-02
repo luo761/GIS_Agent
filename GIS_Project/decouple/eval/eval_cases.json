@@ -1,0 +1,112 @@
+[
+  {
+    "id": "case_001",
+    "question": "统计A区内燃气管线总长度",
+    "expected": {
+      "domains": ["燃气"],
+      "intent": "pipe_length_statistics",
+      "area": "A区",
+      "layers": ["gas_pipes"],
+      "operations": ["select_layer", "clip_by_area", "length_sum"]
+    }
+  },
+  {
+    "id": "case_002",
+    "question": "查询燃气管线100米范围内有哪些隐患点",
+    "expected": {
+      "domains": ["燃气"],
+      "intent": "hazards_near_pipes",
+      "layers": ["gas_pipes", "hazards"],
+      "distance": 100,
+      "operations": ["select_layer", "filter", "distance_query", "count"]
+    }
+  },
+  {
+    "id": "case_003",
+    "question": "检查燃气和水务管线是否存在20米内的近距离冲突",
+    "expected": {
+      "domains": ["燃气", "水务"],
+      "intent": "line_conflict_detection",
+      "layers": ["gas_pipes", "water_pipes"],
+      "distance": 20,
+      "operations": ["select_layer", "distance_query", "count"]
+    }
+  },
+  {
+    "id": "case_004",
+    "question": "统计B区水务泵站300米服务覆盖范围",
+    "expected": {
+      "domains": ["水务"],
+      "intent": "facility_coverage",
+      "area": "B区",
+      "layers": ["facilities", "areas"],
+      "distance": 300,
+      "operations": ["select_layer", "filter", "buffer", "intersect", "area_sum"]
+    }
+  },
+  {
+    "id": "case_005",
+    "question": "筛选A区内高等级燃气泄漏隐患点",
+    "expected": {
+      "domains": ["燃气"],
+      "intent": "spatiotemporal_filter",
+      "area": "A区",
+      "layers": ["hazards"],
+      "operations": ["select_layer", "filter", "clip_by_area", "count"]
+    }
+  },
+  {
+    "id": "case_006",
+    "question": "计算燃气调压站300米缓冲区面积",
+    "expected": {
+      "domains": ["燃气"],
+      "intent": "buffer_analysis",
+      "layers": ["facilities"],
+      "distance": 300,
+      "operations": ["select_layer", "filter", "buffer", "area_sum"]
+    }
+  },
+  {
+    "id": "case_007",
+    "question": "统计C区内水务管线长度",
+    "expected": {
+      "domains": ["水务"],
+      "intent": "pipe_length_statistics",
+      "area": "C区",
+      "layers": ["water_pipes"],
+      "operations": ["select_layer", "clip_by_area", "length_sum"]
+    }
+  },
+  {
+    "id": "case_008",
+    "question": "查询水务管线200米范围内的高风险隐患",
+    "expected": {
+      "domains": ["水务"],
+      "intent": "hazards_near_pipes",
+      "layers": ["water_pipes", "hazards"],
+      "distance": 200,
+      "operations": ["select_layer", "filter", "distance_query", "count"]
+    }
+  },
+  {
+    "id": "case_009",
+    "question": "分析燃气管线和道路施工范围是否重叠",
+    "expected": {
+      "domains": ["燃气"],
+      "intent": "overlay_analysis",
+      "layers": ["gas_pipes", "construction_areas"],
+      "operations": ["select_layer", "intersect", "count"]
+    }
+  },
+  {
+    "id": "case_010",
+    "question": "统计A区内不同等级隐患数量",
+    "expected": {
+      "domains": ["燃气", "水务"],
+      "intent": "spatiotemporal_filter",
+      "area": "A区",
+      "layers": ["hazards"],
+      "operations": ["select_layer", "clip_by_area", "count"]
+    }
+  }
+]

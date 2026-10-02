@@ -1,0 +1,42 @@
+{
+  "select_layer": {
+    "name": "图层选择",
+    "description": "读取一个业务图层，如燃气管线、水务管线、隐患点或设施点。",
+    "postgis": "SELECT * FROM {table}"
+  },
+  "filter": {
+    "name": "属性筛选",
+    "description": "按字段过滤要素，如 pressure='高压' 或 level='高'。",
+    "postgis": "WHERE {field} = {value}"
+  },
+  "clip_by_area": {
+    "name": "区域裁剪",
+    "description": "把线或面限制在指定区域内，用于区域内长度、面积统计。",
+    "postgis": "ST_Intersection"
+  },
+  "buffer": {
+    "name": "缓冲区分析",
+    "description": "围绕点、线、面生成指定距离的影响范围或保护区。",
+    "postgis": "ST_Buffer"
+  },
+  "intersect": {
+    "name": "相交/叠加分析",
+    "description": "判断两个图层是否相交，或计算重叠部分。",
+    "postgis": "ST_Intersects / ST_Intersection"
+  },
+  "distance_query": {
+    "name": "邻近查询",
+    "description": "查询一个图层中距离另一个图层指定距离内的要素。",
+    "postgis": "ST_DWithin"
+  },
+  "length_sum": {
+    "name": "长度统计",
+    "description": "统计线要素长度总和。",
+    "postgis": "ST_Length"
+  },
+  "area_sum": {
+    "name": "面积统计",
+    "description": "统计面要素面积总和。",
+    "postgis": "ST_Area"
+  }
+}

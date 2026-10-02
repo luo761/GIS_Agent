@@ -1,0 +1,15 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {"order_id": "WO001", "domain": "燃气", "order_type": "巡检", "status": "已完成", "event_time": "2026-09-01T09:30:00"},
+      "geometry": {"type": "Point", "coordinates": [520, 110]}
+    },
+    {
+      "type": "Feature",
+      "properties": {"order_id": "WO002", "domain": "水务", "order_type": "抢修", "status": "处理中", "event_time": "2026-09-03T14:20:00"},
+      "geometry": {"type": "Point", "coordinates": [1160, 520]}
+    }
+  ]
+}

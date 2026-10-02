@@ -1,0 +1,15 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {"pipe_id": "W001", "pipe_type": "供水", "diameter": 600, "risk_level": "中"},
+      "geometry": {"type": "LineString", "coordinates": [[500, -100], [500, 900]]}
+    },
+    {
+      "type": "Feature",
+      "properties": {"pipe_id": "W002", "pipe_type": "排水", "diameter": 800, "risk_level": "高"},
+      "geometry": {"type": "LineString", "coordinates": [[1100, 100], [1700, 700]]}
+    }
+  ]
+}

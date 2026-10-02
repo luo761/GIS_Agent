@@ -1,0 +1,20 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {"pipe_id": "G001", "pressure": "高压", "material": "钢管", "risk_level": "高"},
+      "geometry": {"type": "LineString", "coordinates": [[100, 100], [900, 100]]}
+    },
+    {
+      "type": "Feature",
+      "properties": {"pipe_id": "G002", "pressure": "中压", "material": "PE", "risk_level": "中"},
+      "geometry": {"type": "LineString", "coordinates": [[200, 500], [1300, 500]]}
+    },
+    {
+      "type": "Feature",
+      "properties": {"pipe_id": "G003", "pressure": "低压", "material": "钢管", "risk_level": "低"},
+      "geometry": {"type": "LineString", "coordinates": [[1200, 200], [1800, 700]]}
+    }
+  ]
+}

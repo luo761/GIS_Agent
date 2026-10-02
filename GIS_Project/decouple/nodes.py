@@ -187,30 +187,6 @@ def llm_parse_node(state: OverAllState, runtime: Runtime[UserContext]) -> OverAl
     }
 
 
-# [替换-文档版] 删除旧 tool_node 中手写遍历 tool_calls 的逻辑，改用 LangGraph 内置 ToolNode。
-def tool_node_wrapper(state: OverAllState) -> OverAllState:
-    """
-    包装内置 ToolNode，在调用前后记录日志，并保留 state["info"] 累积功能。
-    内置 ToolNode 默认并行执行所有工具调用。
-    """
-
-    last_ai = state["messages"][-1]
-    tool_calls = getattr(last_ai, "tool_calls", [])
-    tool_names = [tc["name"] for tc in tool_calls]
-    logger.info(f"即将并行调用工具: {tool_names}")
-
-    result_state = builtin_tool_node.invoke(state)
-
-    info_msg = "当前工具正在并行执行:"
-    for tool_name in tool_names:
-        info_msg = info_msg + f"['{tool_name}'] "
-    result_state["info"] = [f"{len(state.get('info', [])) + 1}. {info_msg}"]
-
-    sleep(0.1)
-
-    return result_state
-
-
 # [新增-文档版] 显式结束节点。
 def end_node(state: OverAllState) -> OverAllState:
     """结算节点，记录结束信息。"""

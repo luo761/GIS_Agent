@@ -17,6 +17,7 @@ import os
 from math import hypot, pi
 from typing_extensions import Any, TypedDict
 
+from adapters.mock_adapter import MockGISAdapter
 from langchain.tools import tool
 
 
@@ -45,6 +46,9 @@ class Feature(TypedDict, total=False):
     level: str
     facility_type: str
     name: str
+
+
+gis_adapter = MockGISAdapter()
 
 
 # =========================
@@ -135,10 +139,7 @@ def select_layer(layer_name: str) -> list[Feature]:
     - 一个要素列表，每个要素是一个字典。
     """
 
-    layers = _mock_layers()
-    if layer_name not in layers:
-        raise ValueError(f"未知图层：{layer_name}")
-    return layers[layer_name]
+    return gis_adapter.select_layer(layer_name)
 
 
 def filter_features(layer: list[Feature], field: str, value: Any) -> list[Feature]:
@@ -148,7 +149,7 @@ def filter_features(layer: list[Feature], field: str, value: Any) -> list[Featur
     按字段值筛选图层要素。例如只筛选 domain="燃气" 的隐患点。
     """
 
-    return [feature for feature in layer if feature.get(field) == value]
+    return gis_adapter.filter_features(layer, field, value)
 
 
 def _line_length(line: list[Point]) -> float:
@@ -260,15 +261,7 @@ def clip_lines_by_polygon(line_layer: list[Feature], polygon: Feature) -> list[F
     统计 A区 内燃气管线、水务管线长度。
     """
 
-    bounds = polygon["bounds"]
-    clipped = []
-    for feature in line_layer:
-        length = _clip_line_length_to_bounds(feature["geometry"], bounds)
-        if length > 0:
-            clipped_feature = dict(feature)
-            clipped_feature["length"] = length
-            clipped.append(clipped_feature)
-    return clipped
+    return gis_adapter.clip_lines_by_polygon(line_layer, polygon)
 
 
 def length_statistics(line_layer: list[Feature]) -> dict[str, float | int]:
@@ -278,10 +271,7 @@ def length_statistics(line_layer: list[Feature]) -> dict[str, float | int]:
     统计线图层的数量和总长度。
     """
 
-    total = 0.0
-    for feature in line_layer:
-        total += feature.get("length", _line_length(feature["geometry"]))
-    return {"count": len(line_layer), "total_length": total}
+    return gis_adapter.length_statistics(line_layer)
 
 
 def _distance_point_to_segment(point: Point, start: Point, end: Point) -> float:
@@ -316,12 +306,7 @@ def find_points_near_lines(point_layer: list[Feature], line_layer: list[Feature]
     查询燃气管线 100 米范围内有哪些隐患点。
     """
 
-    matched = []
-    for point in point_layer:
-        point_xy = point["geometry"]
-        if any(_distance_point_to_line(point_xy, line["geometry"]) <= distance for line in line_layer):
-            matched.append(point)
-    return matched
+    return gis_adapter.find_points_near_lines(point_layer, line_layer, distance)
 
 
 def _orientation(a: Point, b: Point, c: Point) -> float:
@@ -373,21 +358,7 @@ def find_line_conflicts(line_layer_a: list[Feature], line_layer_b: list[Feature]
     燃气管线和水务管线距离过近，可能存在施工或运维冲突。
     """
 
-    conflicts = []
-    for line_a in line_layer_a:
-        for line_b in line_layer_b:
-            pair_distance = _distance_line_to_line(line_a["geometry"], line_b["geometry"])
-            if pair_distance <= distance:
-                conflicts.append(
-                    {
-                        "geometry_type": "conflict",
-                        "pipe_a": line_a.get("pipe_id", ""),
-                        "pipe_b": line_b.get("pipe_id", ""),
-                        "distance": pair_distance,
-                        "area": pi * distance * distance,
-                    }
-                )
-    return conflicts
+    return gis_adapter.find_line_conflicts(line_layer_a, line_layer_b, distance)
 
 
 def buffer_points(point_layer: list[Feature], radius: float) -> list[Feature]:
@@ -400,14 +371,7 @@ def buffer_points(point_layer: list[Feature], radius: float) -> list[Feature]:
     统计阀门、调压站、泵站等设施的服务覆盖范围。
     """
 
-    buffered = []
-    for feature in point_layer:
-        buffered_feature = dict(feature)
-        buffered_feature["geometry_type"] = "buffer"
-        buffered_feature["bounds"] = _buffer_bounds(feature, radius)
-        buffered_feature["area"] = pi * radius * radius
-        buffered.append(buffered_feature)
-    return buffered
+    return gis_adapter.buffer_points(point_layer, radius)
 
 
 def intersect_areas(layer: list[Feature], polygon: Feature) -> list[Feature]:
@@ -417,15 +381,7 @@ def intersect_areas(layer: list[Feature], polygon: Feature) -> list[Feature]:
     计算一组面范围与目标区域的相交部分。
     """
 
-    intersected = []
-    for feature in layer:
-        intersection = _bounds_intersection(feature["bounds"], polygon["bounds"])
-        if intersection:
-            result = dict(feature)
-            result["bounds"] = intersection
-            result["area"] = min(feature.get("area", _bounds_area(intersection)), _bounds_area(intersection))
-            intersected.append(result)
-    return intersected
+    return gis_adapter.intersect_areas(layer, polygon)
 
 
 def area_statistics(area_layer: list[Feature]) -> dict[str, float | int]:
@@ -438,8 +394,7 @@ def area_statistics(area_layer: list[Feature]) -> dict[str, float | int]:
     这是新手版简化实现，没有精确消除多个缓冲区之间的重叠面积。
     """
 
-    total = sum(feature.get("area", _bounds_area(feature["bounds"])) for feature in area_layer)
-    return {"count": len(area_layer), "total_area": total}
+    return gis_adapter.area_statistics(area_layer)
 
 
 # =========================

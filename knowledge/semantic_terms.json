@@ -1,0 +1,37 @@
+{
+  "domains": {
+    "燃气": {
+      "layer_aliases": {
+        "燃气管线": "gas_pipes",
+        "燃气管网": "gas_pipes",
+        "阀门": "facilities",
+        "调压站": "facilities",
+        "燃气隐患": "hazards"
+      },
+      "terms": ["高压", "中压", "低压", "泄漏", "腐蚀", "保护区", "调压站", "阀门"]
+    },
+    "水务": {
+      "layer_aliases": {
+        "水务管线": "water_pipes",
+        "供水管线": "water_pipes",
+        "排水管线": "water_pipes",
+        "泵站": "facilities",
+        "水务隐患": "hazards"
+      },
+      "terms": ["供水", "排水", "泵站", "破损", "淤积", "覆盖范围", "管径"]
+    }
+  },
+  "intent_aliases": {
+    "pipe_length_statistics": ["长度", "总长", "里程", "管线多长"],
+    "hazards_near_pipes": ["范围内隐患", "周边隐患", "附近隐患", "多少米内"],
+    "line_conflict_detection": ["交叉", "冲突", "距离过近", "碰撞"],
+    "facility_coverage": ["覆盖", "服务范围", "服务半径", "覆盖率"],
+    "buffer_analysis": ["缓冲区", "影响范围", "保护区"],
+    "overlay_analysis": ["叠加", "重叠", "相交"]
+  },
+  "spatial_words": {
+    "range": ["A区", "B区", "C区", "片区", "区域", "道路周边"],
+    "distance": ["米", "公里", "范围内", "周边", "附近"],
+    "time": ["最近", "近7天", "本月", "去年", "期间", "之后", "之前"]
+  }
+}
