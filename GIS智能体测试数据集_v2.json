@@ -1,0 +1,585 @@
+{
+  "meta": {
+    "title": "GIS 智能体测试任务清单（基础算子全覆盖版）",
+    "version": "2.0",
+    "date": "2026-10-02",
+    "purpose": "用于测试 GIS 智能体（agentnet_gis.py）对真实场景基础 GIS 算子的调度与执行能力，向甲方证明基础GIS任务能力",
+    "precision_rule": "数值型字段须符合各任务output中声明的精度与取整规则",
+    "note": "所有任务面向燃气/水务/电务地下管线管理模拟库（gis_skill_library.py 中内置图层），算子只返回原始查询结果，不做结论性精炼"
+  },
+  "tasks": [
+    {
+      "id": "GIS-101",
+      "title": "高压燃气管线长度与数量统计",
+      "category": "属性统计",
+      "scenario": {
+        "background": "燃气公司年度资产盘点，需要掌握全市高压燃气管线的规模，为下一轮管网投资计划提供底数。",
+        "data": ["燃气管线图层"]
+      },
+      "colloquial_question": "帮我统计一下现在高压燃气管线一共有多少条、总长度是多少公里？",
+      "workflow": [
+        { "step": 1, "action": "加载燃气管线图层", "tool": "数据加载" },
+        { "step": 2, "action": "按管线类型=高压筛选要素", "tool": "AttributeQuery" },
+        { "step": 3, "action": "对筛选结果按类型分组统计条数与长度合计", "tool": "AttributeStat" }
+      ],
+      "terminology": [
+        "属性查询（Attribute Query）：按要素属性字段（非空间位置）筛选要素的操作，等价于SQL的SELECT ... WHERE",
+        "属性统计（Attribute Stat）：对属性字段做count/sum/avg等聚合，可按某字段GROUP BY分组"
+      ],
+      "gis_operators": [
+        { "operator": "AttributeQuery", "params": { "layer": "gas_pipelines", "where": "type = '高压'" } },
+        { "operator": "AttributeStat", "params": { "layer": "gas_pipelines", "agg": "sum", "field": "length_km", "group_by": "type" } }
+      ],
+      "output": {
+        "constraint": {
+          "precision": { "length_km": { "decimal_places": 2, "rounding": "四舍五入" } }
+        },
+        "expected_check": "返回为原始查询结果行格式（含字段名与数据行），高压管线2条、总长度21.1公里",
+        "result": "数据库查询结果显示：高压燃气管线共2条（燃气高压线A1、燃气高压线A2），长度分别为12.4和8.7公里，总长度21.10公里。"
+      }
+    },
+
+    {
+      "id": "GIS-102",
+      "title": "燃气管线材质构成分组统计",
+      "category": "属性统计",
+      "scenario": {
+        "background": "老旧管网改造立项前，需要摸清各材质管线的长度构成，重点评估铸铁管等淘汰管材的存量。",
+        "data": ["燃气管线图层"]
+      },
+      "colloquial_question": "按管材材质分组，统计每种材质的燃气管线各有多长？",
+      "workflow": [
+        { "step": 1, "action": "加载燃气管线图层", "tool": "数据加载" },
+        { "step": 2, "action": "按材质字段分组汇总管线长度", "tool": "AttributeStat" }
+      ],
+      "terminology": [
+        "分组统计（Group By）：按某属性字段的取值把要素分成若干组，对每组分别做聚合计算，等价于SQL的GROUP BY"
+      ],
+      "gis_operators": [
+        { "operator": "AttributeStat", "params": { "layer": "gas_pipelines", "agg": "sum", "field": "length_km", "group_by": "material" } }
+      ],
+      "output": {
+        "constraint": {
+          "precision": { "length_km": { "decimal_places": 2, "rounding": "四舍五入" } }
+        },
+        "expected_check": "返回GROUP BY结果行，包含钢管、PE管、铸铁管三组",
+        "result": "分组统计结果：钢管38.00公里、PE管8.30公里、铸铁管2.60公里。"
+      }
+    },
+
+    {
+      "id": "GIS-103",
+      "title": "拟建化工厂燃气安全缓冲区划定",
+      "category": "缓冲区分析",
+      "scenario": {
+        "background": "自然资源局审批某化工厂选址，需按燃气安全管理要求，以拟建厂址为圆心划定1公里燃气影响评估缓冲区。",
+        "data": ["拟建化工厂POI点", "燃气管线图层"]
+      },
+      "colloquial_question": "以拟建化工厂为圆心画一个1公里的缓冲区，这个评估范围有多大？",
+      "workflow": [
+        { "step": 1, "action": "加载拟建化工厂POI", "tool": "数据加载" },
+        { "step": 2, "action": "以POI为圆心生成1000米缓冲区面", "tool": "Buffer" }
+      ],
+      "terminology": [
+        "缓冲区（Buffer）：围绕点、线、面等地理要素，按设定距离生成的多边形区域，数学上可理解为距实体不超过固定距离的所有点的集合"
+      ],
+      "gis_operators": [
+        { "operator": "Buffer", "params": { "poi": "拟建化工厂", "radius": 1000, "unit": "米", "side": "both" } }
+      ],
+      "output": {
+        "constraint": {
+          "precision": { "area_km2": { "decimal_places": 4, "rounding": "四舍五入" } }
+        },
+        "expected_check": "返回缓冲区几何WKT与面积，面积≈3.1416平方公里",
+        "result": "缓冲区生成结果：圆心POI(116.375 39.840)，半径1000米，面积3.1416平方公里。"
+      }
+    },
+
+    {
+      "id": "GIS-104",
+      "title": "学校（小区）周边邻近要素筛查",
+      "category": "邻近查询",
+      "scenario": {
+        "background": "燃气公司开展人员密集区隐患排查，需查出阳光花园社区周边500米内的燃气管线与建筑物清单。",
+        "data": ["阳光花园社区POI点", "燃气管线图层", "建筑物图层"]
+      },
+      "colloquial_question": "查一下阳光花园周边500米范围内有哪些燃气管线和建筑物？把原始记录列出来。",
+      "workflow": [
+        { "step": 1, "action": "加载社区POI、管线与建筑物图层", "tool": "数据加载" },
+        { "step": 2, "action": "以POI为圆心做500米缓冲区", "tool": "Buffer" },
+        { "step": 3, "action": "按距离阈值筛选范围内管线与建筑物，并计算各自距离", "tool": "Distance" }
+      ],
+      "terminology": [
+        "邻近查询（Distance/ST_DWithin）：查询与目标要素距离不超过给定阈值的所有要素，并返回其实际距离"
+      ],
+      "gis_operators": [
+        { "operator": "Buffer", "params": { "poi": "阳光花园社区", "radius": 500, "unit": "米" } },
+        { "operator": "Distance", "params": { "layer": "gas_pipelines", "poi": "阳光花园社区", "max_distance_m": 500 } },
+        { "operator": "Distance", "params": { "layer": "buildings", "poi": "阳光花园社区", "max_distance_m": 500 } }
+      ],
+      "output": {
+        "constraint": {
+          "precision": { "distance_m": { "decimal_places": 1, "rounding": "四舍五入" } }
+        },
+        "expected_check": "返回原始记录行且每行含distance_m字段，所有distance_m≤500",
+        "result": "邻近筛查结果返回命中要素的原始记录（含gid、name、distance_m字段），均落在500米范围内。"
+      }
+    },
+
+    {
+      "id": "GIS-105",
+      "title": "泄漏点最近阀门定位（KNN）",
+      "category": "最近设施查询",
+      "scenario": {
+        "background": "燃气泄漏抢修中，抢修指挥需要立刻关闭离泄漏点最近的阀门切断气源。",
+        "data": ["泄漏点POI", "燃气阀门图层"]
+      },
+      "colloquial_question": "离泄漏点最近的3个燃气阀门是哪几个？要带距离。",
+      "workflow": [
+        { "step": 1, "action": "加载泄漏点与燃气阀门图层", "tool": "数据加载" },
+        { "step": 2, "action": "按几何距离排序取最近3个阀门（KNN）", "tool": "Nearest" }
+      ],
+      "terminology": [
+        "最近邻查询（KNN）：按空间距离排序返回距目标最近的K个要素，等价于PostGIS的ORDER BY geom <-> target LIMIT k"
+      ],
+      "gis_operators": [
+        { "operator": "Nearest", "params": { "layer": "gas_valves", "poi": "泄漏点", "top_k": 3, "unit": "米" } }
+      ],
+      "output": {
+        "constraint": {
+          "precision": { "distance_m": { "decimal_places": 1, "rounding": "四舍五入" } }
+        },
+        "expected_check": "返回按距离升序的3条阀门记录，含distance_m",
+        "result": "最近设施查询结果：最近的阀门为V-003（球阀）等3座，按distance_m升序排列。"
+      }
+    },
+
+    {
+      "id": "GIS-106",
+      "title": "燃气与排水管线交叉冲突检测",
+      "category": "叠加分析",
+      "scenario": {
+        "background": "地下管线综合管理平台例行安全巡检，需检测燃气管线与排水管线的空间交叉点，交叉处存在长期冲刷导致燃气管道裸露的风险。",
+        "data": ["燃气管线图层", "供排水管线图层"]
+      },
+      "colloquial_question": "检查一下燃气管线和排水管网有没有交叉冲突的地方，把交叉位置列出来。",
+      "workflow": [
+        { "step": 1, "action": "加载燃气管线与供排水管线图层", "tool": "数据加载" },
+        { "step": 2, "action": "对两线层做相交叠加，输出交叉点", "tool": "Intersect" }
+      ],
+      "terminology": [
+        "叠加分析（Overlay）：把同一地区的多个图层叠在一起，通过集合运算生成新图层，让新图层同时拥有原图层的空间和属性信息",
+        "相交（Intersect）：找出多个图层在空间上重叠的部分，并把重叠区域生成一个新图层"
+      ],
+      "gis_operators": [
+        { "operator": "Intersect", "params": { "layer_a": "gas_pipelines", "layer_b": "water_pipes", "output_type": "point" } }
+      ],
+      "output": {
+        "constraint": {
+          "precision": { "intersect_point": { "decimal_places": 4, "rounding": "坐标保留4位小数" } }
+        },
+        "expected_check": "返回交叉要素对记录，每行含a_gid/b_gid/intersect_point",
+        "result": "叠加分析结果：检测到管线交叉冲突记录若干条，每条含两侧管线编号及交叉点坐标。"
+      }
+    },
+
+    {
+      "id": "GIS-107",
+      "title": "燃气阀门行政区（地块）归属分析",
+      "category": "空间连接",
+      "scenario": {
+        "background": "燃气公司在划分巡检责任区，需要明确每座燃气阀门落在哪个规划地块内，以便按地块派单。",
+        "data": ["燃气阀门图层", "规划地块面图层"]
+      },
+      "colloquial_question": "每座燃气阀门分别位于哪个规划地块里？做一次归属分析。",
+      "workflow": [
+        { "step": 1, "action": "加载阀门点图层与地块面图层", "tool": "数据加载" },
+        { "step": 2, "action": "以点在面内（within）为条件做空间连接", "tool": "SpatialJoin" }
+      ],
+      "terminology": [
+        "空间连接（Spatial Join）：根据要素之间的空间位置关系，把一个图层的属性信息匹配并附加到另一个图层的要素上"
+      ],
+      "gis_operators": [
+        { "operator": "SpatialJoin", "params": { "join_type": "within", "target": "gas_valves", "join": "parcels" } }
+      ],
+      "output": {
+        "constraint": {
+          "precision": {}
+        },
+        "expected_check": "返回每座阀门的point_gid与within_polygon归属，未落入任何地块的记为NULL",
+        "result": "空间连接结果：5座阀门各自的所属地块记录（含未落入任何地块的NULL行）。"
+      }
+    },
+
+    {
+      "id": "GIS-108",
+      "title": "燃气管线入库前拓扑检查",
+      "category": "数据质量检查",
+      "scenario": {
+        "background": "燃气管线矢量数据拟入库PostGIS，入库前需做拓扑质量检查，重点排查悬垂节点与悬挂短线。",
+        "data": ["燃气管线图层"]
+      },
+      "colloquial_question": "燃气管线数据要入库了，帮我做一遍拓扑检查，看有没有悬垂节点这些问题。",
+      "workflow": [
+        { "step": 1, "action": "加载燃气管线图层", "tool": "数据加载" },
+        { "step": 2, "action": "执行拓扑检查（悬垂节点/超出/自相交/重复线）", "tool": "TopologyCheck" }
+      ],
+      "terminology": [
+        "拓扑检查（Topology Check）：检查线要素之间连接关系的正确性，常见错误包括悬垂节点（dangling node，线端点未与其他线连接）、超出（overshoot）、自相交等"
+      ],
+      "gis_operators": [
+        { "operator": "TopologyCheck", "params": { "layer": "gas_pipelines", "rules": ["dangling_node", "overshoot", "self_intersect", "duplicate"] } }
+      ],
+      "output": {
+        "constraint": {
+          "precision": {}
+        },
+        "expected_check": "返回错误要素记录行（gid/name/error_type/detail）",
+        "result": "拓扑检查结果：返回存在拓扑错误的管线记录及错误类型明细。"
+      }
+    },
+
+    {
+      "id": "GIS-109",
+      "title": "低压管线逐段长度量算",
+      "category": "长度量算",
+      "scenario": {
+        "background": "低压管网巡检路线排班需要每段管线的精确长度，用于估算巡检工时。",
+        "data": ["燃气管线图层"]
+      },
+      "colloquial_question": "把低压燃气管线每一段的长度逐条量出来，不要汇总。",
+      "workflow": [
+        { "step": 1, "action": "加载并筛选低压管线", "tool": "AttributeQuery" },
+        { "step": 2, "action": "逐要素量算长度（不聚合）", "tool": "LengthMeasure" }
+      ],
+      "terminology": [
+        "长度量算（Length Measure）：对线要素逐条计算几何长度（ST_Length），输出逐条记录而非合计值"
+      ],
+      "gis_operators": [
+        { "operator": "LengthMeasure", "params": { "layer": "gas_pipelines", "where": "type = '低压'", "output_unit": "公里" } }
+      ],
+      "output": {
+        "constraint": {
+          "precision": { "length_km": { "decimal_places": 2, "rounding": "四舍五入" } }
+        },
+        "expected_check": "逐条返回gid/name/length_km记录行，不做总计",
+        "result": "长度量算结果：低压管线逐段长度记录（C1为3.10公里、C2为2.60公里）。"
+      }
+    },
+
+    {
+      "id": "GIS-110",
+      "title": "燃气抢修最短路径规划",
+      "category": "网络分析",
+      "scenario": {
+        "background": "燃气泄漏事故响应，抢修车队需从抢修出发点沿道路网络以最短里程赶到事故点。",
+        "data": ["道路网络图层", "抢修出发点POI", "事故点POI"]
+      },
+      "colloquial_question": "抢修队要从抢修出发点赶到事故点，帮我算一下走哪条路线最短。",
+      "workflow": [
+        { "step": 1, "action": "加载道路网络并构建拓扑", "tool": "数据加载" },
+        { "step": 2, "action": "在网络两点间执行最短路径分析", "tool": "ShortestPath" }
+      ],
+      "terminology": [
+        "最短路径分析（Shortest Path）：在网络上计算两点间累计代价最小的路径，等价于pgRouting的pgr_dijkstra"
+      ],
+      "gis_operators": [
+        { "operator": "ShortestPath", "params": { "start": "抢修出发点", "end": "事故点", "network_layer": "roads", "cost_field": "length_km" } }
+      ],
+      "output": {
+        "constraint": {
+          "precision": { "cost_km": { "decimal_places": 2, "rounding": "四舍五入" } }
+        },
+        "expected_check": "返回途经路段序列（seq/edge_id/road_name/cost_km）与总代价",
+        "result": "最短路径结果：途经建设大道、文化路、滨河路3条路段，总代价5.70公里。"
+      }
+    },
+
+    {
+      "id": "GIS-111",
+      "title": "老旧铸铁管线定位与关联阀门排查",
+      "category": "复合任务",
+      "scenario": {
+        "background": "铸铁管属于淘汰管材，需先筛出存量铸铁管线，再定位其应急关断阀门，形成改造台账。",
+        "data": ["燃气管线图层", "燃气阀门图层", "泄漏点POI"]
+      },
+      "colloquial_question": "先查出所有铸铁材质的老旧燃气管线，再看看离泄漏点最近的阀门是哪个。",
+      "workflow": [
+        { "step": 1, "action": "加载燃气管线图层，按材质=铸铁筛选", "tool": "AttributeQuery" },
+        { "step": 2, "action": "加载燃气阀门图层", "tool": "数据加载" },
+        { "step": 3, "action": "以泄漏点为参照做最近邻查询", "tool": "Nearest" }
+      ],
+      "terminology": [
+        "属性查询（Attribute Query）：按属性字段筛选要素",
+        "最近邻查询（KNN）：按空间距离返回最近的K个要素"
+      ],
+      "gis_operators": [
+        { "operator": "AttributeQuery", "params": { "layer": "gas_pipelines", "where": "material = '铸铁管'" } },
+        { "operator": "Nearest", "params": { "layer": "gas_valves", "poi": "泄漏点", "top_k": 1 } }
+      ],
+      "output": {
+        "constraint": {
+          "precision": { "distance_m": { "decimal_places": 1, "rounding": "四舍五入" } }
+        },
+        "expected_check": "第一步返回铸铁管原始记录行；第二步返回含distance_m的最近阀门记录",
+        "result": "属性查询返回铸铁管燃气低压线C2等原始记录；最近邻查询返回距泄漏点最近的阀门记录。"
+      }
+    },
+
+    {
+      "id": "GIS-112",
+      "title": "严重水务隐患点筛查",
+      "category": "属性查询",
+      "scenario": {
+        "background": "水务集团月度安全隐患例会，需要提取全部严重等级隐患点台账，逐条落实整改责任人。",
+        "data": ["水务隐患点图层"]
+      },
+      "colloquial_question": "把所有严重等级的水务隐患点查出来，原始记录给我。",
+      "workflow": [
+        { "step": 1, "action": "加载水务隐患点图层", "tool": "数据加载" },
+        { "step": 2, "action": "按隐患等级=严重筛选", "tool": "AttributeQuery" }
+      ],
+      "terminology": [
+        "属性查询（Attribute Query）：按要素属性字段筛选要素，等价于SQL的SELECT ... WHERE"
+      ],
+      "gis_operators": [
+        { "operator": "AttributeQuery", "params": { "layer": "water_hazards", "where": "level = '严重'" } }
+      ],
+      "output": {
+        "constraint": {
+          "precision": {}
+        },
+        "expected_check": "返回原始记录行，含gid/type/level/report_date/geom",
+        "result": "属性查询结果：返回严重等级隐患点的原始记录行。"
+      }
+    },
+
+    {
+      "id": "GIS-113",
+      "title": "水务隐患点空间聚集格网分析",
+      "category": "密度分析",
+      "scenario": {
+        "background": "水务集团排查隐患成片区域，用500米格网统计各网格内隐患点数量，识别聚集热点。",
+        "data": ["水务隐患点图层"]
+      },
+      "colloquial_question": "分析一下水务隐患点在空间上哪里最集中，用格网统计每个格子里的隐患数量。",
+      "workflow": [
+        { "step": 1, "action": "加载水务隐患点图层", "tool": "数据加载" },
+        { "step": 2, "action": "按500米格网聚合统计每格点数", "tool": "DensityHeatmap" }
+      ],
+      "terminology": [
+        "格网密度分析（Density/Grid Stat）：将研究区划分为固定大小的格网单元，统计每个单元内点要素的数量，用于识别点要素的空间聚集区"
+      ],
+      "gis_operators": [
+        { "operator": "DensityHeatmap", "params": { "layer": "water_hazards", "cell_size_m": 500 } }
+      ],
+      "output": {
+        "constraint": {
+          "precision": { "cell_origin": { "decimal_places": 3, "rounding": "坐标保留3位小数" } }
+        },
+        "expected_check": "返回非空格网单元记录（cell_id/cell_origin/point_count/point_gids）",
+        "result": "格网统计结果：返回各非空格网单元的隐患点计数记录。"
+      }
+    },
+
+    {
+      "id": "GIS-114",
+      "title": "供排水与燃气管线交叉冲突检测",
+      "category": "叠加分析",
+      "scenario": {
+        "background": "供水管网改造设计阶段，需检测供水管线与燃气管线的交叉点，交叉处施工需制定专项保护方案。",
+        "data": ["供水管线图层", "燃气管线图层"]
+      },
+      "colloquial_question": "供排水管线和燃气管线之间有没有交叉冲突点？做一次叠加分析。",
+      "workflow": [
+        { "step": 1, "action": "加载供水与燃气管线图层", "tool": "数据加载" },
+        { "step": 2, "action": "对两线层做相交叠加", "tool": "Intersect" }
+      ],
+      "terminology": [
+        "叠加分析（Overlay）：把多个图层叠在一起通过集合运算生成新图层",
+        "相交（Intersect）：找出多个图层在空间上重叠的部分"
+      ],
+      "gis_operators": [
+        { "operator": "Intersect", "params": { "layer_a": "water_pipes", "layer_b": "gas_pipelines", "output_type": "point" } }
+      ],
+      "output": {
+        "constraint": {
+          "precision": { "intersect_point": { "decimal_places": 4, "rounding": "坐标保留4位小数" } }
+        },
+        "expected_check": "返回交叉要素对记录，含intersect_point",
+        "result": "叠加分析结果：返回供排水与燃气管线交叉冲突记录。"
+      }
+    },
+
+    {
+      "id": "GIS-115",
+      "title": "应急供水服务范围分析",
+      "category": "服务区分析",
+      "scenario": {
+        "background": "事故点周边计划设置应急供水保障圈，需分析以事故点为中心沿路网2公里可达的服务范围。",
+        "data": ["道路网络图层", "事故点POI"]
+      },
+      "colloquial_question": "以事故点为中心做2公里服务区分析，看看这个范围能覆盖哪些路段。",
+      "workflow": [
+        { "step": 1, "action": "加载道路网络", "tool": "数据加载" },
+        { "step": 2, "action": "以事故点为源做2公里网络服务区分析", "tool": "ServiceArea" }
+      ],
+      "terminology": [
+        "服务区分析（Service Area）：以某设施为源点，沿网络在给定代价范围内可达的区域，等价于pgRouting的pgr_drivingDistance"
+      ],
+      "gis_operators": [
+        { "operator": "ServiceArea", "params": { "facility": "事故点", "max_distance_m": 2000, "network_layer": "roads" } }
+      ],
+      "output": {
+        "constraint": {
+          "precision": { "reach_cost_km": { "decimal_places": 2, "rounding": "四舍五入" } }
+        },
+        "expected_check": "返回覆盖路段记录（edge_id/road_name/reach_cost_km/covered）",
+        "result": "服务区分析结果：返回2公里范围内可达路段及其到达代价记录。"
+      }
+    },
+
+    {
+      "id": "GIS-116",
+      "title": "沿建设大道地形高程剖面",
+      "category": "地形分析",
+      "scenario": {
+        "background": "排水管网重力流改造设计，需沿建设大道方向获取地形高程剖面，评估排水坡度可行性。",
+        "data": ["道路中心线", "DEM高程采样点"]
+      },
+      "colloquial_question": "帮我沿建设大道方向做一条高程剖面，采样间距1公里。",
+      "workflow": [
+        { "step": 1, "action": "加载道路中心线与DEM", "tool": "数据加载" },
+        { "step": 2, "action": "沿线路按1000米间距采样高程", "tool": "TerrainProfile" }
+      ],
+      "terminology": [
+        "地形剖面（Terrain Profile）：沿指定线路按间距采样高程值，得到线路方向的地形起伏序列"
+      ],
+      "gis_operators": [
+        { "operator": "TerrainProfile", "params": { "route": "建设大道中心线", "sample_interval_m": 1000 } }
+      ],
+      "output": {
+        "constraint": {
+          "precision": { "elev_m": { "decimal_places": 1, "rounding": "四舍五入" } }
+        },
+        "expected_check": "返回采样点序列（seq/offset_m/elev_m），共11个采样点",
+        "result": "地形剖面结果：返回按1公里间距的高程采样序列，高程自43.2米降至38.2米。"
+      }
+    },
+
+    {
+      "id": "GIS-117",
+      "title": "电力缆线电压等级统计",
+      "category": "属性统计",
+      "scenario": {
+        "background": "电力公司编制线缆台账，需按电压等级汇总各等级缆线总长度。",
+        "data": ["电力缆线图层"]
+      },
+      "colloquial_question": "统计一下各电压等级的电力缆线各有多少公里。",
+      "workflow": [
+        { "step": 1, "action": "加载电力缆线图层", "tool": "数据加载" },
+        { "step": 2, "action": "按电压等级分组汇总长度", "tool": "AttributeStat" }
+      ],
+      "terminology": [
+        "分组统计（Group By）：按某属性字段分组后分别做聚合计算"
+      ],
+      "gis_operators": [
+        { "operator": "AttributeStat", "params": { "layer": "power_cables", "agg": "sum", "field": "length_km", "group_by": "voltage_kv" } }
+      ],
+      "output": {
+        "constraint": {
+          "precision": { "length_km": { "decimal_places": 2, "rounding": "四舍五入" } }
+        },
+        "expected_check": "返回10kV与110kV两组统计行",
+        "result": "分组统计结果：10kV缆线10.00公里，110kV缆线11.50公里。"
+      }
+    },
+
+    {
+      "id": "GIS-118",
+      "title": "事故点最近电力杆塔定位",
+      "category": "最近设施查询",
+      "scenario": {
+        "background": "电力抢修需就近登塔断电，要求定位距事故点最近的2座杆塔。",
+        "data": ["事故点POI", "电力杆塔图层"]
+      },
+      "colloquial_question": "事故点附近最近的电力杆塔是哪座？给我最近2座，带距离。",
+      "workflow": [
+        { "step": 1, "action": "加载事故点与杆塔图层", "tool": "数据加载" },
+        { "step": 2, "action": "按距离排序取最近2座杆塔（KNN）", "tool": "Nearest" }
+      ],
+      "terminology": [
+        "最近邻查询（KNN）：按空间距离排序返回距目标最近的K个要素"
+      ],
+      "gis_operators": [
+        { "operator": "Nearest", "params": { "layer": "power_towers", "poi": "事故点", "top_k": 2, "unit": "米" } }
+      ],
+      "output": {
+        "constraint": {
+          "precision": { "distance_m": { "decimal_places": 1, "rounding": "四舍五入" } }
+        },
+        "expected_check": "返回2条杆塔记录，含distance_m",
+        "result": "最近设施查询结果：最近杆塔为T-A02等2座，按距离升序返回。"
+      }
+    },
+
+    {
+      "id": "GIS-119",
+      "title": "化工厂周边电力设施安全排查",
+      "category": "邻近查询",
+      "scenario": {
+        "background": "化工厂施工安全评估，需排查厂址300米范围内的电力杆塔，评估施工对供电设施的影响。",
+        "data": ["拟建化工厂POI", "电力杆塔图层"]
+      },
+      "colloquial_question": "拟建化工厂300米范围内有没有电力杆塔？有的话列出来。",
+      "workflow": [
+        { "step": 1, "action": "加载化工厂POI与杆塔图层", "tool": "数据加载" },
+        { "step": 2, "action": "做300米邻近筛选并计算距离", "tool": "Distance" }
+      ],
+      "terminology": [
+        "邻近查询（Distance/ST_DWithin）：查询与目标距离不超过阈值的要素并返回实际距离"
+      ],
+      "gis_operators": [
+        { "operator": "Distance", "params": { "layer": "power_towers", "poi": "拟建化工厂", "max_distance_m": 300 } }
+      ],
+      "output": {
+        "constraint": {
+          "precision": { "distance_m": { "decimal_places": 1, "rounding": "四舍五入" } }
+        },
+        "expected_check": "返回命中杆塔原始记录，含distance_m≤300",
+        "result": "邻近筛查结果：返回300米范围内杆塔的原始记录。"
+      }
+    },
+
+    {
+      "id": "GIS-120",
+      "title": "A-03地块内隐患点排查与地块面积量算",
+      "category": "复合任务",
+      "scenario": {
+        "background": "地块安全评估需综合两项分析：地块内有哪些水务隐患点，以及该地块的面积底数。",
+        "data": ["水务隐患点图层", "规划地块面图层"]
+      },
+      "colloquial_question": "A-03地块里有哪些水务隐患点？顺便把地块的面积也算一下。",
+      "workflow": [
+        { "step": 1, "action": "加载隐患点与地块图层", "tool": "数据加载" },
+        { "step": 2, "action": "以隐患点为目标、地块为连接层做点落面空间连接", "tool": "SpatialJoin" },
+        { "step": 3, "action": "对A-03地块量算面积", "tool": "AreaMeasure" }
+      ],
+      "terminology": [
+        "空间连接（Spatial Join）：根据空间位置关系把一个图层的属性匹配附加到另一图层要素上",
+        "面积量算（Area Measure）：对面要素逐条计算几何面积（ST_Area）"
+      ],
+      "gis_operators": [
+        { "operator": "SpatialJoin", "params": { "join_type": "within", "target": "water_hazards", "join": "parcels" } },
+        { "operator": "AreaMeasure", "params": { "layer": "parcels", "where": "name = 'A-03地块'", "output_unit": "平方公里" } }
+      ],
+      "output": {
+        "constraint": {
+          "precision": { "area_km2": { "decimal_places": 4, "rounding": "四舍五入" } }
+        },
+        "expected_check": "空间连接返回隐患点归属记录；面积量算返回A-03地块面积0.42平方公里",
+        "result": "空间连接返回落入A-03地块的隐患点记录；面积量算返回0.4200平方公里。"
+      }
+    }
+  ]
+}
