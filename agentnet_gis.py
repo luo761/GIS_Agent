@@ -53,6 +53,7 @@ model = ChatDeepSeek(
 # 1. 数据模型 / 状态
 # =====================================================================
 
+# 用户上下文
 @dataclass
 class UserContext:
     username: str
@@ -61,18 +62,18 @@ class UserContext:
 
 class AgentNetState(MessagesState):
     remaining_steps: RemainingSteps
-    input: str                                    # 用户原始问题
-    info: Annotated[list[str], add]               # 过程日志
-    output: str                                   # 最终输出
-    detected_domain: Optional[str]                # 识别出的领域
-    task_type: Optional[str]                      # 识别出的任务类型（工具名）
-    selected_agent: Optional[str]                 # 当前选中的智能体
+    input: str                                          # 用户原始问题
+    info: Annotated[list[str], add]                     # 过程日志
+    output: str                                         # 最终输出
+    detected_domain: Optional[str]                      # 识别出的领域
+    task_type: Optional[str]                            # 识别出的任务类型（工具名）
+    selected_agent: Optional[str]                       # 当前选中的智能体
     subtasks: List[str] = field(default_factory=list)   # 待处理子任务
-    subtask_results: Annotated[list[str], add]    # 子任务结果汇总
-    cooperation: Optional[bool]                   # 是否需要多智能体协作
-    trajectory: Annotated[list[str], add]         # 任务执行轨迹（用于提炼 skill）
-    task_success: Optional[bool]                  # 任务是否成功
-    preferences: dict                             # 领域知识库
+    subtask_results: Annotated[list[str], add]          # 子任务结果汇总
+    cooperation: Optional[bool]                         # 是否需要多智能体协作
+    trajectory: Annotated[list[str], add]               # 任务执行轨迹（用于提炼 skill）
+    task_success: Optional[bool]                        # 任务是否成功
+    preferences: dict                                   # 领域知识库
 
 
 class InputState(MessagesState):
@@ -88,73 +89,9 @@ class OutputState(MessagesState):
 # 2. 持久化配置（Postgres）
 # =====================================================================
 DB_URL = "postgresql://langgraph_user:123456@localhost:5432/langgraph_db?sslmode=disable"
-
 AGENTS_NS: Final[Tuple[str]] = ("agents",)           # 智能体独立记忆根
 EXPERIENCE_NS: Final[Tuple[str]] = ("experience_pool",)  # 共享经验池
 SKILLS_NS: Final[Tuple[str]] = ("skills",)           # 技能库
-
-
-# =====================================================================
-# 3. GIS 工具（与 project.py 保持一致）
-# =====================================================================
-@tool(parse_docstring=True)
-def buffer_analysis(domain: str, layer: str, buffer_distance: float) -> str:
-    """
-    GIS缓冲区分析算子，生成要素周边缓冲区范围
-
-    Args:
-        domain: 业务领域，燃气/水务/电务
-        layer: 图层名称，例如燃气管线、水务隐患点
-        buffer_distance: 缓冲距离，单位米
-    """
-    return (f"【模拟缓冲区分析结果】领域:{domain},图层:{layer},"
-            f"缓冲距离:{buffer_distance}米，生成缓冲区面要素共12个，缓冲区总面积2.36平方公里。")
-
-
-@tool(parse_docstring=True)
-def pipe_length_stat(domain: str, filter_condition: str = "") -> str:
-    """
-    管线长度统计算子，统计指定领域管线总长度
-
-    Args:
-        domain: 业务领域，燃气/水务/电务
-        filter_condition: 筛选条件，如"高压管线"、"隐患管线"
-    """
-    total = {"燃气": 128.72, "水务": 246.15}.get(domain, 88.2)
-    return (f"【模拟管线统计结果】领域:{domain},筛选条件:{filter_condition},"
-            f"管线总长度：{total} KM")
-
-
-@tool(parse_docstring=True)
-def hazard_query(domain: str, hazard_type: str = "all") -> str:
-    """
-    隐患筛查查询算子，查询领域内空间隐患分布
-
-    Args:
-        domain: 业务领域：燃气/水务/电务
-        hazard_type: 隐患类型，all全部，泄漏、腐蚀、破损
-    """
-    mock_data = {
-        "燃气": ["阀门腐蚀隐患 3处", "管线泄漏风险点 2处"],
-        "水务": ["管网破损点 5处", "排水淤积隐患4处"],
-    }
-    items = mock_data.get(domain, [])
-    return (f"【模拟隐患查询结果】领域:{domain},隐患类型:{hazard_type},"
-            f"隐患列表：{items}")
-
-
-@tool(parse_docstring=True)
-def overlay_analysis(domain: str, layer_a: str, layer_b: str) -> str:
-    """
-    GIS叠加分析算子，图层叠加，用于管线交叉冲突检测
-
-    Args:
-        domain: 业务领域
-        layer_a: 图层A
-        layer_b: 图层B
-    """
-    return (f"【模拟叠加分析结果】领域:{domain},图层A:{layer_a},图层B:{layer_b},"
-            f"检测到图层交叉冲突位置共4处，已输出冲突空间坐标。")
 
 
 # GIS 工具改为从独立 Skill 库（gis_skill_library.py）导入：主程序与算子库解耦，
@@ -163,7 +100,7 @@ try:
     from gis_skill_library import ATOMIC_TOOLS as gis_tools, SKILL_USAGE_DOCS
 except ImportError:
     logger.warning("未能导入 gis_skill_library，回退到内置4个演示工具")
-    gis_tools = [buffer_analysis, pipe_length_stat, hazard_query, overlay_analysis]
+    gis_tools = [] #可以加绑定的技能
     SKILL_USAGE_DOCS = {}
 model_with_gis_tools = model.bind_tools(gis_tools)
 
@@ -222,7 +159,7 @@ registry.register(GISAgent(
     name="燃气智能体",
     domain="燃气",
     description="负责燃气管线长度统计、泄漏隐患筛查、燃气保护区缓冲区、管线交叉冲突检测",
-    capabilities={"管线统计": 0.9, "隐患筛查": 0.85, "缓冲区分析": 0.8, "叠加分析": 0.7},
+    capabilities={"管线统计": 0.5, "隐患筛查": 0.5, "缓冲区分析": 0.5, "叠加分析": 0.5},
     memory_ns=("agents", "燃气"),
 ))
 
@@ -230,7 +167,7 @@ registry.register(GISAgent(
     name="水务智能体",
     domain="水务",
     description="负责供水管线、排水管网统计、管网破损与淤积隐患筛查、水务缓冲区分析",
-    capabilities={"管线统计": 0.85, "隐患筛查": 0.8, "缓冲区分析": 0.85, "叠加分析": 0.6},
+    capabilities={"管线统计": 0.5, "隐患筛查": 0.5, "缓冲区分析": 0.5, "叠加分析": 0.5},
     memory_ns=("agents", "水务"),
 ))
 
@@ -238,7 +175,7 @@ registry.register(GISAgent(
     name="电务智能体",
     domain="电务",
     description="负责电力管线统计、电力隐患筛查、电力保护区缓冲区分析",
-    capabilities={"管线统计": 0.8, "隐患筛查": 0.75, "缓冲区分析": 0.8, "叠加分析": 0.5},
+    capabilities={"管线统计": 0.5, "隐患筛查": 0.5, "缓冲区分析": 0.5, "叠加分析": 0.5},
     memory_ns=("agents", "电务"),
 ))
 
@@ -250,7 +187,7 @@ registry.register(GISAgent(
 class DetectResult(BaseModel):
     """识别任务领域与任务类型"""
     domain: Literal["燃气", "水务", "电务", "无"] = Field(description="问题所属领域")
-    task_type: str = Field(description="任务类型：管线统计/缓冲区分析/隐患查询/叠加分析")
+    task_type: str = Field(description="任务类型：管线统计/缓冲区分析/隐患查询/叠加分析/其他")
     reason: str = Field(description="简短推理理由")
 
 
@@ -354,12 +291,12 @@ def detect_node(state: AgentNetState) -> AgentNetState:
          HumanMessage(content=state["input"])]
     )
     domain = res.domain
-    if domain == "无":
-        # 兜底1：关键词扫描
-        for d, kws in DOMAIN_KEYWORDS.items():
-            if any(kw in state["input"] for kw in kws):
-                domain = d
-                break
+    # if domain == "无":
+    #     # 兜底1：关键词扫描
+    #     for d, kws in DOMAIN_KEYWORDS.items():
+    #         if any(kw in state["input"] for kw in kws):
+    #             domain = d
+    #             break
     if domain == "无":
         # 兜底2：进入综合模式，交给智能体依据 Skill 库算子说明自行求解
         return {"detected_domain": "综合",
@@ -377,8 +314,7 @@ def route_node(state: AgentNetState, runtime: Runtime) -> AgentNetState:
     # ---------- 中断确认：读取共享知识库/经验池前征得用户同意 ----------
     confirm = interrupt("准备读取共享经验池与智能体网络，进行任务分工，是否继续？(yes/no)")
     if confirm not in (True, "yes"):
-        return Command(goto=END, update={"info": "用户取消读取共享知识库，流程终止。",
-                                        "task_success": False})
+        return Command(goto=END, update={"info": "用户取消读取共享知识库，流程终止。", "task_success": False})
 
     available = registry.all()
     agent_names = ", ".join(a.name for a in available)
@@ -415,8 +351,7 @@ def execute_node(state: AgentNetState, runtime: Runtime) -> AgentNetState:
     # ---------- 中断确认：调用大语言模型前征得用户同意 ----------
     confirm = interrupt(f"准备调用大语言模型，由 {state.get('selected_agent','智能体')} 执行任务，是否继续？(yes/no)")
     if confirm not in (True, "yes"):
-        return Command(goto=END, update={"info": "用户取消调用大语言模型，流程终止。",
-                                        "task_success": False})
+        return Command(goto=END, update={"info": "用户取消调用大语言模型，流程终止。", "task_success": False})
 
     agent = registry.get(state["selected_agent"])
     domain = state["detected_domain"]
@@ -433,11 +368,37 @@ def execute_node(state: AgentNetState, runtime: Runtime) -> AgentNetState:
     #    综合模式下检索不到领域技能时，回退到 Skill 库各域算子使用说明，
     #    让智能体依据算子知识自行拆解求解，而非直接失败。
     store = runtime.store
+    known_domains = ("燃气", "水务", "电务")
     try:
-        skill_items = store.search((*SKILLS_NS, domain))
+        if domain in known_domains:
+            skill_items = store.search((*SKILLS_NS, domain))
+        else:
+            # 综合模式：跨全部领域检索，由相关度排序挑最匹配的技能
+            skill_items = []
+            for d in known_domains:
+                try:
+                    skill_items += store.search((*SKILLS_NS, d))
+                except Exception:
+                    pass
     except Exception:
         skill_items = []
-    skill_refs = [it.value.get("skill", str(it.value)) for it in skill_items][:2]
+
+    # 相关度排序：按技能文本与用户问题的字段重合度打分，取最相关的 top-2
+    def _relevance(it):
+        val = it.value if isinstance(it.value, dict) else {}
+        text = str(val.get("skill", it.value))
+        question = state.get("input", "")
+        # 2字及以上片段命中计分（中文无分词，用滑动窗口粗略匹配）
+        score = 0
+        hits = 0
+        for i in range(len(question) - 1):
+            gram = question[i:i+3]
+            if len(gram) >= 2 and gram in text:
+                hits += 1
+        score = hits
+        return (score, hits)
+    skill_items = sorted(skill_items, key=_relevance, reverse=True)
+    skill_refs = [it.value.get("skill", str(it.value)) for it in skill_items[:2]]
     if not skill_refs and SKILL_USAGE_DOCS:
         skill_refs = list(SKILL_USAGE_DOCS.values())[:2]
     method_text = "\n".join(skill_refs) if skill_refs else "（暂无沉淀技能，可参考经验池）"
@@ -457,10 +418,13 @@ def execute_node(state: AgentNetState, runtime: Runtime) -> AgentNetState:
     else:
         exp_text = "（无历史经验）"
 
+    # ReAct 多轮：首轮带用户问题；后续轮必须携带完整历史（AI工具调用+工具返回结果），
+    # 否则模型看不到工具结果会重复调用同一工具。
+    history = [m for m in state.get("messages", [])]
     messages = [sys_msg,
                 SystemMessage(content=f"【技能库·通用方法论】\n{method_text}"),
                 SystemMessage(content=f"【共享经验池·历史成功轨迹】\n{exp_text}"),
-                HumanMessage(content=state["input"])]
+                HumanMessage(content=state["input"])] + history
     resp = model_with_gis_tools.invoke(messages)
 
     updates: dict = {
@@ -472,8 +436,8 @@ def execute_node(state: AgentNetState, runtime: Runtime) -> AgentNetState:
     }
 
     # 记录到该智能体的独立记忆（记忆独立）
-    store.put(agent.memory_namespace(), "last_task",
-              {"task": state["input"], "summary": resp.content[:200]})
+    store.put(agent.memory_namespace(), "last_task", {"task": state["input"], "summary": resp.content[:200]})
+
     logger.info(f"[记忆] 已写入 {agent.name} 独立记忆")
     sleep(0.05)
     return updates
@@ -590,9 +554,12 @@ builder.add_node("end_node", end_node)
 builder.add_edge(START, "detect_node")
 builder.add_edge("detect_node", "route_node")
 builder.add_edge("route_node", "execute_node")
+# ReAct 循环：execute 发出工具调用 → tool 执行 → 回到 execute 继续推理（
+# 支持串行依赖的多步任务，如先查道路 WKT 再调地形剖面）；
+# 模型不再发出工具调用时才进入最终答复整合，再进入学习沉淀。
 builder.add_conditional_edges("execute_node", router_after_execute)
-builder.add_edge("tool_node", "final_answer_node")  # 工具完成后先整合最终答复
-builder.add_edge("final_answer_node", "learn_node")  # 再进入学习沉淀
+builder.add_edge("tool_node", "execute_node")
+builder.add_edge("final_answer_node", "learn_node")  # 整合完成后学习沉淀
 builder.add_edge("learn_node", "end_node")
 builder.add_edge("end_node", END)
 
