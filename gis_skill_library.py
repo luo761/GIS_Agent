@@ -19,6 +19,7 @@ gis_skill_library.py —— GIS 原子算子 Skill 库
   dem_points      高程采样点
 ================================================================================
 """
+import re
 from typing import List
 from langchain.tools import tool
 
@@ -187,11 +188,15 @@ def spatial_query(layer: str, where: str = "") -> str:
     """
     rows = LAYERS.get(layer, [])
     if where:
-        # 极简条件解析：仅支持 "字段 = '值'"、">=数值"、">数值"、"<数值" 单条件
+        # 极简条件解析：支持 LIKE '%值%'、"字段 = '值'"、">=数值"、">数值"、"<数值" 单条件
         matched = []
+        m_like = re.search(r"(\w+)\s+LIKE\s+'%([^%]+)%'", where, re.IGNORECASE)
         for r in rows:
             ok = False
-            if "=" in where and "!=" not in where:
+            if m_like:
+                f, v = m_like.group(1), m_like.group(2)
+                ok = v in str(r.get(f, ""))
+            elif "=" in where and "!=" not in where:
                 f, v = [s.strip() for s in where.split("=", 1)]
                 ok = str(r.get(f, "")) == v.strip("'\"")
             elif ">=" in where:
@@ -516,6 +521,9 @@ def service_area(facility_poi: str, max_distance_m: float) -> str:
 def terrain_profile(route_wkt: str, sample_interval_m: int = 500) -> str:
     """
     地形剖面采样算子：沿给定线路按间距采样高程（模拟 ST_LineInterpolatePoint + DEM查询），返回采样点高程序列。
+    注意：算子内部会自动沿线插值并查询DEM高程，调用前无需额外准备高程数据；
+    标准用法是先用 spatial_query 查出目标道路/线路的中心线 geom（LINESTRING WKT），
+    然后【必须】将该 WKT 传入 route_wkt 调用本算子，才能得到剖面采样点。
 
     Args:
         route_wkt: 线路WKT坐标，如 "LINESTRING(116.30 39.85, 116.40 39.875)"；也可传POI名"泄漏点"使用其坐标
