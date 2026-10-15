@@ -15,7 +15,7 @@ from app.tools.schemas import (
     SpatialFilterInput,
 )
 
-
+#定义工具的调用方式：无参数 关键字参数 参数模型对象
 ToolInvocation = Literal["none", "kwargs", "request"]
 
 
@@ -86,7 +86,7 @@ TOOL_REGISTRY: dict[str, ToolSpec] = {
     ),
 }
 
-
+#按名称查找工具，不存在时抛出异常
 def get_tool_spec(name: str) -> ToolSpec:
     try:
         return TOOL_REGISTRY[name]
@@ -94,15 +94,15 @@ def get_tool_spec(name: str) -> ToolSpec:
         allowed = ", ".join(sorted(TOOL_REGISTRY))
         raise ValueError(f"Unsupported PostGIS tool: {name}. Allowed tools: {allowed}") from exc
 
-
+#生成全部工具的LLM函数调用定义
 def postgis_tool_definitions() -> list[dict[str, Any]]:
     return [spec.llm_definition() for spec in TOOL_REGISTRY.values()]
 
-
+#返回所有工具名称的集合
 def postgis_tool_names() -> set[str]:
     return set(TOOL_REGISTRY)
 
-
+#将 Pydantic 模型转换成描述参数结构的 JSON Schema
 def _tool_parameters_schema(args_schema: type[BaseModel]) -> dict[str, Any]:
     schema = args_schema.model_json_schema()
     schema.pop("title", None)
@@ -111,7 +111,7 @@ def _tool_parameters_schema(args_schema: type[BaseModel]) -> dict[str, Any]:
     _add_layer_enums(schema)
     return schema
 
-
+#递归遍历 JSON Schema，为图层名称字段补充白名单枚举
 def _add_layer_enums(schema: Any) -> None:
     if isinstance(schema, dict):
         if schema.get("title") in {

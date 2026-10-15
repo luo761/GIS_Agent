@@ -37,7 +37,12 @@ class TargetGeometry(BaseModel):
             raise ValueError("目标必须且只能使用图层对象或 GeoJSON 几何之一")
         return self
 
-
+"""
+layer_name 要查询的图层名称，必填字符串
+target 用于比较的目标对象，必填，结构由 TargetGeometry 定义
+relation 要判断的空间关系，必填
+max_results 最多返回多少条要素，默认 20，允许
+"""
 class SpatialFilterInput(BaseModel):
     layer_name: str
     target: TargetGeometry

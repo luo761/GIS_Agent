@@ -6,6 +6,8 @@ from typing import Any
 from app.agent.deterministic import DeterministicGISAgent
 from app.agent.llm_agent import LLMGISAgent
 
+from app.tools.registry import get_tool_spec
+
 
 DEFAULT_COMPARISON_QUESTIONS = [
     "查看当前数据库有哪些空间图层",
@@ -40,11 +42,20 @@ def compare_agents(questions: list[str] | None = None) -> list[ComparisonCase]:
                 deterministic=deterministic,
                 llm=llm,
                 same_tool=_first_tool_name(deterministic) == _first_tool_name(llm),
-                same_arguments=_first_tool_args(deterministic) == _first_tool_args(llm),
+                same_arguments=_normalized_tool_args(deterministic) == _normalized_tool_args(llm),
                 same_key_result=_key_result(deterministic) == _key_result(llm),
             )
         )
     return results
+
+def _normalized_tool_args(run: dict[str, Any]) -> dict[str, Any] | None:
+    plan = run.get("plan") or []
+    if not plan:
+        return None
+
+    call = plan[0]
+    spec = get_tool_spec(call["name"])
+    return spec.validate_arguments(call.get("arguments")).model_dump()
 
 
 def _first_tool_name(run: dict[str, Any]) -> str | None:
