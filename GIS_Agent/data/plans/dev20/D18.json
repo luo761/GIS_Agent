@@ -1,0 +1,135 @@
+{
+  "steps": [
+    {
+      "id": "gas",
+      "tool": "query_features",
+      "arguments": {
+        "layer_name": "gas_pipelines",
+        "filters": [],
+        "target": {
+          "layer_name": "construction_areas",
+          "feature_code": "A001"
+        },
+        "relation": "ST_Intersects"
+      },
+      "depends_on": []
+    },
+    {
+      "id": "gas_cut",
+      "tool": "clip_features",
+      "arguments": {
+        "features": {
+          "$ref": "gas.result.feature_set"
+        },
+        "clip_target": {
+          "layer_name": "construction_areas",
+          "feature_code": "A001"
+        }
+      },
+      "depends_on": [
+        "gas"
+      ]
+    },
+    {
+      "id": "gas_lengths",
+      "tool": "measure_features",
+      "arguments": {
+        "features": {
+          "$ref": "gas_cut.result.feature_set"
+        },
+        "measure": "length"
+      },
+      "depends_on": [
+        "gas_cut"
+      ]
+    },
+    {
+      "id": "gas_rank",
+      "tool": "summarize_features",
+      "arguments": {
+        "features": {
+          "$ref": "gas_lengths.result.feature_set"
+        },
+        "group_by": [
+          "pressure_level"
+        ],
+        "aggregate": "sum",
+        "sort": "value_desc"
+      },
+      "depends_on": [
+        "gas_lengths"
+      ]
+    },
+    {
+      "id": "water",
+      "tool": "query_features",
+      "arguments": {
+        "layer_name": "water_pipelines",
+        "filters": [],
+        "target": {
+          "layer_name": "construction_areas",
+          "feature_code": "A001"
+        },
+        "relation": "ST_Intersects"
+      },
+      "depends_on": []
+    },
+    {
+      "id": "water_cut",
+      "tool": "clip_features",
+      "arguments": {
+        "features": {
+          "$ref": "water.result.feature_set"
+        },
+        "clip_target": {
+          "layer_name": "construction_areas",
+          "feature_code": "A001"
+        }
+      },
+      "depends_on": [
+        "water"
+      ]
+    },
+    {
+      "id": "water_lengths",
+      "tool": "measure_features",
+      "arguments": {
+        "features": {
+          "$ref": "water_cut.result.feature_set"
+        },
+        "measure": "length"
+      },
+      "depends_on": [
+        "water_cut"
+      ]
+    },
+    {
+      "id": "water_rank",
+      "tool": "summarize_features",
+      "arguments": {
+        "features": {
+          "$ref": "water_lengths.result.feature_set"
+        },
+        "group_by": [
+          "pipe_type"
+        ],
+        "aggregate": "sum",
+        "sort": "value_desc"
+      },
+      "depends_on": [
+        "water_lengths"
+      ]
+    }
+  ],
+  "outputs": {
+    "gas_groups": {
+      "$ref": "gas_rank.result.groups"
+    },
+    "water_groups": {
+      "$ref": "water_rank.result.groups"
+    },
+    "unit": {
+      "$ref": "gas_rank.result.unit"
+    }
+  }
+}

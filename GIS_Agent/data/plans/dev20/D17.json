@@ -1,0 +1,133 @@
+{
+  "steps": [
+    {
+      "id": "devices",
+      "tool": "query_features",
+      "arguments": {
+        "layer_name": "gas_devices",
+        "filters": [
+          {
+            "field": "status",
+            "operator": "in",
+            "value": [
+              "正常",
+              "告警"
+            ]
+          }
+        ],
+        "target": {
+          "layer_name": "construction_areas",
+          "feature_code": "A001"
+        },
+        "relation": "ST_Intersects"
+      },
+      "depends_on": []
+    },
+    {
+      "id": "buffers",
+      "tool": "buffer_features",
+      "arguments": {
+        "features": {
+          "$ref": "devices.result.feature_set"
+        },
+        "distance_m": 300
+      },
+      "depends_on": [
+        "devices"
+      ]
+    },
+    {
+      "id": "union",
+      "tool": "union_features",
+      "arguments": {
+        "features": {
+          "$ref": "buffers.result.feature_set"
+        }
+      },
+      "depends_on": [
+        "buffers"
+      ]
+    },
+    {
+      "id": "coverage",
+      "tool": "intersection_geometry",
+      "arguments": {
+        "left": {
+          "$ref": "union.result.geometry"
+        },
+        "right": {
+          "layer_name": "construction_areas",
+          "feature_code": "A001"
+        }
+      },
+      "depends_on": [
+        "union"
+      ]
+    },
+    {
+      "id": "area",
+      "tool": "measure_geometry",
+      "arguments": {
+        "target": {
+          "$ref": "coverage.result.geometry"
+        },
+        "measure": "area"
+      },
+      "depends_on": [
+        "coverage"
+      ]
+    },
+    {
+      "id": "gas",
+      "tool": "query_features",
+      "arguments": {
+        "layer_name": "gas_pipelines",
+        "filters": [],
+        "target": {
+          "$ref": "coverage.result.geometry"
+        },
+        "relation": "ST_Intersects"
+      },
+      "depends_on": [
+        "coverage"
+      ]
+    },
+    {
+      "id": "gas_cut",
+      "tool": "clip_features",
+      "arguments": {
+        "features": {
+          "$ref": "gas.result.feature_set"
+        },
+        "clip_target": {
+          "$ref": "coverage.result.geometry"
+        }
+      },
+      "depends_on": [
+        "gas",
+        "coverage"
+      ]
+    },
+    {
+      "id": "gas_lengths",
+      "tool": "measure_features",
+      "arguments": {
+        "features": {
+          "$ref": "gas_cut.result.feature_set"
+        },
+        "measure": "length"
+      },
+      "depends_on": [
+        "gas_cut"
+      ]
+    }
+  ],
+  "outputs": {
+    "area": {
+      "$ref": "area.result"
+    },
+    "gas_length": {
+      "$ref": "gas_lengths.result.summary"
+    }
+  }
+}

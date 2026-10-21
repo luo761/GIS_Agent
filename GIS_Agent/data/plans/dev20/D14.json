@@ -1,0 +1,153 @@
+{
+  "steps": [
+    {
+      "id": "high_gas",
+      "tool": "query_features",
+      "arguments": {
+        "layer_name": "gas_pipelines",
+        "filters": [
+          {
+            "field": "pressure_level",
+            "operator": "eq",
+            "value": "高压"
+          }
+        ],
+        "target": {
+          "layer_name": "construction_areas",
+          "feature_code": "A001"
+        },
+        "relation": "ST_Intersects"
+      },
+      "depends_on": []
+    },
+    {
+      "id": "gas_in_area",
+      "tool": "clip_features",
+      "arguments": {
+        "features": {
+          "$ref": "high_gas.result.feature_set"
+        },
+        "clip_target": {
+          "layer_name": "construction_areas",
+          "feature_code": "A001"
+        }
+      },
+      "depends_on": [
+        "high_gas"
+      ]
+    },
+    {
+      "id": "buffers",
+      "tool": "buffer_features",
+      "arguments": {
+        "features": {
+          "$ref": "gas_in_area.result.feature_set"
+        },
+        "distance_m": 50
+      },
+      "depends_on": [
+        "gas_in_area"
+      ]
+    },
+    {
+      "id": "influence",
+      "tool": "union_features",
+      "arguments": {
+        "features": {
+          "$ref": "buffers.result.feature_set"
+        }
+      },
+      "depends_on": [
+        "buffers"
+      ]
+    },
+    {
+      "id": "water",
+      "tool": "query_features",
+      "arguments": {
+        "layer_name": "water_pipelines",
+        "filters": [],
+        "target": {
+          "$ref": "influence.result.geometry"
+        },
+        "relation": "ST_Intersects"
+      },
+      "depends_on": [
+        "influence"
+      ]
+    },
+    {
+      "id": "water_influence",
+      "tool": "clip_features",
+      "arguments": {
+        "features": {
+          "$ref": "water.result.feature_set"
+        },
+        "clip_target": {
+          "$ref": "influence.result.geometry"
+        }
+      },
+      "depends_on": [
+        "water",
+        "influence"
+      ]
+    },
+    {
+      "id": "water_in_area",
+      "tool": "clip_features",
+      "arguments": {
+        "features": {
+          "$ref": "water_influence.result.feature_set"
+        },
+        "clip_target": {
+          "layer_name": "construction_areas",
+          "feature_code": "A001"
+        }
+      },
+      "depends_on": [
+        "water_influence"
+      ]
+    },
+    {
+      "id": "water_lengths",
+      "tool": "measure_features",
+      "arguments": {
+        "features": {
+          "$ref": "water_in_area.result.feature_set"
+        },
+        "measure": "length"
+      },
+      "depends_on": [
+        "water_in_area"
+      ]
+    },
+    {
+      "id": "water_rank",
+      "tool": "summarize_features",
+      "arguments": {
+        "features": {
+          "$ref": "water_lengths.result.feature_set"
+        },
+        "group_by": [
+          "source_code"
+        ],
+        "aggregate": "sum",
+        "sort": "value_desc"
+      },
+      "depends_on": [
+        "water_lengths"
+      ]
+    }
+  ],
+  "outputs": {
+    "groups": {
+      "$ref": "water_rank.result.groups"
+    },
+    "unit": {
+      "$ref": "water_rank.result.unit"
+    },
+    "total_length": {
+      "$ref": "water_lengths.result.summary"
+    }
+  }
+}

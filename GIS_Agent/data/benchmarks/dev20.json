@@ -1,0 +1,385 @@
+{
+  "suite_id": "postgis_dev20_v1",
+  "split": "development",
+  "description": "仅用于开发调试的20题；不作为独立正式测试集，不包含真实模型成绩。",
+  "toolset": "advanced",
+  "measure_srid": 3857,
+  "quad_segs": 8,
+  "default_abs_tol": 0.000001,
+  "rel_tol": 0,
+  "cases": [
+    {
+      "id": "D01",
+      "level": "L1",
+      "question": "统计严格位于施工区 A001 内、状态为正常的燃气设备数量，边界上的设备不计入。",
+      "tags": [
+        "attribute_filter",
+        "boundary"
+      ],
+      "semantics": "严格内部，不含边界；不包含告警或停用设备。",
+      "reference_plan": "data/plans/dev20/D01.json",
+      "gold_sql": "sql/dev20/D01.sql",
+      "output_contract": {
+        "count": "设备数（个），整数。"
+      },
+      "tolerances": {}
+    },
+    {
+      "id": "D02",
+      "level": "L1",
+      "question": "统计与施工区 A001 相交、状态为正常或告警的燃气设备数量，包含边界设备，同一设备只计一次。",
+      "tags": [
+        "attribute_filter",
+        "boundary"
+      ],
+      "semantics": "包含边界；状态条件为正常 OR 告警。",
+      "reference_plan": "data/plans/dev20/D02.json",
+      "gold_sql": "sql/dev20/D02.sql",
+      "output_contract": {
+        "count": "设备数（个），整数。"
+      },
+      "tolerances": {}
+    },
+    {
+      "id": "D03",
+      "level": "L1",
+      "question": "统计与含孔洞的施工区 A003 相交、状态为正常的燃气设备数量，孔洞内的设备不计入，边界接触计入。",
+      "tags": [
+        "attribute_filter",
+        "boundary",
+        "hole"
+      ],
+      "semantics": "孔洞不属于施工区实体；相交包含边界。",
+      "reference_plan": "data/plans/dev20/D03.json",
+      "gold_sql": "sql/dev20/D03.sql",
+      "output_contract": {
+        "count": "设备数（个），整数。"
+      },
+      "tolerances": {}
+    },
+    {
+      "id": "D04",
+      "level": "L1",
+      "question": "查询全部状态为正常的燃气设备，按 device_type 分组计数，按设备类型名称升序输出全部分组。",
+      "tags": [
+        "attribute_filter",
+        "group_count",
+        "full_sort"
+      ],
+      "semantics": "不加空间限制；只统计正常设备；同一设备只计一次；名称按 Unicode 顺序。",
+      "reference_plan": "data/plans/dev20/D04.json",
+      "gold_sql": "sql/dev20/D04.sql",
+      "output_contract": {
+        "groups": "全部分组；group.device_type、value、feature_count；按设备类型升序。",
+        "unit": "固定 feature。"
+      },
+      "tolerances": {}
+    },
+    {
+      "id": "D05",
+      "level": "L2",
+      "question": "将所有与 A001 相交的燃气管线裁剪到 A001，按 pressure_level 汇总区内长度（米），按总长度降序、同长按压力名称升序，输出全部分组。边界上的线段计入。",
+      "tags": [
+        "clip",
+        "measure",
+        "group_sum",
+        "full_sort"
+      ],
+      "semantics": "先裁剪后量测；相交含边界；各源管线长度直接相加，不做空间 union。",
+      "reference_plan": "data/plans/dev20/D05.json",
+      "gold_sql": "sql/dev20/D05.sql",
+      "output_contract": {
+        "groups": "按压力分组的区内长度及参与管线数；降序、同值按分组键升序。",
+        "unit": "固定 meter。"
+      },
+      "tolerances": {}
+    },
+    {
+      "id": "D06",
+      "level": "L2",
+      "question": "计算燃气管线 G006 位于施工区 A003 实体部分内的长度（米），排除孔洞，并返回参与量测的原管线数量。",
+      "tags": [
+        "clip",
+        "hole",
+        "measure"
+      ],
+      "semantics": "G006 穿过孔洞后可能分成多段，但仍是一个源要素。",
+      "reference_plan": "data/plans/dev20/D06.json",
+      "gold_sql": "sql/dev20/D06.sql",
+      "output_contract": {
+        "length": "完整长度 summary：value（米）、unit、measure、measure_srid、feature_count（源要素数）。"
+      },
+      "tolerances": {}
+    },
+    {
+      "id": "D07",
+      "level": "L2",
+      "question": "计算所有水管位于施工区 A003 实体部分内的总长度（米），排除孔洞，包含边界接触，并返回非空裁剪结果的源水管数量。",
+      "tags": [
+        "clip",
+        "hole",
+        "boundary",
+        "measure"
+      ],
+      "semantics": "先相交筛选再裁剪；点接触长度为零但仍计为非空源记录；不做几何 union。",
+      "reference_plan": "data/plans/dev20/D07.json",
+      "gold_sql": "sql/dev20/D07.sql",
+      "output_contract": {
+        "length": "完整长度 summary；feature_count 含零长度点接触记录。"
+      },
+      "tolerances": {}
+    },
+    {
+      "id": "D08",
+      "level": "L2",
+      "question": "以燃气设备 D011 为中心建立 300 米缓冲区，计算缓冲区位于 A001 内的面积（平方米）。",
+      "tags": [
+        "buffer",
+        "intersection",
+        "measure",
+        "contained_buffer"
+      ],
+      "semantics": "圆弧固定 quad_segs=8；只计算 A001 内覆盖，不用 πr² 代替实际缓冲面积。",
+      "reference_plan": "data/plans/dev20/D08.json",
+      "gold_sql": "sql/dev20/D08.sql",
+      "output_contract": {
+        "area": "完整面积量测：value（平方米）、unit、measure、measure_srid、is_empty。"
+      },
+      "tolerances": {}
+    },
+    {
+      "id": "D09",
+      "level": "L2",
+      "question": "以燃气设备 D011 为中心建立 700 米缓冲区，计算缓冲区位于 A001 内的面积（平方米）。",
+      "tags": [
+        "buffer",
+        "intersection",
+        "measure",
+        "partial_clip"
+      ],
+      "semantics": "圆弧固定 quad_segs=8；只计算 A001 内覆盖，不用 πr² 代替实际缓冲面积。",
+      "reference_plan": "data/plans/dev20/D09.json",
+      "gold_sql": "sql/dev20/D09.sql",
+      "output_contract": {
+        "area": "完整面积量测：value（平方米）、unit、measure、measure_srid、is_empty。"
+      },
+      "tolerances": {}
+    },
+    {
+      "id": "D10",
+      "level": "L2",
+      "question": "计算施工区 A001 与 A002 交集的长度（米）；两区仅共边时，返回公共边界长度而不是面积。",
+      "tags": [
+        "intersection",
+        "boundary",
+        "dimension"
+      ],
+      "semantics": "明确 length；面面交集可能退化为线，不把零面积当作空交集。",
+      "reference_plan": "data/plans/dev20/D10.json",
+      "gold_sql": "sql/dev20/D10.sql",
+      "output_contract": {
+        "length": "完整长度量测，单位 meter，非空线交集。"
+      },
+      "tolerances": {}
+    },
+    {
+      "id": "D11",
+      "level": "L2",
+      "question": "计算施工区 A001 与狭长施工区 A008 的重叠面积（平方米）。",
+      "tags": [
+        "intersection",
+        "measure"
+      ],
+      "semantics": "仅交集面积，不计算两个区面积之和或 union 面积。",
+      "reference_plan": "data/plans/dev20/D11.json",
+      "gold_sql": "sql/dev20/D11.sql",
+      "output_contract": {
+        "area": "完整面积量测，单位 square_meter。"
+      },
+      "tolerances": {}
+    },
+    {
+      "id": "D12",
+      "level": "L2",
+      "question": "计算所有水管位于孤立施工区 A009 内的总长度（米），并返回非空裁剪结果的源水管数量。若没有匹配水管，长度和数量都返回 0，不报目标不存在。",
+      "tags": [
+        "empty_result",
+        "clip",
+        "measure"
+      ],
+      "semantics": "A009 存在；匹配集合为空是成功结果，不使用缺失目标替代空结果。",
+      "reference_plan": "data/plans/dev20/D12.json",
+      "gold_sql": "sql/dev20/D12.sql",
+      "output_contract": {
+        "length": "长度 summary；空集 value=0、feature_count=0，仍带单位和 SRID。"
+      },
+      "tolerances": {}
+    },
+    {
+      "id": "D13",
+      "level": "L3",
+      "question": "对与 A001 相交且正常或告警的燃气设备分别建立 300 米缓冲区，合并重叠后裁剪到 A001，求覆盖面积（平方米）以及占 A001 面积的百分比。边界设备计入。",
+      "tags": [
+        "attribute_filter",
+        "buffer",
+        "union",
+        "ratio",
+        "shared_result"
+      ],
+      "semantics": "包含边界设备；先合并再量测；分母是整个 A001；百分比而非 0～1 小数。",
+      "reference_plan": "data/plans/dev20/D13.json",
+      "gold_sql": "sql/dev20/D13.sql",
+      "output_contract": {
+        "area": "完整面积量测，单位 square_meter。",
+        "coverage_percent": "value 为百分比；unit=percent；包含 numerator 和 denominator。"
+      },
+      "tolerances": {
+        "coverage_percent.value": 1e-9
+      }
+    },
+    {
+      "id": "D14",
+      "level": "L2",
+      "question": "取与 A001 相交的高压燃气管线，先裁剪到 A001，再分别缓冲 50 米并合并。计算各水管在该影响范围且在 A001 内的长度（米），按长度降序、同长按水管编码升序输出全部水管及总长度。保留非空的零长度边界接触记录。",
+      "tags": [
+        "attribute_filter",
+        "clip_before_buffer",
+        "union",
+        "group_sum",
+        "full_sort"
+      ],
+      "semantics": "严格先裁剪高压管线再缓冲；水管需同时位于影响范围和 A001；点接触保留，空几何剔除。",
+      "reference_plan": "data/plans/dev20/D14.json",
+      "gold_sql": "sql/dev20/D14.sql",
+      "output_contract": {
+        "groups": "按 source_code 的完整长度列表，含零长度记录。",
+        "unit": "固定 meter。",
+        "total_length": "完整长度 summary，feature_count 为保留水管数。"
+      },
+      "tolerances": {}
+    },
+    {
+      "id": "D15",
+      "level": "L3",
+      "question": "对与 A001 相交且状态正常的设备分别缓冲 200 米，不裁剪缓冲区。分别给出所有缓冲面积直接相加的结果，以及缓冲合并去重后的面积（平方米），复用同一批缓冲结果。",
+      "tags": [
+        "buffer",
+        "union",
+        "overlap_double_count",
+        "shared_result"
+      ],
+      "semantics": "含边界设备，但不含告警设备；不裁剪到 A001；逐要素相加与几何 union 是两种统计口径。",
+      "reference_plan": "data/plans/dev20/D15.json",
+      "gold_sql": "sql/dev20/D15.sql",
+      "output_contract": {
+        "summed_area": "逐缓冲面积相加的 summary（平方米）。",
+        "union_area": "合并后面积量测（平方米），重叠只计一次。"
+      },
+      "tolerances": {}
+    },
+    {
+      "id": "D16",
+      "level": "L3",
+      "question": "针对 A001 和 A008，分别计算两区面积直接相加、联合覆盖去重面积和重叠面积（平方米），不要将三者混淆。联合覆盖与直接相加应复用同一份区域查询结果。",
+      "tags": [
+        "union",
+        "intersection",
+        "overlap_double_count",
+        "shared_result"
+      ],
+      "semantics": "直接相加允许重叠重复；union 重叠只计一次；overlap 只取交集。",
+      "reference_plan": "data/plans/dev20/D16.json",
+      "gold_sql": "sql/dev20/D16.sql",
+      "output_contract": {
+        "summed_area": "两区面积直接相加 summary（平方米）。",
+        "union_area": "联合覆盖面积量测（平方米）。",
+        "overlap_area": "重叠面积量测（平方米）。"
+      },
+      "tolerances": {}
+    },
+    {
+      "id": "D17",
+      "level": "L3",
+      "question": "与 A001 相交且正常或告警的设备分别缓冲 300 米，合并后裁剪到 A001。复用该覆盖几何，分别计算覆盖面积（平方米）和其中全部燃气管线的总长度（米），保留非空零长度接触记录。",
+      "tags": [
+        "buffer",
+        "union",
+        "shared_result",
+        "multi_branch",
+        "clip"
+      ],
+      "semantics": "覆盖几何只生成一次；长度对各源管线相加，不把缓冲面积相加当覆盖面积。",
+      "reference_plan": "data/plans/dev20/D17.json",
+      "gold_sql": "sql/dev20/D17.sql",
+      "output_contract": {
+        "area": "覆盖面积量测（平方米）。",
+        "gas_length": "覆盖范围内源燃气管线长度 summary（米）。"
+      },
+      "tolerances": {}
+    },
+    {
+      "id": "D18",
+      "level": "L3",
+      "question": "在 A001 内分别统计两类数据：燃气管线按 pressure_level 分组汇总裁剪后长度，水管按 pipe_type 分组汇总裁剪后长度，单位均为米。每类按总长度降序、同长按分组名称升序，输出全部分组，保留零长度非空接触记录。",
+      "tags": [
+        "multi_layer",
+        "multi_branch",
+        "group_sum",
+        "full_sort"
+      ],
+      "semantics": "燃气和水管是独立分支；都先裁剪到 A001；边界线段计入，空几何剔除；不做跨管线空间 union。",
+      "reference_plan": "data/plans/dev20/D18.json",
+      "gold_sql": "sql/dev20/D18.sql",
+      "output_contract": {
+        "gas_groups": "燃气按压力的完整分组。",
+        "water_groups": "水管按管线类型的完整分组。",
+        "unit": "固定 meter。"
+      },
+      "tolerances": {}
+    },
+    {
+      "id": "D19",
+      "level": "L3",
+      "question": "分别统计与 A001、A002 相交且状态正常的设备数，再将两个施工区合并后统计正常设备的联合去重数量。边界设备计入各区，但联合统计中同一个设备只计一次，不能直接把两区数量相加。",
+      "tags": [
+        "boundary",
+        "identity_dedup",
+        "union",
+        "multi_branch"
+      ],
+      "semantics": "每个源设备在联合范围只查询一次；共享边界设备可同时属于两区。",
+      "reference_plan": "data/plans/dev20/D19.json",
+      "gold_sql": "sql/dev20/D19.sql",
+      "output_contract": {
+        "a001_count": "A001 正常设备数（个）。",
+        "a002_count": "A002 正常设备数（个）。",
+        "unique_count": "两区联合范围正常设备去重数（个）。"
+      },
+      "tolerances": {}
+    },
+    {
+      "id": "D20",
+      "level": "L3",
+      "question": "取与 A001 相交的高压燃气管线，先裁剪到 A001，再分别缓冲 50 米合并为同一影响范围。复用该范围：（1）统计 A001 内正常或告警设备，按状态升序分组计数；（2）计算 A001 内各水管受影响长度（米），按长度降序、同长按编码升序，并给出总长度。边界计入，水管非空零长度接触记录保留。",
+      "tags": [
+        "multi_layer",
+        "shared_result",
+        "multi_branch",
+        "clip_before_buffer",
+        "group_count",
+        "group_sum"
+      ],
+      "semantics": "影响 union 只生成一次；两分支都需受影响范围 AND A001；设备以原记录计数，水管按源编码输出完整列表。",
+      "reference_plan": "data/plans/dev20/D20.json",
+      "gold_sql": "sql/dev20/D20.sql",
+      "output_contract": {
+        "device_groups": "设备按状态升序计数。",
+        "device_unit": "固定 feature。",
+        "water_groups": "按 source_code 的完整水管长度列表。",
+        "water_unit": "固定 meter。",
+        "total_length": "水管总长度 summary（米）。"
+      },
+      "tolerances": {}
+    }
+  ]
+}

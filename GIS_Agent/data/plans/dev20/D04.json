@@ -1,0 +1,44 @@
+{
+  "steps": [
+    {
+      "id": "devices",
+      "tool": "query_features",
+      "arguments": {
+        "layer_name": "gas_devices",
+        "filters": [
+          {
+            "field": "status",
+            "operator": "eq",
+            "value": "正常"
+          }
+        ]
+      },
+      "depends_on": []
+    },
+    {
+      "id": "counts",
+      "tool": "summarize_features",
+      "arguments": {
+        "features": {
+          "$ref": "devices.result.feature_set"
+        },
+        "group_by": [
+          "device_type"
+        ],
+        "aggregate": "count",
+        "sort": "group_asc"
+      },
+      "depends_on": [
+        "devices"
+      ]
+    }
+  ],
+  "outputs": {
+    "groups": {
+      "$ref": "counts.result.groups"
+    },
+    "unit": {
+      "$ref": "counts.result.unit"
+    }
+  }
+}

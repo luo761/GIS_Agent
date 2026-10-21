@@ -1,0 +1,83 @@
+{
+  "steps": [
+    {
+      "id": "devices",
+      "tool": "query_features",
+      "arguments": {
+        "layer_name": "gas_devices",
+        "filters": [
+          {
+            "field": "status",
+            "operator": "eq",
+            "value": "正常"
+          }
+        ],
+        "target": {
+          "layer_name": "construction_areas",
+          "feature_code": "A001"
+        },
+        "relation": "ST_Intersects"
+      },
+      "depends_on": []
+    },
+    {
+      "id": "buffers",
+      "tool": "buffer_features",
+      "arguments": {
+        "features": {
+          "$ref": "devices.result.feature_set"
+        },
+        "distance_m": 200
+      },
+      "depends_on": [
+        "devices"
+      ]
+    },
+    {
+      "id": "summed",
+      "tool": "measure_features",
+      "arguments": {
+        "features": {
+          "$ref": "buffers.result.feature_set"
+        },
+        "measure": "area"
+      },
+      "depends_on": [
+        "buffers"
+      ]
+    },
+    {
+      "id": "union",
+      "tool": "union_features",
+      "arguments": {
+        "features": {
+          "$ref": "buffers.result.feature_set"
+        }
+      },
+      "depends_on": [
+        "buffers"
+      ]
+    },
+    {
+      "id": "merged_area",
+      "tool": "measure_geometry",
+      "arguments": {
+        "target": {
+          "$ref": "union.result.geometry"
+        },
+        "measure": "area"
+      },
+      "depends_on": [
+        "union"
+      ]
+    }
+  ],
+  "outputs": {
+    "summed_area": {
+      "$ref": "summed.result.summary"
+    },
+    "union_area": {
+      "$ref": "merged_area.result"
+    }
+  }
+}

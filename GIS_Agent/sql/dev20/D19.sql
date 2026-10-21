@@ -1,0 +1,4 @@
+-- D19 L3: 分别统计与 A001、A002 相交且状态正常的设备数，再将两个施工区合并后统计正常设备的联合去重数量。边界设备计入各区，但联合统计中同一个设备只计一次，不能直接把两区数量相加。
+-- 独立只读基准；EPSG:3857、quad_segs=8；不调用工具或执行器。
+-- 每个源设备在联合范围只查询一次；共享边界设备可同时属于两区。
+WITH a AS (SELECT geom FROM gis_lab.construction_areas WHERE code='A001'), b AS (SELECT geom FROM gis_lab.construction_areas WHERE code='A002'), merged AS (SELECT ST_Union(a.geom,b.geom) AS geom FROM a CROSS JOIN b) SELECT jsonb_build_object('a001_count',(SELECT count(*) FROM gis_lab.gas_devices d CROSS JOIN a WHERE d.status='正常' AND ST_Intersects(d.geom,a.geom)),'a002_count',(SELECT count(*) FROM gis_lab.gas_devices d CROSS JOIN b WHERE d.status='正常' AND ST_Intersects(d.geom,b.geom)),'unique_count',(SELECT count(DISTINCT d.code) FROM gis_lab.gas_devices d CROSS JOIN merged m WHERE d.status='正常' AND ST_Intersects(d.geom,m.geom))) AS answer;

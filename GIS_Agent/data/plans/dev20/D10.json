@@ -1,0 +1,37 @@
+{
+  "steps": [
+    {
+      "id": "common",
+      "tool": "intersection_geometry",
+      "arguments": {
+        "left": {
+          "layer_name": "construction_areas",
+          "feature_code": "A001"
+        },
+        "right": {
+          "layer_name": "construction_areas",
+          "feature_code": "A002"
+        }
+      },
+      "depends_on": []
+    },
+    {
+      "id": "length",
+      "tool": "measure_geometry",
+      "arguments": {
+        "target": {
+          "$ref": "common.result.geometry"
+        },
+        "measure": "length"
+      },
+      "depends_on": [
+        "common"
+      ]
+    }
+  ],
+  "outputs": {
+    "length": {
+      "$ref": "length.result"
+    }
+  }
+}

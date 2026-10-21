@@ -1,0 +1,4 @@
+-- D05 L2: 将所有与 A001 相交的燃气管线裁剪到 A001，按 pressure_level 汇总区内长度（米），按总长度降序、同长按压力名称升序，输出全部分组。边界上的线段计入。
+-- 独立只读基准；EPSG:3857、quad_segs=8；不调用工具或执行器。
+-- 先裁剪后量测；相交含边界；各源管线长度直接相加，不做空间 union。
+WITH a AS (SELECT geom FROM gis_lab.construction_areas WHERE code='A001'), clipped AS (SELECT g.pressure_level,ST_Intersection(g.geom,a.geom) AS geom FROM gis_lab.gas_pipelines g CROSS JOIN a WHERE ST_Intersects(g.geom,a.geom)), grouped AS (SELECT pressure_level AS label,sum(ST_Length(geom)) AS value,count(*) AS n FROM clipped WHERE NOT ST_IsEmpty(geom) GROUP BY pressure_level) SELECT jsonb_build_object('groups',COALESCE(jsonb_agg(jsonb_build_object('group',jsonb_build_object('pressure_level',label),'value',value,'feature_count',n) ORDER BY value DESC,label COLLATE "C"),'[]'::jsonb),'unit','meter') AS answer FROM grouped;

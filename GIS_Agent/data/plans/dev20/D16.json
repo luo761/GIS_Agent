@@ -1,0 +1,99 @@
+{
+  "steps": [
+    {
+      "id": "areas",
+      "tool": "query_features",
+      "arguments": {
+        "layer_name": "construction_areas",
+        "filters": [
+          {
+            "field": "code",
+            "operator": "in",
+            "value": [
+              "A001",
+              "A008"
+            ]
+          }
+        ]
+      },
+      "depends_on": []
+    },
+    {
+      "id": "summed",
+      "tool": "measure_features",
+      "arguments": {
+        "features": {
+          "$ref": "areas.result.feature_set"
+        },
+        "measure": "area"
+      },
+      "depends_on": [
+        "areas"
+      ]
+    },
+    {
+      "id": "union",
+      "tool": "union_features",
+      "arguments": {
+        "features": {
+          "$ref": "areas.result.feature_set"
+        }
+      },
+      "depends_on": [
+        "areas"
+      ]
+    },
+    {
+      "id": "merged_area",
+      "tool": "measure_geometry",
+      "arguments": {
+        "target": {
+          "$ref": "union.result.geometry"
+        },
+        "measure": "area"
+      },
+      "depends_on": [
+        "union"
+      ]
+    },
+    {
+      "id": "overlap",
+      "tool": "intersection_geometry",
+      "arguments": {
+        "left": {
+          "layer_name": "construction_areas",
+          "feature_code": "A001"
+        },
+        "right": {
+          "layer_name": "construction_areas",
+          "feature_code": "A008"
+        }
+      },
+      "depends_on": []
+    },
+    {
+      "id": "overlap_area",
+      "tool": "measure_geometry",
+      "arguments": {
+        "target": {
+          "$ref": "overlap.result.geometry"
+        },
+        "measure": "area"
+      },
+      "depends_on": [
+        "overlap"
+      ]
+    }
+  ],
+  "outputs": {
+    "summed_area": {
+      "$ref": "summed.result.summary"
+    },
+    "union_area": {
+      "$ref": "merged_area.result"
+    },
+    "overlap_area": {
+      "$ref": "overlap_area.result"
+    }
+  }
+}

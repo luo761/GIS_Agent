@@ -1,0 +1,52 @@
+{
+  "steps": [
+    {
+      "id": "water",
+      "tool": "query_features",
+      "arguments": {
+        "layer_name": "water_pipelines",
+        "filters": [],
+        "target": {
+          "layer_name": "construction_areas",
+          "feature_code": "A009"
+        },
+        "relation": "ST_Intersects"
+      },
+      "depends_on": []
+    },
+    {
+      "id": "clipped",
+      "tool": "clip_features",
+      "arguments": {
+        "features": {
+          "$ref": "water.result.feature_set"
+        },
+        "clip_target": {
+          "layer_name": "construction_areas",
+          "feature_code": "A009"
+        }
+      },
+      "depends_on": [
+        "water"
+      ]
+    },
+    {
+      "id": "lengths",
+      "tool": "measure_features",
+      "arguments": {
+        "features": {
+          "$ref": "clipped.result.feature_set"
+        },
+        "measure": "length"
+      },
+      "depends_on": [
+        "clipped"
+      ]
+    }
+  ],
+  "outputs": {
+    "length": {
+      "$ref": "lengths.result.summary"
+    }
+  }
+}

@@ -1,0 +1,4 @@
+-- D15 L3: 对与 A001 相交且状态正常的设备分别缓冲 200 米，不裁剪缓冲区。分别给出所有缓冲面积直接相加的结果，以及缓冲合并去重后的面积（平方米），复用同一批缓冲结果。
+-- 独立只读基准；EPSG:3857、quad_segs=8；不调用工具或执行器。
+-- 含边界设备，但不含告警设备；不裁剪到 A001；逐要素相加与几何 union 是两种统计口径。
+WITH a AS (SELECT geom FROM gis_lab.construction_areas WHERE code='A001'), buffers AS (SELECT ST_Buffer(d.geom,200,'quad_segs=8') AS geom FROM gis_lab.gas_devices d CROSS JOIN a WHERE d.status='正常' AND ST_Intersects(d.geom,a.geom)), merged AS (SELECT ST_UnaryUnion(ST_Collect(geom)) AS geom FROM buffers) SELECT jsonb_build_object('summed_area',(SELECT jsonb_build_object('value',sum(ST_Area(geom)),'unit','square_meter','measure','area','measure_srid',3857,'feature_count',count(*)) FROM buffers),'union_area',(SELECT jsonb_build_object('value',ST_Area(geom),'unit','square_meter','measure','area','measure_srid',3857,'is_empty',ST_IsEmpty(geom)) FROM merged)) AS answer;

@@ -1,0 +1,117 @@
+{
+  "steps": [
+    {
+      "id": "devices",
+      "tool": "query_features",
+      "arguments": {
+        "layer_name": "gas_devices",
+        "filters": [
+          {
+            "field": "status",
+            "operator": "in",
+            "value": [
+              "正常",
+              "告警"
+            ]
+          }
+        ],
+        "target": {
+          "layer_name": "construction_areas",
+          "feature_code": "A001"
+        },
+        "relation": "ST_Intersects"
+      },
+      "depends_on": []
+    },
+    {
+      "id": "buffers",
+      "tool": "buffer_features",
+      "arguments": {
+        "features": {
+          "$ref": "devices.result.feature_set"
+        },
+        "distance_m": 300
+      },
+      "depends_on": [
+        "devices"
+      ]
+    },
+    {
+      "id": "union",
+      "tool": "union_features",
+      "arguments": {
+        "features": {
+          "$ref": "buffers.result.feature_set"
+        }
+      },
+      "depends_on": [
+        "buffers"
+      ]
+    },
+    {
+      "id": "coverage",
+      "tool": "intersection_geometry",
+      "arguments": {
+        "left": {
+          "$ref": "union.result.geometry"
+        },
+        "right": {
+          "layer_name": "construction_areas",
+          "feature_code": "A001"
+        }
+      },
+      "depends_on": [
+        "union"
+      ]
+    },
+    {
+      "id": "area",
+      "tool": "measure_geometry",
+      "arguments": {
+        "target": {
+          "$ref": "coverage.result.geometry"
+        },
+        "measure": "area"
+      },
+      "depends_on": [
+        "coverage"
+      ]
+    },
+    {
+      "id": "total_area",
+      "tool": "measure_geometry",
+      "arguments": {
+        "target": {
+          "layer_name": "construction_areas",
+          "feature_code": "A001"
+        },
+        "measure": "area"
+      },
+      "depends_on": []
+    },
+    {
+      "id": "ratio",
+      "tool": "calculate_ratio",
+      "arguments": {
+        "numerator": {
+          "$ref": "area.result"
+        },
+        "denominator": {
+          "$ref": "total_area.result"
+        }
+      },
+      "depends_on": [
+        "area",
+        "total_area"
+      ]
+    }
+  ],
+  "outputs": {
+    "area": {
+      "$ref": "area.result"
+    },
+    "coverage_percent": {
+      "$ref": "ratio.result"
+    }
+  }
+}

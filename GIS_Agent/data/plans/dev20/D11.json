@@ -1,0 +1,37 @@
+{
+  "steps": [
+    {
+      "id": "overlap",
+      "tool": "intersection_geometry",
+      "arguments": {
+        "left": {
+          "layer_name": "construction_areas",
+          "feature_code": "A001"
+        },
+        "right": {
+          "layer_name": "construction_areas",
+          "feature_code": "A008"
+        }
+      },
+      "depends_on": []
+    },
+    {
+      "id": "area",
+      "tool": "measure_geometry",
+      "arguments": {
+        "target": {
+          "$ref": "overlap.result.geometry"
+        },
+        "measure": "area"
+      },
+      "depends_on": [
+        "overlap"
+      ]
+    }
+  ],
+  "outputs": {
+    "area": {
+      "$ref": "area.result"
+    }
+  }
+}

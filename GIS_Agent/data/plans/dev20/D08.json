@@ -1,0 +1,50 @@
+{
+  "steps": [
+    {
+      "id": "buffer",
+      "tool": "buffer_geometry",
+      "arguments": {
+        "target": {
+          "layer_name": "gas_devices",
+          "feature_code": "D011"
+        },
+        "distance_m": 300
+      },
+      "depends_on": []
+    },
+    {
+      "id": "clipped",
+      "tool": "intersection_geometry",
+      "arguments": {
+        "left": {
+          "$ref": "buffer.result.geometry"
+        },
+        "right": {
+          "layer_name": "construction_areas",
+          "feature_code": "A001"
+        }
+      },
+      "depends_on": [
+        "buffer"
+      ]
+    },
+    {
+      "id": "area",
+      "tool": "measure_geometry",
+      "arguments": {
+        "target": {
+          "$ref": "clipped.result.geometry"
+        },
+        "measure": "area"
+      },
+      "depends_on": [
+        "clipped"
+      ]
+    }
+  ],
+  "outputs": {
+    "area": {
+      "$ref": "area.result"
+    }
+  }
+}

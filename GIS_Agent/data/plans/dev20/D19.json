@@ -1,0 +1,106 @@
+{
+  "steps": [
+    {
+      "id": "areas",
+      "tool": "query_features",
+      "arguments": {
+        "layer_name": "construction_areas",
+        "filters": [
+          {
+            "field": "code",
+            "operator": "in",
+            "value": [
+              "A001",
+              "A002"
+            ]
+          }
+        ]
+      },
+      "depends_on": []
+    },
+    {
+      "id": "union",
+      "tool": "union_features",
+      "arguments": {
+        "features": {
+          "$ref": "areas.result.feature_set"
+        }
+      },
+      "depends_on": [
+        "areas"
+      ]
+    },
+    {
+      "id": "unique_devices",
+      "tool": "query_features",
+      "arguments": {
+        "layer_name": "gas_devices",
+        "filters": [
+          {
+            "field": "status",
+            "operator": "eq",
+            "value": "正常"
+          }
+        ],
+        "target": {
+          "$ref": "union.result.geometry"
+        },
+        "relation": "ST_Intersects"
+      },
+      "depends_on": [
+        "union"
+      ]
+    },
+    {
+      "id": "devices_a001",
+      "tool": "query_features",
+      "arguments": {
+        "layer_name": "gas_devices",
+        "filters": [
+          {
+            "field": "status",
+            "operator": "eq",
+            "value": "正常"
+          }
+        ],
+        "target": {
+          "layer_name": "construction_areas",
+          "feature_code": "A001"
+        },
+        "relation": "ST_Intersects"
+      },
+      "depends_on": []
+    },
+    {
+      "id": "devices_a002",
+      "tool": "query_features",
+      "arguments": {
+        "layer_name": "gas_devices",
+        "filters": [
+          {
+            "field": "status",
+            "operator": "eq",
+            "value": "正常"
+          }
+        ],
+        "target": {
+          "layer_name": "construction_areas",
+          "feature_code": "A002"
+        },
+        "relation": "ST_Intersects"
+      },
+      "depends_on": []
+    }
+  ],
+  "outputs": {
+    "a001_count": {
+      "$ref": "devices_a001.result.feature_set.feature_count"
+    },
+    "a002_count": {
+      "$ref": "devices_a002.result.feature_set.feature_count"
+    },
+    "unique_count": {
+      "$ref": "unique_devices.result.feature_set.feature_count"
+    }
+  }
+}

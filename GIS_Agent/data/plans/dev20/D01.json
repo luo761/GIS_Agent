@@ -1,0 +1,31 @@
+{
+  "steps": [
+    {
+      "id": "devices",
+      "tool": "query_features",
+      "arguments": {
+        "layer_name": "gas_devices",
+        "filters": [
+          {
+            "field": "status",
+            "operator": "in",
+            "value": [
+              "正常"
+            ]
+          }
+        ],
+        "target": {
+          "layer_name": "construction_areas",
+          "feature_code": "A001"
+        },
+        "relation": "ST_Within"
+      },
+      "depends_on": []
+    }
+  ],
+  "outputs": {
+    "count": {
+      "$ref": "devices.result.feature_set.feature_count"
+    }
+  }
+}

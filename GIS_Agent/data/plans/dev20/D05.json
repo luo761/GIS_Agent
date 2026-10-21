@@ -1,0 +1,72 @@
+{
+  "steps": [
+    {
+      "id": "gas",
+      "tool": "query_features",
+      "arguments": {
+        "layer_name": "gas_pipelines",
+        "filters": [],
+        "target": {
+          "layer_name": "construction_areas",
+          "feature_code": "A001"
+        },
+        "relation": "ST_Intersects"
+      },
+      "depends_on": []
+    },
+    {
+      "id": "clipped",
+      "tool": "clip_features",
+      "arguments": {
+        "features": {
+          "$ref": "gas.result.feature_set"
+        },
+        "clip_target": {
+          "layer_name": "construction_areas",
+          "feature_code": "A001"
+        }
+      },
+      "depends_on": [
+        "gas"
+      ]
+    },
+    {
+      "id": "lengths",
+      "tool": "measure_features",
+      "arguments": {
+        "features": {
+          "$ref": "clipped.result.feature_set"
+        },
+        "measure": "length"
+      },
+      "depends_on": [
+        "clipped"
+      ]
+    },
+    {
+      "id": "rank",
+      "tool": "summarize_features",
+      "arguments": {
+        "features": {
+          "$ref": "lengths.result.feature_set"
+        },
+        "group_by": [
+          "pressure_level"
+        ],
+        "aggregate": "sum",
+        "sort": "value_desc"
+      },
+      "depends_on": [
+        "lengths"
+      ]
+    }
+  ],
+  "outputs": {
+    "groups": {
+      "$ref": "rank.result.groups"
+    },
+    "unit": {
+      "$ref": "rank.result.unit"
+    }
+  }
+}

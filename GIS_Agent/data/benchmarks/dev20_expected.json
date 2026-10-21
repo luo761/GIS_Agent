@@ -1,0 +1,377 @@
+{
+  "suite_id": "postgis_dev20_v1",
+  "artifacts": {
+    "data/benchmarks/dev20.json": "f1d85def04d06c74b54454b51a75c49880dd200397350b65c97948192d4f81dd",
+    "sql/001_extensions_and_schema.sql": "6196235a769eae1f518dec638234588176b195ca7c2e1d0ade533f8aa76f91b6",
+    "sql/002_seed_mock_data.sql": "f05241a101cd48ccb32836973c6aa07ecf48b6a1044d3b5e4fb55c462295f659",
+    "data/plans/dev20/D01.json": "204fde579f4e006cb2d8ffa1cc248c86642375896ebc4acaef40d13b9eec8fe7",
+    "sql/dev20/D01.sql": "20f7fe1bb4a433f7c4b6259ebc872bc558411ebf9941474f821412035998f2a4",
+    "data/plans/dev20/D02.json": "21acfaa3c291d8f8322ab2f8b4bd9c80cbb1f45dcff689a05bc08045fb5deaf4",
+    "sql/dev20/D02.sql": "e47a3459992fd2e35b9c9f6b1069d932ee40d8715360b8d7c1e0605d2f82e4bf",
+    "data/plans/dev20/D03.json": "19c6792260368e23c34647786d14a301d28f1df49409b42fbe750ef1a62a94fb",
+    "sql/dev20/D03.sql": "ca79cd5d06e986416e678749a2442466a59f6c560e976619d2625cd7eabbdb0b",
+    "data/plans/dev20/D04.json": "4062ae236732a9e37b332dcffe23f6a4643d8aed834a1a215677c8b76b901f87",
+    "sql/dev20/D04.sql": "8202f3f1c31d01630a8922980545c207db1437e2c675badffc47778e7dc7077c",
+    "data/plans/dev20/D05.json": "a386a7e72a7f5e507e6b8bc161a2e722bf75bbc2667feb1aa4a435f365439177",
+    "sql/dev20/D05.sql": "d8971c2f48bd101c4edf79df4ee00178821cb182802dd0183fbef7c11f210738",
+    "data/plans/dev20/D06.json": "996d5cb80b816b99e700cd64f4e12ae70642377188bdab5878db9c63152a5257",
+    "sql/dev20/D06.sql": "b26c9e5182835b9daed1dd8aed06c0b29ba1605d2539d9a4bd17c36e0cf6db51",
+    "data/plans/dev20/D07.json": "947a7a6fff350ad691dc3c8c56bb303bc6ae929a3aca6d427367203ca3c75a81",
+    "sql/dev20/D07.sql": "0e8dc3c9e43fa1a5f4e04450840a3c1afa858c5691bab780b478e4dec8ce2494",
+    "data/plans/dev20/D08.json": "d765a6130dc82d33eb3e38919137f2a20d8fae61bfe3f22e9420a49774df39e4",
+    "sql/dev20/D08.sql": "131ec4e6b26e59e5b932a7af3a3d95cf5f8808cd0d2d0e24762c380ec7910247",
+    "data/plans/dev20/D09.json": "8d07a0cee60504e0031c38d7b5138b156fb0d3a0b122072c388d05f32fb1ef0b",
+    "sql/dev20/D09.sql": "d3a7479be81b3f066fff38f9d2515d48ac852639140783cb646cdf00b9621664",
+    "data/plans/dev20/D10.json": "4e634f2d91aa79504930ac348565475678e13c8660e5e7467b479c734a1a55d3",
+    "sql/dev20/D10.sql": "9b1f2d89a1b8ea2779d026d77c2aae9a4e137067a238de2ca2e39094462366ea",
+    "data/plans/dev20/D11.json": "430497fa213f633f7c6626e32b2bedee087b8af5826e4963a2b5648be97c3cea",
+    "sql/dev20/D11.sql": "40c576eb255df27315121ec85ec2bdc1a2c642af35b1ee314a453721ec7ef4aa",
+    "data/plans/dev20/D12.json": "845ab83c8794de56d01449d4a20bfe5b000374f6bf27bb4159bb947d13fb4805",
+    "sql/dev20/D12.sql": "fa3858aa8e9607e8ba64b7c92354e5affce4ae2258b6218c656cbd549dcbbab7",
+    "data/plans/dev20/D13.json": "806440439ae50b877f2814b7f70456ec6748bd0b3b9d72f0d205376392394bf3",
+    "sql/dev20/D13.sql": "3a25182de0b7d6273ad0feaf5ea9660bd8e7a56a927e2bafd1f9ad0dc3cac7e0",
+    "data/plans/dev20/D14.json": "8c5d03772e37107407f6e4529983c283e155ffa19ebd8b9c3f73743a42491031",
+    "sql/dev20/D14.sql": "1ebf049f3607a1f6c3d1f5d86c36b90cd11b564d4ce6bd5a171124a63b56cc8a",
+    "data/plans/dev20/D15.json": "3ddaf7a1813ac8a1854fe79e5d3dd0137480f2cafe480df1ed3fc61d5ed34906",
+    "sql/dev20/D15.sql": "ff303597f26b1ec2f7e2f2a752bea001fcb482fcf4d26c69a3fd1be23a0b3d2b",
+    "data/plans/dev20/D16.json": "187a49bd321475bbf52e57d3e9ebf2bacc1a23d05f6ee898595edfff9c65efad",
+    "sql/dev20/D16.sql": "10a6bf19a278d31beb4aa0b641397c150b214165ee80d31535270aeb36a3862b",
+    "data/plans/dev20/D17.json": "9663f3571838f4138840dcde62e556d7fb7f6f896f5d7551902bb22db5162a1d",
+    "sql/dev20/D17.sql": "c50c38a681136730f5d6a6c63dec0c5ab700b8b85956d727a27dabbbe22524ce",
+    "data/plans/dev20/D18.json": "5d29aba53e514200a700939be01c87fb73a4da81c0f46f12c95a32ac72161a0d",
+    "sql/dev20/D18.sql": "bd97c836821500ad9a20fa81c53dafd1fd9c1613cc3ed087cb0e7dac268e5233",
+    "data/plans/dev20/D19.json": "d440025b4d18ce207b3022656f2079fc6402541dfa5887b2a823a4ec47d0e7d7",
+    "sql/dev20/D19.sql": "bd49e9786d9e593e58af1b33e83ae3c4ccec5c6b17c5a20f6c55c6a7bba9d4fb",
+    "data/plans/dev20/D20.json": "8c23b201dbf33f3e73b2dd3233b671222ccf6065c03590010e57fdec064d98b5",
+    "sql/dev20/D20.sql": "47e29ea6b35e1e2dc037c42ff37ea91e6dd1bb6a8a8ffb9dc9b115efd8253c99"
+  },
+  "dataset": {
+    "sha256": "35b257d7379ef2ea4d444f0163ab497401ec4d8d522e4133c84a00b0774d2eca",
+    "layer_counts": {
+      "construction_areas": 10,
+      "demo_roads": 3,
+      "gas_devices": 12,
+      "gas_pipelines": 12,
+      "water_pipelines": 10
+    }
+  },
+  "cases": {
+    "D01": {
+      "count": 2
+    },
+    "D02": {
+      "count": 4
+    },
+    "D03": {
+      "count": 1
+    },
+    "D04": {
+      "unit": "feature",
+      "groups": [
+        {
+          "group": {
+            "device_type": "监测点"
+          },
+          "value": 1,
+          "feature_count": 1
+        },
+        {
+          "group": {
+            "device_type": "调压站"
+          },
+          "value": 2,
+          "feature_count": 2
+        },
+        {
+          "group": {
+            "device_type": "阀门"
+          },
+          "value": 7,
+          "feature_count": 7
+        }
+      ]
+    },
+    "D05": {
+      "unit": "meter",
+      "groups": [
+        {
+          "group": {
+            "pressure_level": "高压"
+          },
+          "value": 2414.213562373095,
+          "feature_count": 2
+        },
+        {
+          "group": {
+            "pressure_level": "中压"
+          },
+          "value": 2400,
+          "feature_count": 3
+        },
+        {
+          "group": {
+            "pressure_level": "低压"
+          },
+          "value": 1000,
+          "feature_count": 1
+        }
+      ]
+    },
+    "D06": {
+      "length": {
+        "unit": "meter",
+        "value": 600,
+        "measure": "length",
+        "measure_srid": 3857,
+        "feature_count": 1
+      }
+    },
+    "D07": {
+      "length": {
+        "unit": "meter",
+        "value": 700,
+        "measure": "length",
+        "measure_srid": 3857,
+        "feature_count": 3
+      }
+    },
+    "D08": {
+      "area": {
+        "unit": "square_meter",
+        "value": 280930.06370322476,
+        "measure": "area",
+        "is_empty": false,
+        "measure_srid": 3857
+      }
+    },
+    "D09": {
+      "area": {
+        "unit": "square_meter",
+        "value": 998412.9907871715,
+        "measure": "area",
+        "is_empty": false,
+        "measure_srid": 3857
+      }
+    },
+    "D10": {
+      "length": {
+        "unit": "meter",
+        "value": 1000,
+        "measure": "length",
+        "is_empty": false,
+        "measure_srid": 3857
+      }
+    },
+    "D11": {
+      "area": {
+        "unit": "square_meter",
+        "value": 140000,
+        "measure": "area",
+        "is_empty": false,
+        "measure_srid": 3857
+      }
+    },
+    "D12": {
+      "length": {
+        "unit": "meter",
+        "value": 0,
+        "measure": "length",
+        "measure_srid": 3857,
+        "feature_count": 0
+      }
+    },
+    "D13": {
+      "area": {
+        "unit": "square_meter",
+        "value": 639185.4490710819,
+        "measure": "area",
+        "is_empty": false,
+        "measure_srid": 3857
+      },
+      "coverage_percent": {
+        "unit": "percent",
+        "value": 63.9185449071082,
+        "numerator": 639185.4490710819,
+        "denominator": 1000000
+      }
+    },
+    "D14": {
+      "unit": "meter",
+      "groups": [
+        {
+          "group": {
+            "source_code": "W001"
+          },
+          "value": 1000,
+          "feature_count": 1
+        },
+        {
+          "group": {
+            "source_code": "W008"
+          },
+          "value": 220.71067811865476,
+          "feature_count": 1
+        },
+        {
+          "group": {
+            "source_code": "W009"
+          },
+          "value": 0,
+          "feature_count": 1
+        }
+      ],
+      "total_length": {
+        "unit": "meter",
+        "value": 1220.7106781186549,
+        "measure": "length",
+        "measure_srid": 3857,
+        "feature_count": 3
+      }
+    },
+    "D15": {
+      "union_area": {
+        "unit": "square_meter",
+        "value": 370190.3751365281,
+        "measure": "area",
+        "is_empty": false,
+        "measure_srid": 3857
+      },
+      "summed_area": {
+        "unit": "square_meter",
+        "value": 374573.4182709662,
+        "measure": "area",
+        "measure_srid": 3857,
+        "feature_count": 3
+      }
+    },
+    "D16": {
+      "union_area": {
+        "unit": "square_meter",
+        "value": 1100000,
+        "measure": "area",
+        "is_empty": false,
+        "measure_srid": 3857
+      },
+      "summed_area": {
+        "unit": "square_meter",
+        "value": 1240000,
+        "measure": "area",
+        "measure_srid": 3857,
+        "feature_count": 2
+      },
+      "overlap_area": {
+        "unit": "square_meter",
+        "value": 140000,
+        "measure": "area",
+        "is_empty": false,
+        "measure_srid": 3857
+      }
+    },
+    "D17": {
+      "area": {
+        "unit": "square_meter",
+        "value": 639185.4490710819,
+        "measure": "area",
+        "is_empty": false,
+        "measure_srid": 3857
+      },
+      "gas_length": {
+        "unit": "meter",
+        "value": 4332.362443880318,
+        "measure": "length",
+        "measure_srid": 3857,
+        "feature_count": 6
+      }
+    },
+    "D18": {
+      "unit": "meter",
+      "gas_groups": [
+        {
+          "group": {
+            "pressure_level": "高压"
+          },
+          "value": 2414.213562373095,
+          "feature_count": 2
+        },
+        {
+          "group": {
+            "pressure_level": "中压"
+          },
+          "value": 2400,
+          "feature_count": 3
+        },
+        {
+          "group": {
+            "pressure_level": "低压"
+          },
+          "value": 1000,
+          "feature_count": 1
+        }
+      ],
+      "water_groups": [
+        {
+          "group": {
+            "pipe_type": "给水"
+          },
+          "value": 1700,
+          "feature_count": 3
+        }
+      ]
+    },
+    "D19": {
+      "a001_count": 3,
+      "a002_count": 3,
+      "unique_count": 5
+    },
+    "D20": {
+      "water_unit": "meter",
+      "device_unit": "feature",
+      "total_length": {
+        "unit": "meter",
+        "value": 1220.7106781186549,
+        "measure": "length",
+        "measure_srid": 3857,
+        "feature_count": 3
+      },
+      "water_groups": [
+        {
+          "group": {
+            "source_code": "W001"
+          },
+          "value": 1000,
+          "feature_count": 1
+        },
+        {
+          "group": {
+            "source_code": "W008"
+          },
+          "value": 220.71067811865476,
+          "feature_count": 1
+        },
+        {
+          "group": {
+            "source_code": "W009"
+          },
+          "value": 0,
+          "feature_count": 1
+        }
+      ],
+      "device_groups": [
+        {
+          "group": {
+            "status": "告警"
+          },
+          "value": 1,
+          "feature_count": 1
+        },
+        {
+          "group": {
+            "status": "正常"
+          },
+          "value": 2,
+          "feature_count": 2
+        }
+      ]
+    }
+  }
+}
