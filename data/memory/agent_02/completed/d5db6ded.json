@@ -1,0 +1,66 @@
+{
+  "id": "d5db6ded",
+  "agent_id": "agent_02",
+  "question_feat": "统计 gas_devices 中与 construction_areas.code = 'A001' 的施工区几何相交（ST_Intersects，包含边界）且 status 为 '正常' 或 '告警' 的设备数量，同一设备仅计一次。",
+  "plan": {
+    "nodes": [
+      {
+        "id": "s1",
+        "action": "query_features",
+        "params": {
+          "layer_name": "construction_areas",
+          "filters": {
+            "code": "A001"
+          },
+          "target": "geom"
+        },
+        "depends_on": []
+      },
+      {
+        "id": "s2",
+        "action": "query_features",
+        "params": {
+          "layer_name": "gas_devices",
+          "filters": {
+            "status": [
+              "正常",
+              "告警"
+            ]
+          },
+          "target": "geom",
+          "relation": "ST_Intersects",
+          "reference": "s1.geom"
+        },
+        "depends_on": [
+          "s1"
+        ]
+      },
+      {
+        "id": "s3",
+        "action": "summarize_features",
+        "params": {
+          "aggregate": "count",
+          "distinct_by": "id",
+          "input": "s2"
+        },
+        "depends_on": [
+          "s2"
+        ]
+      }
+    ],
+    "edges": [
+      [
+        "s1",
+        "s2"
+      ],
+      [
+        "s2",
+        "s3"
+      ]
+    ]
+  },
+  "result_summary": "{\"count\": 4}",
+  "outcome": "success",
+  "error": "",
+  "ts": "2026-11-06 15:49:00"
+}

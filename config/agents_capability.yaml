@@ -1,0 +1,99 @@
+# ============================================================
+# 智能体能力向量表 —— 初始状态：能力完全均衡
+# ============================================================
+# 设计要点：
+# 1. 智能体只用编号命名（01/02/03/04），不预设任何专长或描述；
+#    编号本身不携带能力信息，专长是后期进化出来的结果，不是先验设定。
+# 2. 所有智能体的所有能力维度初始经验值一律为 0.5（0=完全不会，1=精通），
+#    因此初始状态下任意两个智能体对同一子问题的得分完全相同。
+# 3. 能力只能通过"执行 → 成功/失败"沉淀的经验提升或降低
+#    （见 evolution 配置与 agents/capability_store.py），配置文件中的值只是
+#    初始值；运行期真实能力写在 data/agent_capabilities.json 中。
+# 4. 能力均等（得分并列最高）时由 agents/capability_router.py 随机抽取，
+#    避免固定顺序导致某个编号总是被选中而抢先积累经验。
+# ============================================================
+
+# 初始经验值（能力值域 [0, 1]）
+initial_capability: 0.5
+
+agents:
+  agent_01:
+    name: "01"
+    capabilities:
+      spatial_compute: 0.5
+      attribute_query: 0.5
+      statistics: 0.5
+      mapping: 0.5
+    preferred_tools: []          # 初始不预设工具偏好，成功执行后自动积累
+    memory_dir: "data/memory/agent_01"
+
+  agent_02:
+    name: "02"
+    capabilities:
+      spatial_compute: 0.5
+      attribute_query: 0.5
+      statistics: 0.5
+      mapping: 0.5
+    preferred_tools: []
+    memory_dir: "data/memory/agent_02"
+
+  agent_03:
+    name: "03"
+    capabilities:
+      spatial_compute: 0.5
+      attribute_query: 0.5
+      statistics: 0.5
+      mapping: 0.5
+    preferred_tools: []
+    memory_dir: "data/memory/agent_03"
+
+  agent_04:
+    name: "04"
+    capabilities:
+      spatial_compute: 0.5
+      attribute_query: 0.5
+      statistics: 0.5
+      mapping: 0.5
+    preferred_tools: []
+    memory_dir: "data/memory/agent_04"
+
+# 能力维度说明（供路由与规划 prompt 使用；与业务领域正交）
+capability_glossary:
+  spatial_compute: "几何运算：缓冲、叠加、裁剪、量测"
+  attribute_query: "属性条件筛选与查询"
+  statistics: "统计聚合、排序、比例"
+  mapping: "专题制图与可视化"
+
+# 能力维度短名（能力向量图坐标轴标签）
+capability_labels:
+  spatial_compute: "空间计算"
+  attribute_query: "属性查询"
+  statistics: "统计分析"
+  mapping: "制图可视化"
+
+# ---------------- 能力路由 ----------------
+routing:
+  # 得分并列最高的判定容差：|score_a - score_b| <= tie_epsilon 视为"能力均等"
+  tie_epsilon: 0.0
+  # 平局随机抽取的随机种子：null 表示真随机（每次运行不同）
+  random_seed: null
+
+# ---------------- 能力进化（经验沉淀） ----------------
+evolution:
+  # 成功：向 1 靠近（饱和式增长，越接近上限增量越小）
+  #   v' = v + success_gain * (max_value - v)
+  success_gain: 0.10
+  # 失败：向 0 回落（越接近下限回落越少）
+  #   v' = v - failure_loss * (v - min_value)
+  failure_loss: 0.08
+  min_value: 0.05
+  max_value: 0.99
+  # 保留的小数位（只影响展示与落盘，不影响计算）
+  decimals: 4
+  # 每个智能体最多记住多少个成功用过的算子作为工具偏好
+  max_preferred_tools: 5
+
+# ---------------- 短期缓存 ----------------
+short_term_cache:
+  max_entries: 10     # 每个智能体短期缓存最多保留最近 N 条任务记录
+  persist: true       # 是否落盘

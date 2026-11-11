@@ -1,0 +1,45 @@
+{
+  "id": "571e64a1",
+  "agent_id": "agent_02",
+  "question_feat": "查询 gas_devices 表中 status 为 '正常' 的全部设备，按 device_type 分组计数，并按 device_type 升序输出全部分组。",
+  "plan": {
+    "nodes": [
+      {
+        "id": "s1",
+        "action": "query_features",
+        "params": {
+          "table": "gas_devices",
+          "where": "status = '正常'",
+          "fields": [
+            "id",
+            "device_type",
+            "status"
+          ]
+        },
+        "depends_on": []
+      },
+      {
+        "id": "s2",
+        "action": "summarize_features",
+        "params": {
+          "aggregate": "count",
+          "group_by": "device_type",
+          "sort": "device_type asc"
+        },
+        "depends_on": [
+          "s1"
+        ]
+      }
+    ],
+    "edges": [
+      [
+        "s1",
+        "s2"
+      ]
+    ]
+  },
+  "result_summary": "{\"unit\": \"feature\", \"groups\": [{\"group\": {\"device_type\": \"监测点\"}, \"value\": 1.0, \"feature_count\": 1.0}, {\"group\": {\"device_type\": \"调压站\"}, \"value\": 2.0, \"feature_count\": 2.0}, {\"group\": {\"device_type\": \"",
+  "outcome": "success",
+  "error": "",
+  "ts": "2026-11-06 15:49:16"
+}

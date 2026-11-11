@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>智能体能力向量图（动态进化）</title>
+<style>
+  :root { --bg:#f6f8fb; --card:#ffffff; --line:#e3e8f0; --ink:#1f2937; --muted:#6b7280; }
+  * { box-sizing: border-box; }
+  body { margin:0; padding:20px; background:var(--bg); color:var(--ink);
+         font-family:"Microsoft YaHei","PingFang SC","Noto Sans CJK SC",system-ui,sans-serif; }
+  h1 { font-size:19px; margin:0 0 2px; }
+  .sub { color:var(--muted); font-size:12px; margin-bottom:14px; }
+  .layout { display:flex; gap:16px; align-items:flex-start; flex-wrap:wrap; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:14px; }
+  .chart-card { flex:0 0 auto; }
+  canvas { width:520px; height:520px; display:block; }
+  .side { flex:1 1 420px; min-width:360px; display:flex; flex-direction:column; gap:12px; }
+  .controls { display:flex; align-items:center; gap:10px; margin-top:10px; }
+  button { border:1px solid var(--line); background:#fff; color:var(--ink); border-radius:8px;
+           padding:6px 12px; font-size:12px; cursor:pointer; }
+  button:hover { border-color:#2563eb; color:#2563eb; }
+  input[type=range] { flex:1; accent-color:#2563eb; }
+  .frame-label { font-size:12px; color:var(--muted); margin-top:8px; line-height:1.5;
+                 min-height:34px; }
+  table { width:100%; border-collapse:collapse; font-size:12px; }
+  th, td { padding:5px 6px; text-align:center; border-bottom:1px solid #eef1f6; }
+  th { color:var(--muted); font-weight:500; }
+  td.agent { text-align:left; font-weight:600; }
+  .dot { display:inline-block; width:8px; height:8px; border-radius:50%; margin-right:6px; }
+  .up { background:#e8f7ee; color:#15803d; }
+  .down { background:#fdeaea; color:#b91c1c; }
+  .events { max-height:250px; overflow:auto; font-size:12px; }
+  .event { padding:6px 8px; border-radius:8px; margin-bottom:4px; background:#f8fafc;
+           border:1px solid #eef1f6; line-height:1.45; }
+  .event.current { outline:2px solid #2563eb; background:#eff6ff; }
+  .tag { display:inline-block; padding:1px 6px; border-radius:6px; font-size:11px; margin-right:6px; }
+  .tag.ok { background:#e8f7ee; color:#15803d; }
+  .tag.bad { background:#fdeaea; color:#b91c1c; }
+  .hint { font-size:11px; color:var(--muted); margin-top:8px; line-height:1.6; }
+</style>
+</head>
+<body>
+<h1>智能体能力向量图（动态进化）</h1>
+<div class="sub">初始所有能力值 = 0.50（能力完全均衡，路由随机）｜能力只随成功/失败经验进化
+ ｜更新于 2026-11-06 15:52:56</div>
+<div class="layout">
+  <div class="card chart-card">
+    <canvas id="radar"></canvas>
+    <div class="controls">
+      <button id="play">▶ 播放进化</button>
+      <input id="slider" type="range" min="0" max="0" value="0">
+      <button id="latest">最新</button>
+    </div>
+    <div class="frame-label" id="frameLabel"></div>
+  </div>
+  <div class="side">
+    <div class="card">
+      <table id="capTable"></table>
+    </div>
+    <div class="card">
+      <div style="font-size:13px;font-weight:600;margin-bottom:8px;">进化记录</div>
+      <div class="events" id="events"></div>
+      <div class="hint">拖动时间轴可回放每一次执行后的能力变化；绿色为能力上升（成功经验），
+        红色为下降（失败经验）。刷新页面即可看到最新状态。</div>
+    </div>
+  </div>
+</div>
+<script>
+const D = {"initial_capability": 0.5, "dimensions": ["spatial_compute", "attribute_query", "statistics", "mapping"], "labels": {"spatial_compute": "空间计算", "attribute_query": "属性查询", "statistics": "统计分析", "mapping": "制图可视化"}, "agents": {"agent_01": {"name": "01", "capabilities": {"spatial_compute": 0.5, "attribute_query": 0.5, "statistics": 0.5, "mapping": 0.5}, "preferred_tools": [], "stats": {"attempts": 0, "successes": 0, "failures": 0}}, "agent_02": {"name": "02", "capabilities": {"spatial_compute": 0.8048, "attribute_query": 0.7684, "statistics": 0.7341, "mapping": 0.5}, "preferred_tools": ["clip_features", "measure_features", "summarize_features", "union_features", "intersection_geometry"], "stats": {"attempts": 20, "successes": 18, "failures": 2}}, "agent_03": {"name": "03", "capabilities": {"spatial_compute": 0.5, "attribute_query": 0.5, "statistics": 0.5, "mapping": 0.5}, "preferred_tools": [], "stats": {"attempts": 0, "successes": 0, "failures": 0}}, "agent_04": {"name": "04", "capabilities": {"spatial_compute": 0.5, "attribute_query": 0.5, "statistics": 0.5, "mapping": 0.5}, "preferred_tools": [], "stats": {"attempts": 0, "successes": 0, "failures": 0}}}, "history": [{"ts": "2026-11-06 15:48:52", "agent_id": "agent_02", "agent_name": "02", "dims": ["spatial_compute", "attribute_query", "statistics"], "outcome": "success", "question": "统计 gas_devices 表中 status = '正常' 且 geom 严格位于 construction_areas 表中 code = 'A001' 的施工区面要素内部的燃气设备数量（使用 ST_Within，边界上的设备不计入）。", "task_signature": "gas/统计分析", "before": {"spatial_compute": 0.5, "attribute_query": 0.5, "statistics": 0.5}, "after": {"spatial_compute": 0.549, "attribute_query": 0.549, "statistics": 0.549}, "delta": {"spatial_compute": 0.049, "attribute_query": 0.049, "statistics": 0.049}, "vector_before": {"spatial_compute": 0.5, "attribute_query": 0.5, "statistics": 0.5, "mapping": 0.5}, "vector_after": {"spatial_compute": 0.549, "attribute_query": 0.549, "statistics": 0.549, "mapping": 0.5}, "note": "", "index": 0}, {"ts": "2026-11-06 15:49:00", "agent_id": "agent_02", "agent_name": "02", "dims": ["spatial_compute", "attribute_query", "statistics"], "outcome": "success", "question": "统计 gas_devices 中与 construction_areas.code = 'A001' 的施工区几何相交（ST_Intersects，包含边界）且 status 为 '正常' 或 '告警' 的设备数量，同一设备仅计一次。", "task_signature": "gas/统计分析", "before": {"spatial_compute": 0.549, "attribute_query": 0.549, "statistics": 0.549}, "after": {"spatial_compute": 0.5931, "attribute_query": 0.5931, "statistics": 0.5931}, "delta": {"spatial_compute": 0.0441, "attribute_query": 0.0441, "statistics": 0.0441}, "vector_before": {"spatial_compute": 0.549, "attribute_query": 0.549, "statistics": 0.549, "mapping": 0.5}, "vector_after": {"spatial_compute": 0.5931, "attribute_query": 0.5931, "statistics": 0.5931, "mapping": 0.5}, "note": "", "index": 1}, {"ts": "2026-11-06 15:49:08", "agent_id": "agent_02", "agent_name": "02", "dims": ["spatial_compute", "attribute_query", "statistics"], "outcome": "success", "question": "统计 gas_devices 中满足以下条件的设备数量：设备 geom 与 construction_areas 中 code='A003' 的施工区实体区域（排除孔洞，边界接触计入）相交，且 status='正常'。", "task_signature": "gas/统计分析", "before": {"spatial_compute": 0.5931, "attribute_query": 0.5931, "statistics": 0.5931}, "after": {"spatial_compute": 0.6328, "attribute_query": 0.6328, "statistics": 0.6328}, "delta": {"spatial_compute": 0.0397, "attribute_query": 0.0397, "statistics": 0.0397}, "vector_before": {"spatial_compute": 0.5931, "attribute_query": 0.5931, "statistics": 0.5931, "mapping": 0.5}, "vector_after": {"spatial_compute": 0.6328, "attribute_query": 0.6328, "statistics": 0.6328, "mapping": 0.5}, "note": "", "index": 2}, {"ts": "2026-11-06 15:49:16", "agent_id": "agent_02", "agent_name": "02", "dims": ["attribute_query", "statistics"], "outcome": "success", "question": "查询 gas_devices 表中 status 为 '正常' 的全部设备，按 device_type 分组计数，并按 device_type 升序输出全部分组。", "task_signature": "gas/统计分析", "before": {"attribute_query": 0.6328, "statistics": 0.6328}, "after": {"attribute_query": 0.6685, "statistics": 0.6685}, "delta": {"attribute_query": 0.0357, "statistics": 0.0357}, "vector_before": {"spatial_compute": 0.6328, "attribute_query": 0.6328, "statistics": 0.6328, "mapping": 0.5}, "vector_after": {"spatial_compute": 0.6328, "attribute_query": 0.6685, "statistics": 0.6685, "mapping": 0.5}, "note": "", "index": 3}, {"ts": "2026-11-06 15:49:28", "agent_id": "agent_02", "agent_name": "02", "dims": ["spatial_compute", "attribute_query", "statistics"], "outcome": "success", "question": "从 gas_pipelines 表中筛选与施工区 A001 相交（ST_Intersects，含边界接触）的燃气管线，将其裁剪到 A001 范围内，计算每条管线在区内的长度（米），然后按 pressure_level 分组汇总区内总长度，输出所有压力等级分组及其总长度，按总长度降序、同长按压力等级名称升序排列。", "task_signature": "gas/统计分析", "before": {"spatial_compute": 0.6328, "attribute_query": 0.6685, "statistics": 0.6685}, "after": {"spatial_compute": 0.6685, "attribute_query": 0.7006, "statistics": 0.7006}, "delta": {"spatial_compute": 0.0357, "attribute_query": 0.0321, "statistics": 0.0321}, "vector_before": {"spatial_compute": 0.6328, "attribute_query": 0.6685, "statistics": 0.6685, "mapping": 0.5}, "vector_after": {"spatial_compute": 0.6685, "attribute_query": 0.7006, "statistics": 0.7006, "mapping": 0.5}, "note": "", "index": 4}, {"ts": "2026-11-06 15:49:39", "agent_id": "agent_02", "agent_name": "02", "dims": ["spatial_compute", "attribute_query"], "outcome": "success", "question": "计算燃气管线 G006（gas_pipelines.code = 'G006'）位于施工区 A003（construction_areas.code = 'A003'）实体部分内的长度（米），排除孔洞，并返回参与量测的原管线数量。", "task_signature": "gas/空间计算", "before": {"spatial_compute": 0.6685, "attribute_query": 0.7006}, "after": {"spatial_compute": 0.7006, "attribute_query": 0.7295}, "delta": {"spatial_compute": 0.0321, "attribute_query": 0.0289}, "vector_before": {"spatial_compute": 0.6685, "attribute_query": 0.7006, "statistics": 0.7006, "mapping": 0.5}, "vector_after": {"spatial_compute": 0.7006, "attribute_query": 0.7295, "statistics": 0.7006, "mapping": 0.5}, "note": "", "index": 5}, {"ts": "2026-11-06 15:49:49", "agent_id": "agent_02", "agent_name": "02", "dims": ["spatial_compute", "statistics"], "outcome": "success", "question": "计算所有水管（water_pipelines）位于施工区 A003（construction_areas.code = 'A003'）实体部分内的总长度（米），排除孔洞，包含边界接触，并返回非空裁剪结果的源水管数量。", "task_signature": "water/空间计算", "before": {"spatial_compute": 0.7006, "statistics": 0.7006}, "after": {"spatial_compute": 0.7295, "statistics": 0.7295}, "delta": {"spatial_compute": 0.0289, "statistics": 0.0289}, "vector_before": {"spatial_compute": 0.7006, "attribute_query": 0.7295, "statistics": 0.7006, "mapping": 0.5}, "vector_after": {"spatial_compute": 0.7295, "attribute_query": 0.7295, "statistics": 0.7295, "mapping": 0.5}, "note": "", "index": 6}, {"ts": "2026-11-06 15:50:00", "agent_id": "agent_02", "agent_name": "02", "dims": ["spatial_compute"], "outcome": "success", "question": "以 gas_devices 表中 code='D011' 的燃气设备点要素为中心，在 EPSG:3857 坐标系下建立半径 300 米的缓冲区，与 construction_areas 表中 code='A001' 的施工区面要素求交，计算交集区域的面积（平方米）。", "task_signature": "gas/空间计算", "before": {"spatial_compute": 0.7295}, "after": {"spatial_compute": 0.7556}, "delta": {"spatial_compute": 0.0261}, "vector_before": {"spatial_compute": 0.7295, "attribute_query": 0.7295, "statistics": 0.7295, "mapping": 0.5}, "vector_after": {"spatial_compute": 0.7556, "attribute_query": 0.7295, "statistics": 0.7295, "mapping": 0.5}, "note": "", "index": 7}, {"ts": "2026-11-06 15:50:12", "agent_id": "agent_02", "agent_name": "02", "dims": ["spatial_compute", "attribute_query"], "outcome": "success", "question": "以 gas_devices 表中 code='D011' 的燃气设备点要素为圆心，在 EPSG:3857 坐标系下建立半径 700 米的缓冲区，与 construction_areas 表中 code='A001' 的施工区面要素求交，计算交集面积（平方米）。", "task_signature": "gas/空间计算", "before": {"spatial_compute": 0.7556, "attribute_query": 0.7295}, "after": {"spatial_compute": 0.779, "attribute_query": 0.7556}, "delta": {"spatial_compute": 0.0234, "attribute_query": 0.0261}, "vector_before": {"spatial_compute": 0.7556, "attribute_query": 0.7295, "statistics": 0.7295, "mapping": 0.5}, "vector_after": {"spatial_compute": 0.779, "attribute_query": 0.7556, "statistics": 0.7295, "mapping": 0.5}, "note": "", "index": 8}, {"ts": "2026-11-06 15:50:21", "agent_id": "agent_02", "agent_name": "02", "dims": ["spatial_compute"], "outcome": "success", "question": "计算 construction_areas 表中 code 为 A001 与 A002 的两个面要素 geom 的交集长度（单位：米，EPSG:3857）；当两区仅共边（交集为线）时，返回公共边界长度而非面积。", "task_signature": "general/空间计算", "before": {"spatial_compute": 0.779}, "after": {"spatial_compute": 0.8001}, "delta": {"spatial_compute": 0.0211}, "vector_before": {"spatial_compute": 0.779, "attribute_query": 0.7556, "statistics": 0.7295, "mapping": 0.5}, "vector_after": {"spatial_compute": 0.8001, "attribute_query": 0.7556, "statistics": 0.7295, "mapping": 0.5}, "note": "", "index": 9}, {"ts": "2026-11-06 15:50:31", "agent_id": "agent_02", "agent_name": "02", "dims": ["spatial_compute"], "outcome": "success", "question": "查询 construction_areas 表中 code='A001' 与 code='A008' 的 geom，对两几何求交（intersection_geometry），并量测交集面积（平方米，measure_geometry）。", "task_signature": "general/空间计算", "before": {"spatial_compute": 0.8001}, "after": {"spatial_compute": 0.8191}, "delta": {"spatial_compute": 0.019}, "vector_before": {"spatial_compute": 0.8001, "attribute_query": 0.7556, "statistics": 0.7295, "mapping": 0.5}, "vector_after": {"spatial_compute": 0.8191, "attribute_query": 0.7556, "statistics": 0.7295, "mapping": 0.5}, "note": "", "index": 10}, {"ts": "2026-11-06 15:50:42", "agent_id": "agent_02", "agent_name": "02", "dims": ["spatial_compute", "statistics"], "outcome": "success", "question": "计算所有水管（water_pipelines.geom）严格位于孤立施工区 A009（construction_areas.code = 'A009'）内的总长度（米），并返回非空裁剪结果的源水管数量；若无匹配水管，长度和数量均返回 0。", "task_signature": "water/空间计算", "before": {"spatial_compute": 0.8191, "statistics": 0.7295}, "after": {"spatial_compute": 0.8362, "statistics": 0.7556}, "delta": {"spatial_compute": 0.0171, "statistics": 0.0261}, "vector_before": {"spatial_compute": 0.8191, "attribute_query": 0.7556, "statistics": 0.7295, "mapping": 0.5}, "vector_after": {"spatial_compute": 0.8362, "attribute_query": 0.7556, "statistics": 0.7556, "mapping": 0.5}, "note": "", "index": 11}, {"ts": "2026-11-06 15:50:59", "agent_id": "agent_02", "agent_name": "02", "dims": ["spatial_compute", "attribute_query", "statistics"], "outcome": "success", "question": "在 gas_devices 中筛选与 construction_areas.code='A001' 的几何相交（边界接触计入）且 status 为 '正常' 或 '告警' 的燃气设备点，分别对每个设备以 300 米建立缓冲区，将所有缓冲区合并去重后裁剪到 A001 的几何范围内，计算裁剪结果的覆盖面积（平方米）以及该面积占 A001 面积的百分比。", "task_signature": "gas/空间计算", "before": {"spatial_compute": 0.8362, "attribute_query": 0.7556, "statistics": 0.7556}, "after": {"spatial_compute": 0.8516, "attribute_query": 0.779, "statistics": 0.779}, "delta": {"spatial_compute": 0.0154, "attribute_query": 0.0234, "statistics": 0.0234}, "vector_before": {"spatial_compute": 0.8362, "attribute_query": 0.7556, "statistics": 0.7556, "mapping": 0.5}, "vector_after": {"spatial_compute": 0.8516, "attribute_query": 0.779, "statistics": 0.779, "mapping": 0.5}, "note": "", "index": 12}, {"ts": "2026-11-06 15:51:18", "agent_id": "agent_02", "agent_name": "02", "dims": ["spatial_compute", "attribute_query", "statistics"], "outcome": "failure", "question": "从 gas_pipelines 中筛选 pressure_level='高压' 且与施工区 A001 相交的燃气管线，裁剪至 A001 后分别缓冲 50 米并合并，得到影响范围；计算 water_pipelines 中各水管在该影响范围内且在 A001 内的长度（米），保留非空的零长度边界接触记录，按长度降序、同长按水管编码升序输出全部水管及总长度。", "task_signature": "water/空间计算", "before": {"spatial_compute": 0.8516, "attribute_query": 0.779, "statistics": 0.779}, "after": {"spatial_compute": 0.7875, "attribute_query": 0.7207, "statistics": 0.7207}, "delta": {"spatial_compute": -0.0641, "attribute_query": -0.0583, "statistics": -0.0583}, "vector_before": {"spatial_compute": 0.8516, "attribute_query": 0.779, "statistics": 0.779, "mapping": 0.5}, "vector_after": {"spatial_compute": 0.7875, "attribute_query": 0.7207, "statistics": 0.7207, "mapping": 0.5}, "note": "$.groups: 长度 10，期望 3；$.total_length.feature_count: 10，期望 3", "index": 13}, {"ts": "2026-11-06 15:51:31", "agent_id": "agent_02", "agent_name": "02", "dims": ["spatial_compute", "attribute_query"], "outcome": "success", "question": "对表 gas_devices 中与设备 A001（按 code 引用）相交（ST_Intersects）且 status = '正常' 的设备，分别以每个设备几何为中心建立 200 米缓冲区（不裁剪），复用同一批缓冲结果，分别计算所有缓冲面积直接相加的总和（平方米）以及缓冲合并去重后的总面积（平方米）。", "task_signature": "general/空间计算", "before": {"spatial_compute": 0.7875, "attribute_query": 0.7207}, "after": {"spatial_compute": 0.8077, "attribute_query": 0.7476}, "delta": {"spatial_compute": 0.0202, "attribute_query": 0.0269}, "vector_before": {"spatial_compute": 0.7875, "attribute_query": 0.7207, "statistics": 0.7207, "mapping": 0.5}, "vector_after": {"spatial_compute": 0.8077, "attribute_query": 0.7476, "statistics": 0.7207, "mapping": 0.5}, "note": "", "index": 14}, {"ts": "2026-11-06 15:51:43", "agent_id": "agent_02", "agent_name": "02", "dims": ["spatial_compute", "attribute_query"], "outcome": "success", "question": "针对 construction_areas 表中 code 为 A001 与 A008 的两个面要素，基于同一份区域查询结果（一次查询同时取出 A001、A008 的 geom），分别计算：(1) 两区面积直接相加值（ST_Area(A001.geom)+ST_Area(A008.geom)，单位 square_meter）；(2) 联合覆盖去重面积（ST_Area(ST_Union(A001.geom, A008.geom))，单位 square_meter）；(3) 重叠面积（ST_Area(ST_Intersection(A001.geom, A008.geom))，单位 square_meter）。三者分别输出、不得混淆，且 (1)(2) 必须复用同一份查询结果。", "task_signature": "general/空间计算", "before": {"spatial_compute": 0.8077, "attribute_query": 0.7476}, "after": {"spatial_compute": 0.8259, "attribute_query": 0.7718}, "delta": {"spatial_compute": 0.0182, "attribute_query": 0.0242}, "vector_before": {"spatial_compute": 0.8077, "attribute_query": 0.7476, "statistics": 0.7207, "mapping": 0.5}, "vector_after": {"spatial_compute": 0.8259, "attribute_query": 0.7718, "statistics": 0.7207, "mapping": 0.5}, "note": "", "index": 15}, {"ts": "2026-11-06 15:52:02", "agent_id": "agent_02", "agent_name": "02", "dims": ["spatial_compute", "attribute_query", "statistics"], "outcome": "success", "question": "在 gas_devices 中筛选与施工区 A001 相交且 status 为'正常'或'告警'的设备，对其 geom 分别按 300 米缓冲，合并（union）去重后裁剪（clip）到 A001 的几何范围，得到覆盖几何；复用该覆盖几何分别计算覆盖面积（平方米）以及其中 gas_pipelines 全部燃气管线的总长度（米），保留非空零长度接触记录。", "task_signature": "gas/空间计算", "before": {"spatial_compute": 0.8259, "attribute_query": 0.7718, "statistics": 0.7207}, "after": {"spatial_compute": 0.8423, "attribute_query": 0.7936, "statistics": 0.7476}, "delta": {"spatial_compute": 0.0164, "attribute_query": 0.0218, "statistics": 0.0269}, "vector_before": {"spatial_compute": 0.8259, "attribute_query": 0.7718, "statistics": 0.7207, "mapping": 0.5}, "vector_after": {"spatial_compute": 0.8423, "attribute_query": 0.7936, "statistics": 0.7476, "mapping": 0.5}, "note": "", "index": 16}, {"ts": "2026-11-06 15:52:16", "agent_id": "agent_02", "agent_name": "02", "dims": ["spatial_compute", "attribute_query", "statistics"], "outcome": "success", "question": "在施工区 A001 内，分别对 gas_pipelines 按 pressure_level 分组、对 water_pipelines 按 pipe_type 分组，统计裁剪到 A001 后的线长度之和（单位：米）；每组输出分组名称与总长度，按总长度降序、同长按分组名称升序排列，输出全部分组，保留零长度但非空接触的记录。", "task_signature": "gas/统计分析", "before": {"spatial_compute": 0.8423, "attribute_query": 0.7936, "statistics": 0.7476}, "after": {"spatial_compute": 0.8571, "attribute_query": 0.8132, "statistics": 0.7718}, "delta": {"spatial_compute": 0.0148, "attribute_query": 0.0196, "statistics": 0.0242}, "vector_before": {"spatial_compute": 0.8423, "attribute_query": 0.7936, "statistics": 0.7476, "mapping": 0.5}, "vector_after": {"spatial_compute": 0.8571, "attribute_query": 0.8132, "statistics": 0.7718, "mapping": 0.5}, "note": "", "index": 17}, {"ts": "2026-11-06 15:52:34", "agent_id": "agent_02", "agent_name": "02", "dims": ["spatial_compute", "attribute_query", "statistics"], "outcome": "success", "question": "分别统计与施工区 A001、A002 相交（ST_Intersects，含边界）且 gas_devices.status = '正常' 的设备数量；再将 A001 与 A002 的几何合并（union）后，统计与合并几何相交（ST_Intersects）且 status = '正常' 的设备去重数量。", "task_signature": "general/空间计算", "before": {"spatial_compute": 0.8571, "attribute_query": 0.8132, "statistics": 0.7718}, "after": {"spatial_compute": 0.8704, "attribute_query": 0.8309, "statistics": 0.7936}, "delta": {"spatial_compute": 0.0133, "attribute_query": 0.0177, "statistics": 0.0218}, "vector_before": {"spatial_compute": 0.8571, "attribute_query": 0.8132, "statistics": 0.7718, "mapping": 0.5}, "vector_after": {"spatial_compute": 0.8704, "attribute_query": 0.8309, "statistics": 0.7936, "mapping": 0.5}, "note": "", "index": 18}, {"ts": "2026-11-06 15:52:56", "agent_id": "agent_02", "agent_name": "02", "dims": ["spatial_compute", "attribute_query", "statistics"], "outcome": "failure", "question": "从 gas_pipelines 中筛选 pressure_level='高压' 且与施工区 construction_areas.code='A001' 相交的燃气管线，裁剪至 A001 边界后分别缓冲 50 米并合并为同一影响范围；复用该范围：(1) 统计 A001 内 gas_devices 中 status 为 '正常' 或 '告警' 的设备，按 status 升序分组计数；(2) 计算 A001 内 water_pipelines 各管线的受影响长度（米），按长度降序、同长按 code 升序输出，并给出总长度；边界计入，非空零长度接触记录保留。", "task_signature": "gas/综合", "before": {"spatial_compute": 0.8704, "attribute_query": 0.8309, "statistics": 0.7936}, "after": {"spatial_compute": 0.8048, "attribute_query": 0.7684, "statistics": 0.7341}, "delta": {"spatial_compute": -0.0656, "attribute_query": -0.0625, "statistics": -0.0595}, "vector_before": {"spatial_compute": 0.8704, "attribute_query": 0.8309, "statistics": 0.7936, "mapping": 0.5}, "vector_after": {"spatial_compute": 0.8048, "attribute_query": 0.7684, "statistics": 0.7341, "mapping": 0.5}, "note": "$.device_groups[1].value: 3，期望 2；$.device_groups[1].feature_count: 3，期望 2", "index": 19}], "updated_at": "2026-11-06 15:52:56"};
+const DIMS = D.dimensions;
+const LABELS = D.labels || {};
+const AGENTS = Object.keys(D.agents).sort();
+const COLORS = ["#2563eb","#dc2626","#16a34a","#d97706","#7c3aed","#0891b2"];
+const INIT = Number(D.initial_capability);
+
+function colorOf(a){ return COLORS[AGENTS.indexOf(a) % COLORS.length]; }
+function emptyStats(){
+  const s = {};
+  AGENTS.forEach(a => s[a] = { attempts:0, successes:0, failures:0 });
+  return s;
+}
+function copyStats(s){ return JSON.parse(JSON.stringify(s)); }
+function initialVectors(){
+  const v = {};
+  AGENTS.forEach(a => { v[a] = {}; DIMS.forEach(d => v[a][d] = INIT); });
+  return v;
+}
+
+/* ---------- 构造帧序列：初始 → 每次进化 ---------- */
+const frames = [];
+frames.push({
+  label: "初始状态：所有智能体的所有能力值均为 " + INIT.toFixed(2) + "，完全均衡",
+  ts: "",
+  vectors: initialVectors(),
+  stats: emptyStats(),
+  agent: null
+});
+const vectors = initialVectors();
+const stats = emptyStats();
+(D.history || []).forEach(function(e){
+  vectors[e.agent_id] = e.vector_after;
+  const st = stats[e.agent_id];
+  st.attempts += 1;
+  if (e.outcome === "success") st.successes += 1; else st.failures += 1;
+  const detail = e.dims.map(function(d){
+    return (LABELS[d] || d) + " " + Number(e.before[d]).toFixed(3) + "→" + Number(e.after[d]).toFixed(3);
+  }).join("、");
+  frames.push({
+    label: e.ts + " · 智能体 " + e.agent_name + (e.outcome === "success" ? " 成功" : " 失败")
+           + " · " + detail,
+    ts: e.ts,
+    vectors: JSON.parse(JSON.stringify(vectors)),
+    stats: copyStats(stats),
+    agent: e.agent_id,
+    dims: e.dims
+  });
+});
+/* 末帧用落盘的当前真实状态，避免与历史推演不一致 */
+const last = frames[frames.length - 1];
+const curVectors = {};
+const curStats = {};
+AGENTS.forEach(function(a){
+  curVectors[a] = {};
+  DIMS.forEach(function(d){ curVectors[a][d] = Number(D.agents[a].capabilities[d]); });
+  curStats[a] = D.agents[a].stats || { attempts:0, successes:0, failures:0 };
+});
+if (JSON.stringify(curVectors) !== JSON.stringify(last.vectors)) {
+  frames.push({ label: "当前状态 " + (D.updated_at || ""), ts: D.updated_at || "",
+                vectors: curVectors, stats: curStats, agent: null, dims: [] });
+} else {
+  last.stats = curStats;
+}
+
+let idx = frames.length - 1;
+let timer = null;
+
+/* ---------- 雷达图 ---------- */
+const canvas = document.getElementById("radar");
+const ctx = canvas.getContext("2d");
+
+function drawRadar(frame, prev){
+  const dpr = window.devicePixelRatio || 1;
+  const cssW = canvas.clientWidth || 520, cssH = canvas.clientHeight || 520;
+  canvas.width = cssW * dpr; canvas.height = cssH * dpr;
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.clearRect(0, 0, cssW, cssH);
+
+  const n = DIMS.length;
+  const cx = cssW / 2, cy = cssH / 2 + 4;
+  const R = Math.min(cssW, cssH) / 2 - 64;
+  const angle = i => -Math.PI / 2 + 2 * Math.PI * i / n;
+  const pt = (i, v) => [cx + Math.cos(angle(i)) * R * v, cy + Math.sin(angle(i)) * R * v];
+
+  /* 网格 */
+  [0.25, 0.5, 0.75, 1.0].forEach(function(r){
+    ctx.beginPath();
+    for (let i = 0; i < n; i++) {
+      const p = pt(i, r);
+      i ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1]);
+    }
+    ctx.closePath();
+    ctx.strokeStyle = (r === 1.0) ? "#c9d3e3" : "#e8edf5";
+    ctx.lineWidth = 1;
+    ctx.stroke();
+  });
+  /* 轴线 */
+  for (let i = 0; i < n; i++) {
+    const p = pt(i, 1);
+    ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(p[0], p[1]);
+    ctx.strokeStyle = "#e8edf5"; ctx.stroke();
+    /* 轴标签 */
+    const lp = pt(i, 1.17);
+    ctx.font = "12px 'Microsoft YaHei',sans-serif";
+    ctx.fillStyle = "#4b5563";
+    ctx.textAlign = Math.abs(lp[0] - cx) < 6 ? "center" : (lp[0] > cx ? "left" : "right");
+    ctx.textBaseline = "middle";
+    ctx.fillText(LABELS[DIMS[i]] || DIMS[i], lp[0], lp[1]);
+  }
+
+  /* 数据多边形 */
+  AGENTS.forEach(function(a){
+    const vals = DIMS.map(function(d){ return Math.max(0, Math.min(1, frame.vectors[a][d])); });
+    ctx.beginPath();
+    vals.forEach(function(v, i){
+      const p = pt(i, v);
+      i ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1]);
+    });
+    ctx.closePath();
+    ctx.fillStyle = colorOf(a) + "14";
+    ctx.fill();
+    ctx.strokeStyle = colorOf(a);
+    ctx.lineWidth = (frame.agent === a) ? 3.2 : 2;
+    ctx.stroke();
+
+    vals.forEach(function(v, i){
+      const p = pt(i, v);
+      ctx.beginPath();
+      ctx.arc(p[0], p[1], (frame.agent === a) ? 4 : 3, 0, 2 * Math.PI);
+      ctx.fillStyle = colorOf(a); ctx.fill();
+    });
+  });
+
+  /* 中心刻度 */
+  ctx.font = "10px sans-serif";
+  ctx.fillStyle = "#9ca3af";
+  ctx.textAlign = "left"; ctx.textBaseline = "top";
+  ctx.fillText("0.00", cx + 4, cy + 2);
+}
+
+/* ---------- 数值表 ---------- */
+function changed(a, d){
+  const f = frames[idx];
+  return f.agent === a && (f.dims || []).indexOf(d) >= 0;
+}
+function renderTable(){
+  const f = frames[idx];
+  const prev = idx > 0 ? frames[idx - 1] : null;
+  let html = "<thead><tr><th style='text-align:left'>智能体</th>";
+  DIMS.forEach(function(d){ html += "<th>" + (LABELS[d] || d) + "</th>"; });
+  html += "<th>尝试</th><th>成功</th><th>失败</th></tr></thead><tbody>";
+  AGENTS.forEach(function(a){
+    const st = f.stats[a] || { attempts:0, successes:0, failures:0 };
+    html += "<tr><td class='agent'><span class='dot' style='background:" + colorOf(a)
+          + "'></span>智能体 " + D.agents[a].name + "</td>";
+    DIMS.forEach(function(d){
+      const v = Number(f.vectors[a][d]);
+      let cls = "";
+      if (prev && changed(a, d)) {
+        const pv = Number(prev.vectors[a][d]);
+        cls = v > pv + 1e-12 ? "up" : (v < pv - 1e-12 ? "down" : "");
+      }
+      html += "<td class='" + cls + "'>" + v.toFixed(4) + "</td>";
+    });
+    html += "<td>" + st.attempts + "</td><td>" + st.successes + "</td><td>" + st.failures + "</td></tr>";
+  });
+  html += "</tbody>";
+  document.getElementById("capTable").innerHTML = html;
+}
+
+/* ---------- 进化记录 ---------- */
+function renderEvents(){
+  const box = document.getElementById("events");
+  const hist = D.history || [];
+  if (!hist.length) { box.innerHTML = "<div class='event'>暂无进化记录，先执行一次任务吧。</div>"; return; }
+  let html = "";
+  hist.slice().reverse().forEach(function(e, i){
+    const realIdx = hist.length - 1 - i;
+    const cur = frames[idx].ts && frames[idx].ts === e.ts && frames[idx].agent === e.agent_id;
+    const detail = e.dims.map(function(d){
+      return (LABELS[d] || d) + " " + Number(e.before[d]).toFixed(3) + "→" + Number(e.after[d]).toFixed(3);
+    }).join("、");
+    html += "<div class='event" + (cur ? " current" : "") + "'>"
+          + "<span class='tag " + (e.outcome === "success" ? "ok" : "bad") + "'>"
+          + (e.outcome === "success" ? "成功" : "失败") + "</span>"
+          + "<b>智能体 " + e.agent_name + "</b> · " + detail
+          + "<div style='color:#6b7280;font-size:11px;margin-top:2px'>" + (e.ts || "")
+          + (e.question ? " · " + escapeHtml(e.question) : "") + "</div></div>";
+  });
+  box.innerHTML = html;
+}
+function escapeHtml(s){
+  return String(s).replace(/[&<>"']/g, function(c){
+    return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];
+  });
+}
+
+function render(){
+  const f = frames[idx];
+  document.getElementById("frameLabel").textContent =
+    "第 " + idx + " / " + (frames.length - 1) + " 帧 · " + f.label;
+  const slider = document.getElementById("slider");
+  slider.max = String(frames.length - 1);
+  slider.value = String(idx);
+  drawRadar(f, idx > 0 ? frames[idx - 1] : null);
+  renderTable();
+  renderEvents();
+}
+
+document.getElementById("slider").addEventListener("input", function(e){
+  stopPlay();
+  idx = Number(e.target.value);
+  render();
+});
+document.getElementById("latest").addEventListener("click", function(){
+  stopPlay(); idx = frames.length - 1; render();
+});
+function stopPlay(){ if (timer) { clearInterval(timer); timer = null; } document.getElementById("play").textContent = "▶ 播放进化"; }
+document.getElementById("play").addEventListener("click", function(){
+  if (timer) { stopPlay(); return; }
+  if (idx >= frames.length - 1) idx = 0;
+  document.getElementById("play").textContent = "⏸ 暂停";
+  timer = setInterval(function(){
+    if (idx >= frames.length - 1) { stopPlay(); return; }
+    idx += 1; render();
+  }, 750);
+});
+window.addEventListener("resize", function(){ drawRadar(frames[idx], null); });
+render();
+</script>
+</body>
+</html>

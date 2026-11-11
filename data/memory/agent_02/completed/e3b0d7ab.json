@@ -1,0 +1,169 @@
+{
+  "id": "e3b0d7ab",
+  "agent_id": "agent_02",
+  "question_feat": "在 gas_devices 中筛选与 construction_areas.code='A001' 的几何相交（边界接触计入）且 status 为 '正常' 或 '告警' 的燃气设备点，分别对每个设备以 300 米建立缓冲区，将所有缓冲区合并去重后裁剪到 A001 的几何范围内，计算裁剪结果的覆盖面积（平方米）以及该面积占 A001 面积的百分比。",
+  "plan": {
+    "nodes": [
+      {
+        "id": "s1",
+        "action": "query_features",
+        "params": {
+          "table": "construction_areas",
+          "where": "code='A001'",
+          "select": [
+            "code",
+            "geom"
+          ]
+        },
+        "depends_on": []
+      },
+      {
+        "id": "s2",
+        "action": "query_features",
+        "params": {
+          "table": "gas_devices",
+          "where": "status IN ('正常','告警')",
+          "select": [
+            "code",
+            "status",
+            "geom"
+          ]
+        },
+        "depends_on": []
+      },
+      {
+        "id": "s3",
+        "action": "intersection_geometry",
+        "params": {
+          "left": "s2.geom",
+          "right": "s1.geom",
+          "predicate": "intersects",
+          "boundary_inclusive": true
+        },
+        "depends_on": [
+          "s1",
+          "s2"
+        ]
+      },
+      {
+        "id": "s4",
+        "action": "buffer_geometry",
+        "params": {
+          "geom": "s3.geom",
+          "radius": 300,
+          "units": "meters",
+          "crs": "EPSG:3857"
+        },
+        "depends_on": [
+          "s3"
+        ]
+      },
+      {
+        "id": "s5",
+        "action": "union_features",
+        "params": {
+          "geoms": "s4.geom",
+          "dedupe": true
+        },
+        "depends_on": [
+          "s4"
+        ]
+      },
+      {
+        "id": "s6",
+        "action": "clip_features",
+        "params": {
+          "input": "s5.geom",
+          "clip": "s1.geom"
+        },
+        "depends_on": [
+          "s5",
+          "s1"
+        ]
+      },
+      {
+        "id": "s7",
+        "action": "measure_features",
+        "params": {
+          "geom": "s6.geom",
+          "metric": "area",
+          "units": "square_meters"
+        },
+        "depends_on": [
+          "s6"
+        ]
+      },
+      {
+        "id": "s8",
+        "action": "measure_geometry",
+        "params": {
+          "geom": "s1.geom",
+          "metric": "area",
+          "units": "square_meters"
+        },
+        "depends_on": [
+          "s1"
+        ]
+      },
+      {
+        "id": "s9",
+        "action": "calculate_ratio",
+        "params": {
+          "numerator": "s7.area",
+          "denominator": "s8.area",
+          "as_percent": true
+        },
+        "depends_on": [
+          "s7",
+          "s8"
+        ]
+      }
+    ],
+    "edges": [
+      [
+        "s1",
+        "s3"
+      ],
+      [
+        "s2",
+        "s3"
+      ],
+      [
+        "s3",
+        "s4"
+      ],
+      [
+        "s4",
+        "s5"
+      ],
+      [
+        "s5",
+        "s6"
+      ],
+      [
+        "s1",
+        "s6"
+      ],
+      [
+        "s6",
+        "s7"
+      ],
+      [
+        "s1",
+        "s8"
+      ],
+      [
+        "s7",
+        "s9"
+      ],
+      [
+        "s8",
+        "s9"
+      ]
+    ]
+  },
+  "result_summary": "{\"area\": {\"unit\": \"square_meter\", \"value\": 639185.449071082, \"measure\": \"area\", \"is_empty\": false, \"measure_srid\": 3857}, \"coverage_percent\": {\"unit\": \"percent\", \"value\": 63.91854490710821, \"numerator",
+  "outcome": "success",
+  "error": "",
+  "ts": "2026-11-06 15:50:59"
+}

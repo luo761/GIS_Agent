@@ -1,0 +1,116 @@
+{
+  "id": "bb1fc6cb",
+  "agent_id": "agent_02",
+  "question_feat": "从 gas_pipelines 表中筛选与施工区 A001 相交（ST_Intersects，含边界接触）的燃气管线，将其裁剪到 A001 范围内，计算每条管线在区内的长度（米），然后按 pressure_level 分组汇总区内总长度，输出所有压力等级分组及其总长度，按总长度降序、同长按压力等级名称升序排列。",
+  "plan": {
+    "nodes": [
+      {
+        "id": "s1",
+        "action": "query_features",
+        "params": {
+          "table": "construction_areas",
+          "filter": "code = 'A003'",
+          "select": [
+            "geom"
+          ]
+        },
+        "depends_on": []
+      },
+      {
+        "id": "s2",
+        "action": "query_features",
+        "params": {
+          "table": "gas_pipelines",
+          "spatial_filter": {
+            "op": "ST_Intersects",
+            "ref": "s1.geom"
+          },
+          "select": [
+            "id",
+            "code",
+            "pressure_level",
+            "geom"
+          ]
+        },
+        "depends_on": [
+          "s1"
+        ]
+      },
+      {
+        "id": "s3",
+        "action": "clip_features",
+        "params": {
+          "input": "s2",
+          "clip_geom": "s1.geom",
+          "output_geom": "geom_clipped"
+        },
+        "depends_on": [
+          "s2"
+        ]
+      },
+      {
+        "id": "s4",
+        "action": "measure_features",
+        "params": {
+          "input": "s3",
+          "geom_field": "geom_clipped",
+          "method": "length",
+          "unit": "meter",
+          "output_field": "length_m"
+        },
+        "depends_on": [
+          "s3"
+        ]
+      },
+      {
+        "id": "s5",
+        "action": "summarize_features",
+        "params": {
+          "input": "s4",
+          "aggregate": "sum",
+          "value_field": "length_m",
+          "group_by": "pressure_level",
+          "output_fields": [
+            "pressure_level",
+            "total_length"
+          ],
+          "sort": [
+            [
+              "total_length",
+              "desc"
+            ],
+            [
+              "pressure_level",
+              "asc"
+            ]
+          ]
+        },
+        "depends_on": [
+          "s4"
+        ]
+      }
+    ],
+    "edges": [
+      [
+        "s1",
+        "s2"
+      ],
+      [
+        "s2",
+        "s3"
+      ],
+      [
+        "s3",
+        "s4"
+      ],
+      [
+        "s4",
+        "s5"
+      ]
+    ]
+  },
+  "result_summary": "{\"unit\": \"meter\", \"groups\": [{\"group\": {\"pressure_level\": \"高压\"}, \"value\": 2414.213562373095, \"feature_count\": 2}, {\"group\": {\"pressure_level\": \"中压\"}, \"value\": 2400.0, \"feature_count\": 3}, {\"group\": {\"",
+  "outcome": "success",
+  "error": "",
+  "ts": "2026-11-06 15:49:28"
+}

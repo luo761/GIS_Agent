@@ -1,0 +1,698 @@
+[
+  {
+    "task_signature": "gas/统计分析",
+    "question_feat": "在施工区 A001 内，分别对 gas_pipelines 按 pressure_level 分组、对 water_pipelines 按 pipe_type 分组，统计裁剪到 A001 后的线长度之和（单位：米）；每组输出分组名称与总长度，按总长度降序、同长按分组名称升序排列，输出全部分组，保留零长度但非空接触的记录。",
+    "plan": {
+      "t1": {
+        "nodes": [
+          {
+            "id": "s1",
+            "action": "query_features",
+            "params": {
+              "table": "construction_areas",
+              "filter": "code = 'A001'",
+              "fields": [
+                "geom"
+              ]
+            },
+            "depends_on": []
+          },
+          {
+            "id": "s2",
+            "action": "query_features",
+            "params": {
+              "table": "gas_pipelines",
+              "filter": "ST_Intersects(geom, A001.geom)",
+              "fields": [
+                "id",
+                "code",
+                "pressure_level",
+                "geom"
+              ]
+            },
+            "depends_on": [
+              "s1"
+            ]
+          },
+          {
+            "id": "s3",
+            "action": "clip_features",
+            "params": {
+              "input": "s2",
+              "clip_geom": "s1.geom",
+              "output_geom_field": "clipped_geom"
+            },
+            "depends_on": [
+              "s2"
+            ]
+          },
+          {
+            "id": "s4",
+            "action": "measure_geometry",
+            "params": {
+              "input": "s3",
+              "geom_field": "clipped_geom",
+              "unit": "meter",
+              "output_field": "length_m"
+            },
+            "depends_on": [
+              "s3"
+            ]
+          },
+          {
+            "id": "s5",
+            "action": "summarize_features",
+            "params": {
+              "input": "s4",
+              "aggregate": "sum",
+              "value_field": "length_m",
+              "group_by": "pressure_level",
+              "sort": [
+                [
+                  "sum_length_m",
+                  "desc"
+                ],
+                [
+                  "pressure_level",
+                  "asc"
+                ]
+              ],
+              "include_zero_length": true
+            },
+            "depends_on": [
+              "s4"
+            ]
+          },
+          {
+            "id": "s6",
+            "action": "query_features",
+            "params": {
+              "table": "water_pipelines",
+              "filter": "ST_Intersects(geom, A001.geom)",
+              "fields": [
+                "id",
+                "code",
+                "pipe_type",
+                "geom"
+              ]
+            },
+            "depends_on": [
+              "s1"
+            ]
+          },
+          {
+            "id": "s7",
+            "action": "clip_features",
+            "params": {
+              "input": "s6",
+              "clip_geom": "s1.geom",
+              "output_geom_field": "clipped_geom"
+            },
+            "depends_on": [
+              "s6"
+            ]
+          },
+          {
+            "id": "s8",
+            "action": "measure_geometry",
+            "params": {
+              "input": "s7",
+              "geom_field": "clipped_geom",
+              "unit": "meter",
+              "output_field": "length_m"
+            },
+            "depends_on": [
+              "s7"
+            ]
+          },
+          {
+            "id": "s9",
+            "action": "summarize_features",
+            "params": {
+              "input": "s8",
+              "aggregate": "sum",
+              "value_field": "length_m",
+              "group_by": "pipe_type",
+              "sort": [
+                [
+                  "sum_length_m",
+                  "desc"
+                ],
+                [
+                  "pipe_type",
+                  "asc"
+                ]
+              ],
+              "include_zero_length": true
+            },
+            "depends_on": [
+              "s8"
+            ]
+          },
+          {
+            "id": "s10",
+            "action": "merge_results",
+            "params": {
+              "inputs": [
+                "s5",
+                "s9"
+              ],
+              "output_format": "分组名称与总长度列表"
+            },
+            "depends_on": [
+              "s5",
+              "s9"
+            ]
+          }
+        ],
+        "edges": [
+          [
+            "s1",
+            "s2"
+          ],
+          [
+            "s2",
+            "s3"
+          ],
+          [
+            "s3",
+            "s4"
+          ],
+          [
+            "s4",
+            "s5"
+          ],
+          [
+            "s1",
+            "s6"
+          ],
+          [
+            "s6",
+            "s7"
+          ],
+          [
+            "s7",
+            "s8"
+          ],
+          [
+            "s8",
+            "s9"
+          ],
+          [
+            "s5",
+            "s10"
+          ],
+          [
+            "s9",
+            "s10"
+          ]
+        ]
+      }
+    },
+    "trace": "在A001施工区，对gas_pipelines按pressure_level、water_pipelines按pipe_type分组，裁剪后统计线长度（米）。算子顺序：query_features×3→clip_features×2→measure_features×2→summarize_features×2。输出每组名称与总长度，按长度降序、同长名称升序，保留零长度非空接触记录。",
+    "outcome": "success",
+    "error_lesson": "",
+    "id": "766dc9b8",
+    "hits": 5,
+    "updated_at": "2026-11-06 15:52:18"
+  },
+  {
+    "task_signature": "general/空间计算",
+    "question_feat": "分别统计与施工区 A001、A002 相交（ST_Intersects，含边界）且 gas_devices.status = '正常' 的设备数量；再将 A001 与 A002 的几何合并（union）后，统计与合并几何相交（ST_Intersects）且 status = '正常' 的设备去重数量。",
+    "plan": {
+      "t1": {
+        "nodes": [
+          {
+            "id": "s1",
+            "action": "query_features",
+            "params": {
+              "layer_name": "construction_areas",
+              "filters": {
+                "code": "A001"
+              },
+              "fields": [
+                "code",
+                "geom"
+              ]
+            },
+            "depends_on": []
+          },
+          {
+            "id": "s2",
+            "action": "query_features",
+            "params": {
+              "layer_name": "construction_areas",
+              "filters": {
+                "code": "A002"
+              },
+              "fields": [
+                "code",
+                "geom"
+              ]
+            },
+            "depends_on": []
+          },
+          {
+            "id": "s3",
+            "action": "query_features",
+            "params": {
+              "layer_name": "gas_devices",
+              "filters": {
+                "status": "正常"
+              },
+              "target": "s1.geom",
+              "relation": "ST_Intersects",
+              "fields": [
+                "id",
+                "code",
+                "geom"
+              ]
+            },
+            "depends_on": [
+              "s1"
+            ]
+          },
+          {
+            "id": "s4",
+            "action": "query_features",
+            "params": {
+              "layer_name": "gas_devices",
+              "filters": {
+                "status": "正常"
+              },
+              "target": "s2.geom",
+              "relation": "ST_Intersects",
+              "fields": [
+                "id",
+                "code",
+                "geom"
+              ]
+            },
+            "depends_on": [
+              "s2"
+            ]
+          },
+          {
+            "id": "s5",
+            "action": "summarize_features",
+            "params": {
+              "input": "s3",
+              "aggregate": "count",
+              "distinct_by": "id"
+            },
+            "depends_on": [
+              "s3"
+            ]
+          },
+          {
+            "id": "s6",
+            "action": "summarize_features",
+            "params": {
+              "input": "s4",
+              "aggregate": "count",
+              "distinct_by": "id"
+            },
+            "depends_on": [
+              "s4"
+            ]
+          },
+          {
+            "id": "s7",
+            "action": "union_features",
+            "params": {
+              "inputs": [
+                "s1.geom",
+                "s2.geom"
+              ],
+              "output": "merged_geom"
+            },
+            "depends_on": [
+              "s1",
+              "s2"
+            ]
+          },
+          {
+            "id": "s8",
+            "action": "query_features",
+            "params": {
+              "layer_name": "gas_devices",
+              "filters": {
+                "status": "正常"
+              },
+              "target": "s7.merged_geom",
+              "relation": "ST_Intersects",
+              "fields": [
+                "id",
+                "code",
+                "geom"
+              ]
+            },
+            "depends_on": [
+              "s7"
+            ]
+          },
+          {
+            "id": "s9",
+            "action": "summarize_features",
+            "params": {
+              "input": "s8",
+              "aggregate": "count",
+              "distinct_by": "id"
+            },
+            "depends_on": [
+              "s8"
+            ]
+          }
+        ],
+        "edges": [
+          [
+            "s1",
+            "s3"
+          ],
+          [
+            "s2",
+            "s4"
+          ],
+          [
+            "s3",
+            "s5"
+          ],
+          [
+            "s4",
+            "s6"
+          ],
+          [
+            "s1",
+            "s7"
+          ],
+          [
+            "s2",
+            "s7"
+          ],
+          [
+            "s7",
+            "s8"
+          ],
+          [
+            "s8",
+            "s9"
+          ]
+        ]
+      }
+    },
+    "trace": "先分别用ST_Intersects统计与A001、A002相交且status='正常'的设备数；再union两区几何，用ST_Intersects统计与合并几何相交且status='正常'的去重设备数。算子顺序：query_features×4→union_features×2→query_features×2→summarize_features×2→intersection_geometry→query_features×2；结果均为数量。",
+    "outcome": "success",
+    "error_lesson": "",
+    "id": "80fa5212",
+    "hits": 12,
+    "updated_at": "2026-11-06 15:52:36"
+  },
+  {
+    "task_signature": "gas/综合",
+    "question_feat": "从 gas_pipelines 中筛选 pressure_level='高压' 且与施工区 construction_areas.code='A001' 相交的燃气管线，裁剪至 A001 边界后分别缓冲 50 米并合并为同一影响范围；复用该范围：(1) 统计 A001 内 gas_devices 中 status 为 '正常' 或 '告警' 的设备，按 status 升序分组计数；(2) 计算 A001 内 water_pipelines 各管线的受影响长度（米），按长度降序、同长按 code 升序输出，并给出总长度；边界计入，非空零长度接触记录保留。",
+    "plan": {
+      "t1": {
+        "nodes": [
+          {
+            "id": "s1",
+            "action": "query_features",
+            "params": {
+              "table": "construction_areas",
+              "where": "code = 'A001'",
+              "select": "geom"
+            },
+            "depends_on": []
+          },
+          {
+            "id": "s2",
+            "action": "query_features",
+            "params": {
+              "table": "gas_pipelines",
+              "where": "pressure_level = '高压'",
+              "select": "id, code, geom"
+            },
+            "depends_on": []
+          },
+          {
+            "id": "s3",
+            "action": "intersection_geometry",
+            "params": {
+              "left": "s2",
+              "right": "s1",
+              "predicate": "ST_Intersects",
+              "include_boundary": true
+            },
+            "depends_on": [
+              "s1",
+              "s2"
+            ]
+          },
+          {
+            "id": "s4",
+            "action": "clip_features",
+            "params": {
+              "input": "s3",
+              "clip_geom": "s1"
+            },
+            "depends_on": [
+              "s3",
+              "s1"
+            ]
+          },
+          {
+            "id": "s5",
+            "action": "buffer_features",
+            "params": {
+              "input": "s4",
+              "distance": 50,
+              "unit": "meter"
+            },
+            "depends_on": [
+              "s4"
+            ]
+          },
+          {
+            "id": "s6",
+            "action": "union_features",
+            "params": {
+              "input": "s5",
+              "dissolve": true
+            },
+            "depends_on": [
+              "s5"
+            ]
+          },
+          {
+            "id": "s7",
+            "action": "query_features",
+            "params": {
+              "table": "gas_devices",
+              "where": "status IN ('正常','告警')",
+              "select": "id, code, status, geom"
+            },
+            "depends_on": []
+          },
+          {
+            "id": "s8",
+            "action": "intersection_geometry",
+            "params": {
+              "left": "s7",
+              "right": "s1",
+              "predicate": "ST_Intersects",
+              "include_boundary": true
+            },
+            "depends_on": [
+              "s7",
+              "s1"
+            ]
+          },
+          {
+            "id": "s9",
+            "action": "summarize_features",
+            "params": {
+              "input": "s8",
+              "aggregate": "count",
+              "group_by": "status",
+              "sort": "status ASC",
+              "output": "status, count"
+            },
+            "depends_on": [
+              "s8"
+            ]
+          },
+          {
+            "id": "s10",
+            "action": "query_features",
+            "params": {
+              "table": "water_pipelines",
+              "select": "id, code, geom"
+            },
+            "depends_on": []
+          },
+          {
+            "id": "s11",
+            "action": "intersection_geometry",
+            "params": {
+              "left": "s10",
+              "right": "s6",
+              "predicate": "ST_Intersects",
+              "include_boundary": true
+            },
+            "depends_on": [
+              "s10",
+              "s6"
+            ]
+          },
+          {
+            "id": "s12",
+            "action": "intersection_geometry",
+            "params": {
+              "left": "s11",
+              "right": "s1",
+              "predicate": "ST_Intersects",
+              "include_boundary": true
+            },
+            "depends_on": [
+              "s11",
+              "s1"
+            ]
+          },
+          {
+            "id": "s13",
+            "action": "clip_features",
+            "params": {
+              "input": "s12",
+              "clip_geom": "s6"
+            },
+            "depends_on": [
+              "s12",
+              "s6"
+            ]
+          },
+          {
+            "id": "s14",
+            "action": "measure_features",
+            "params": {
+              "input": "s13",
+              "measure": "length",
+              "unit": "meter",
+              "keep_zero_length_nonempty": true,
+              "output": "code, length_m"
+            },
+            "depends_on": [
+              "s13"
+            ]
+          },
+          {
+            "id": "s15",
+            "action": "summarize_features",
+            "params": {
+              "input": "s14",
+              "aggregate": "sum",
+              "group_by": "code",
+              "value_field": "length_m",
+              "sort": "length_m DESC, code ASC",
+              "output": "code, length_m"
+            },
+            "depends_on": [
+              "s14"
+            ]
+          },
+          {
+            "id": "s16",
+            "action": "summarize_features",
+            "params": {
+              "input": "s14",
+              "aggregate": "sum",
+              "value_field": "length_m",
+              "output": "total_length_m"
+            },
+            "depends_on": [
+              "s14"
+            ]
+          }
+        ],
+        "edges": [
+          [
+            "s1",
+            "s3"
+          ],
+          [
+            "s2",
+            "s3"
+          ],
+          [
+            "s3",
+            "s4"
+          ],
+          [
+            "s1",
+            "s4"
+          ],
+          [
+            "s4",
+            "s5"
+          ],
+          [
+            "s5",
+            "s6"
+          ],
+          [
+            "s7",
+            "s8"
+          ],
+          [
+            "s1",
+            "s8"
+          ],
+          [
+            "s8",
+            "s9"
+          ],
+          [
+            "s10",
+            "s11"
+          ],
+          [
+            "s6",
+            "s11"
+          ],
+          [
+            "s11",
+            "s12"
+          ],
+          [
+            "s1",
+            "s12"
+          ],
+          [
+            "s12",
+            "s13"
+          ],
+          [
+            "s6",
+            "s13"
+          ],
+          [
+            "s13",
+            "s14"
+          ],
+          [
+            "s14",
+            "s15"
+          ],
+          [
+            "s14",
+            "s16"
+          ]
+        ]
+      }
+    },
+    "trace": "先筛选高压燃气管线并与A001施工区相交，裁剪至边界后缓冲50米并合并为影响范围；复用该范围统计A001内正常/告警设备按status升序分组计数，并计算water_pipelines各管线受影响长度，按长度降序、同长按code升序输出及总长度，边界计入、零长度接触保留。算子顺序：query→clip→buffer→union→query→clip→measure→summarize。",
+    "outcome": "error",
+    "error_lesson": "$.device_groups[1].value: 3，期望 2；$.device_groups[1].feature_count: 3，期望 2",
+    "id": "5188b4ff",
+    "hits": 0,
+    "updated_at": "2026-11-06 15:52:58"
+  }
+]

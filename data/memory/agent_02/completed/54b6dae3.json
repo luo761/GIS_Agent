@@ -1,0 +1,136 @@
+{
+  "id": "54b6dae3",
+  "agent_id": "agent_02",
+  "question_feat": "针对 construction_areas 表中 code 为 A001 与 A008 的两个面要素，基于同一份区域查询结果（一次查询同时取出 A001、A008 的 geom），分别计算：(1) 两区面积直接相加值（ST_Area(A001.geom)+ST_Area(A008.geom)，单位 square_meter）；(2) 联合覆盖去重面积（ST_Area(ST_Union(A001.geom, A008.geom))，单位 square_meter）；(3) 重叠面积（ST_Area(ST_Intersection(A001.geom, A008.geom))，单位 square_meter）。三者分别输出、不得混淆，且 (1)(2) 必须复用同一份查询结果。",
+  "plan": {
+    "nodes": [
+      {
+        "id": "s1",
+        "action": "query_features",
+        "params": {
+          "table": "construction_areas",
+          "fields": [
+            "code",
+            "geom"
+          ],
+          "where": "code IN ('A001','A008')",
+          "note": "一次查询同时取出 A001、A008 的 geom，作为后续 (1)(2)(3) 的共同输入"
+        },
+        "depends_on": []
+      },
+      {
+        "id": "s2",
+        "action": "measure_features",
+        "params": {
+          "input": "s1",
+          "operation": "ST_Area",
+          "per_feature": true,
+          "unit": "square_meter",
+          "note": "分别量测 A001、A008 各自面积"
+        },
+        "depends_on": [
+          "s1"
+        ]
+      },
+      {
+        "id": "s3",
+        "action": "calculate_ratio",
+        "params": {
+          "operation": "sum",
+          "inputs": [
+            "s2.A001",
+            "s2.A008"
+          ],
+          "output_name": "area_sum_direct",
+          "unit": "square_meter",
+          "note": "计算 (1) 两区面积直接相加值 ST_Area(A001.geom)+ST_Area(A008.geom)"
+        },
+        "depends_on": [
+          "s2"
+        ]
+      },
+      {
+        "id": "s4",
+        "action": "union_features",
+        "params": {
+          "input": "s1",
+          "operation": "ST_Union",
+          "note": "对同一份查询结果中的 A001、A008 几何求并集去重"
+        },
+        "depends_on": [
+          "s1"
+        ]
+      },
+      {
+        "id": "s5",
+        "action": "measure_features",
+        "params": {
+          "input": "s4",
+          "operation": "ST_Area",
+          "output_name": "area_union",
+          "unit": "square_meter",
+          "note": "计算 (2) 联合覆盖去重面积 ST_Area(ST_Union(A001.geom, A008.geom))"
+        },
+        "depends_on": [
+          "s4"
+        ]
+      },
+      {
+        "id": "s6",
+        "action": "union_features",
+        "params": {
+          "input": "s1",
+          "operation": "ST_Intersection",
+          "note": "对同一份查询结果中的 A001、A008 几何求交集"
+        },
+        "depends_on": [
+          "s1"
+        ]
+      },
+      {
+        "id": "s7",
+        "action": "measure_features",
+        "params": {
+          "input": "s6",
+          "operation": "ST_Area",
+          "output_name": "area_intersection",
+          "unit": "square_meter",
+          "note": "计算 (3) 重叠面积 ST_Area(ST_Intersection(A001.geom, A008.geom))"
+        },
+        "depends_on": [
+          "s6"
+        ]
+      }
+    ],
+    "edges": [
+      [
+        "s1",
+        "s2"
+      ],
+      [
+        "s2",
+        "s3"
+      ],
+      [
+        "s1",
+        "s4"
+      ],
+      [
+        "s4",
+        "s5"
+      ],
+      [
+        "s1",
+        "s6"
+      ],
+      [
+        "s6",
+        "s7"
+      ]
+    ]
+  },
+  "result_summary": "{\"summed_area\": {\"unit\": \"square_meter\", \"value\": 1240000.0, \"measure\": \"area\", \"measure_srid\": 3857, \"feature_count\": 2}, \"union_area\": {\"unit\": \"square_meter\", \"value\": 1100000.0, \"measure\": \"area\",",
+  "outcome": "success",
+  "error": "",
+  "ts": "2026-11-06 15:51:43"
+}

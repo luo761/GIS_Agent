@@ -1,0 +1,62 @@
+{
+  "id": "d81a93c9",
+  "agent_id": "agent_02",
+  "question_feat": "计算 construction_areas 表中 code 为 A001 与 A002 的两个面要素 geom 的交集长度（单位：米，EPSG:3857）；当两区仅共边（交集为线）时，返回公共边界长度而非面积。",
+  "plan": {
+    "nodes": [
+      {
+        "id": "s1",
+        "action": "query_features",
+        "params": {
+          "table": "construction_areas",
+          "where": "code IN ('A001','A002')",
+          "fields": [
+            "id",
+            "code",
+            "geom"
+          ]
+        },
+        "depends_on": []
+      },
+      {
+        "id": "s2",
+        "action": "intersection_geometry",
+        "params": {
+          "left": "A001.geom",
+          "right": "A002.geom",
+          "output": "intersection_geom"
+        },
+        "depends_on": [
+          "s1"
+        ]
+      },
+      {
+        "id": "s3",
+        "action": "measure_geometry",
+        "params": {
+          "geometry": "intersection_geom",
+          "measure": "length",
+          "unit": "meter",
+          "srid": 3857
+        },
+        "depends_on": [
+          "s2"
+        ]
+      }
+    ],
+    "edges": [
+      [
+        "s1",
+        "s2"
+      ],
+      [
+        "s2",
+        "s3"
+      ]
+    ]
+  },
+  "result_summary": "{\"length\": {\"unit\": \"meter\", \"value\": 1000.0, \"measure\": \"length\", \"is_empty\": false, \"measure_srid\": 3857}}",
+  "outcome": "success",
+  "error": "",
+  "ts": "2026-11-06 15:50:21"
+}

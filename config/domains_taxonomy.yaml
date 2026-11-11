@@ -1,0 +1,39 @@
+# 领域分类定义（阶段①领域识别依据）
+# 领域 = 业务行业维度，用于缩小候选表与知识库范围；
+# 它与智能体能力路由正交：路由只看能力向量，不看领域。
+domains:
+  gas:
+    name: "燃气"
+    keywords: ["燃气", "天然气管网", "调压站", "阀门", "燃气管线", "泄漏"]
+    typical_tables: [gas_pipeline, gas_valve, gas_station]
+
+  water:
+    name: "水务"
+    keywords: ["供水", "排水", "管网", "水厂", "管段", "压力", "漏损", "河流", "流域"]
+    typical_tables: [water_pipeline, water_meter, pump_station, river_network]
+
+  power:
+    name: "电务"
+    keywords: ["电力", "电网", "变电站", "馈线", "电缆", "杆塔", "负荷"]
+    typical_tables: [power_line, transformer_station, power_cable]
+
+  general:
+    name: "通用地理"
+    keywords: ["行政区", "人口", "道路", "土地利用", " DEM ", "高程"]
+    typical_tables: [region_stat, road_network, land_use_2023]
+
+# 基础任务分类（跨领域）
+task_types:
+  - 空间计算     # 缓冲、求交、裁剪、量测等
+  - 属性查询     # 条件筛选、字段查询
+  - 统计分析     # 分组聚合、排序、计数
+  - 制图可视化   # 专题图、符号化
+  - 综合        # 多步复合任务
+
+# 任务类型 → 所需能力维度（当 LLM 未给出 required_capabilities 时的回退映射）
+task_type_capabilities:
+  空间计算: [spatial_compute]
+  属性查询: [attribute_query]
+  统计分析: [statistics]
+  制图可视化: [mapping]
+  综合: [spatial_compute, attribute_query, statistics, mapping]

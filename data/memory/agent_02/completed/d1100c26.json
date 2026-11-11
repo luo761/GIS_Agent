@@ -1,0 +1,132 @@
+{
+  "id": "d1100c26",
+  "agent_id": "agent_02",
+  "question_feat": "对表 gas_devices 中与设备 A001（按 code 引用）相交（ST_Intersects）且 status = '正常' 的设备，分别以每个设备几何为中心建立 200 米缓冲区（不裁剪），复用同一批缓冲结果，分别计算所有缓冲面积直接相加的总和（平方米）以及缓冲合并去重后的总面积（平方米）。",
+  "plan": {
+    "nodes": [
+      {
+        "id": "s1",
+        "action": "query_features",
+        "params": {
+          "table": "construction_areas",
+          "where": "code = 'A001'",
+          "select": [
+            "geom"
+          ]
+        },
+        "depends_on": []
+      },
+      {
+        "id": "s2",
+        "action": "query_features",
+        "params": {
+          "table": "gas_devices",
+          "where": "status = '正常'",
+          "select": [
+            "id",
+            "code",
+            "geom"
+          ]
+        },
+        "depends_on": []
+      },
+      {
+        "id": "s3",
+        "action": "spatial_filter",
+        "params": {
+          "predicate": "ST_Intersects",
+          "left": "s2",
+          "right": "s1",
+          "boundary_inclusive": true
+        },
+        "depends_on": [
+          "s1",
+          "s2"
+        ]
+      },
+      {
+        "id": "s4",
+        "action": "buffer_features",
+        "params": {
+          "input": "s3",
+          "distance": 200,
+          "unit": "meter",
+          "clip": false,
+          "dissolve": false
+        },
+        "depends_on": [
+          "s3"
+        ]
+      },
+      {
+        "id": "s5",
+        "action": "measure_geometry",
+        "params": {
+          "input": "s4",
+          "metric": "area",
+          "unit": "square_meter",
+          "aggregate": "sum",
+          "note": "逐设备缓冲面积直接相加，不合并去重"
+        },
+        "depends_on": [
+          "s4"
+        ]
+      },
+      {
+        "id": "s6",
+        "action": "union_features",
+        "params": {
+          "input": "s4",
+          "dissolve": true
+        },
+        "depends_on": [
+          "s4"
+        ]
+      },
+      {
+        "id": "s7",
+        "action": "measure_geometry",
+        "params": {
+          "input": "s6",
+          "metric": "area",
+          "unit": "square_meter",
+          "aggregate": "sum",
+          "note": "合并去重后的缓冲总面积"
+        },
+        "depends_on": [
+          "s6"
+        ]
+      }
+    ],
+    "edges": [
+      [
+        "s1",
+        "s3"
+      ],
+      [
+        "s2",
+        "s3"
+      ],
+      [
+        "s3",
+        "s4"
+      ],
+      [
+        "s4",
+        "s5"
+      ],
+      [
+        "s4",
+        "s6"
+      ],
+      [
+        "s6",
+        "s7"
+      ]
+    ]
+  },
+  "result_summary": "{\"summed_area\": {\"unit\": \"square_meter\", \"value\": 374573.4182709662, \"measure\": \"area\", \"measure_srid\": 3857, \"feature_count\": 3}, \"union_area\": {\"unit\": \"square_meter\", \"value\": 370190.3751365281, \"m",
+  "outcome": "success",
+  "error": "",
+  "ts": "2026-11-06 15:51:31"
+}

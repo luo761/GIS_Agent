@@ -1,0 +1,187 @@
+{
+  "id": "0c9b3bd3",
+  "agent_id": "agent_02",
+  "question_feat": "从 gas_pipelines 中筛选 pressure_level='高压' 且与施工区 A001 相交的燃气管线，裁剪至 A001 后分别缓冲 50 米并合并，得到影响范围；计算 water_pipelines 中各水管在该影响范围内且在 A001 内的长度（米），保留非空的零长度边界接触记录，按长度降序、同长按水管编码升序输出全部水管及总长度。",
+  "plan": {
+    "nodes": [
+      {
+        "id": "s1",
+        "action": "query_features",
+        "params": {
+          "table": "construction_areas",
+          "where": "code = 'A001'",
+          "select": "geom"
+        },
+        "depends_on": []
+      },
+      {
+        "id": "s2",
+        "action": "query_features",
+        "params": {
+          "table": "gas_pipelines",
+          "where": "pressure_level = '高压'",
+          "select": "id, code, geom"
+        },
+        "depends_on": []
+      },
+      {
+        "id": "s3",
+        "action": "query_features",
+        "params": {
+          "table": "water_pipelines",
+          "select": "id, code, geom"
+        },
+        "depends_on": []
+      },
+      {
+        "id": "s4",
+        "action": "clip_features",
+        "params": {
+          "input": "s2",
+          "clip": "s1",
+          "predicate": "ST_Intersects",
+          "keep_empty": false
+        },
+        "depends_on": [
+          "s1",
+          "s2"
+        ]
+      },
+      {
+        "id": "s5",
+        "action": "buffer_features",
+        "params": {
+          "input": "s4",
+          "distance": 50,
+          "unit": "meter"
+        },
+        "depends_on": [
+          "s4"
+        ]
+      },
+      {
+        "id": "s6",
+        "action": "union_features",
+        "params": {
+          "input": "s5",
+          "dissolve": true
+        },
+        "depends_on": [
+          "s5"
+        ]
+      },
+      {
+        "id": "s7",
+        "action": "clip_features",
+        "params": {
+          "input": "s3",
+          "clip": "s6",
+          "predicate": "ST_Intersects",
+          "keep_empty": true
+        },
+        "depends_on": [
+          "s3",
+          "s6"
+        ]
+      },
+      {
+        "id": "s8",
+        "action": "clip_features",
+        "params": {
+          "input": "s7",
+          "clip": "s1",
+          "predicate": "ST_Intersects",
+          "keep_empty": true
+        },
+        "depends_on": [
+          "s7",
+          "s1"
+        ]
+      },
+      {
+        "id": "s9",
+        "action": "measure_geometry",
+        "params": {
+          "input": "s8",
+          "metric": "length",
+          "unit": "meter",
+          "group_by": "code",
+          "keep_zero": true
+        },
+        "depends_on": [
+          "s8"
+        ]
+      },
+      {
+        "id": "s10",
+        "action": "summarize_features",
+        "params": {
+          "input": "s9",
+          "aggregate": "sum",
+          "value_field": "length",
+          "group_by": "code",
+          "order_by": [
+            [
+              "length_sum",
+              "desc"
+            ],
+            [
+              "code",
+              "asc"
+            ]
+          ],
+          "output_all": true
+        },
+        "depends_on": [
+          "s9"
+        ]
+      }
+    ],
+    "edges": [
+      [
+        "s1",
+        "s4"
+      ],
+      [
+        "s2",
+        "s4"
+      ],
+      [
+        "s4",
+        "s5"
+      ],
+      [
+        "s5",
+        "s6"
+      ],
+      [
+        "s3",
+        "s7"
+      ],
+      [
+        "s6",
+        "s7"
+      ],
+      [
+        "s7",
+        "s8"
+      ],
+      [
+        "s1",
+        "s8"
+      ],
+      [
+        "s8",
+        "s9"
+      ],
+      [
+        "s9",
+        "s10"
+      ]
+    ]
+  },
+  "result_summary": "{\"unit\": \"meter\", \"groups\": [{\"group\": {\"source_code\": \"W001\"}, \"value\": 1000.0, \"feature_count\": 1}, {\"group\": {\"source_code\": \"W008\"}, \"value\": 220.71067811865476, \"feature_count\": 1}, {\"group\": {\"s",
+  "outcome": "success",
+  "error": "",
+  "ts": "2026-11-06 15:51:18"
+}

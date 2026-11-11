@@ -1,0 +1,214 @@
+{
+  "id": "b076e68a",
+  "agent_id": "agent_02",
+  "question_feat": "在施工区 A001 内，分别对 gas_pipelines 按 pressure_level 分组、对 water_pipelines 按 pipe_type 分组，统计裁剪到 A001 后的线长度之和（单位：米）；每组输出分组名称与总长度，按总长度降序、同长按分组名称升序排列，输出全部分组，保留零长度但非空接触的记录。",
+  "plan": {
+    "nodes": [
+      {
+        "id": "s1",
+        "action": "query_features",
+        "params": {
+          "table": "construction_areas",
+          "filter": "code = 'A001'",
+          "fields": [
+            "geom"
+          ]
+        },
+        "depends_on": []
+      },
+      {
+        "id": "s2",
+        "action": "query_features",
+        "params": {
+          "table": "gas_pipelines",
+          "filter": "ST_Intersects(geom, A001.geom)",
+          "fields": [
+            "id",
+            "code",
+            "pressure_level",
+            "geom"
+          ]
+        },
+        "depends_on": [
+          "s1"
+        ]
+      },
+      {
+        "id": "s3",
+        "action": "clip_features",
+        "params": {
+          "input": "s2",
+          "clip_geom": "s1.geom",
+          "output_geom_field": "clipped_geom"
+        },
+        "depends_on": [
+          "s2"
+        ]
+      },
+      {
+        "id": "s4",
+        "action": "measure_geometry",
+        "params": {
+          "input": "s3",
+          "geom_field": "clipped_geom",
+          "unit": "meter",
+          "output_field": "length_m"
+        },
+        "depends_on": [
+          "s3"
+        ]
+      },
+      {
+        "id": "s5",
+        "action": "summarize_features",
+        "params": {
+          "input": "s4",
+          "aggregate": "sum",
+          "value_field": "length_m",
+          "group_by": "pressure_level",
+          "sort": [
+            [
+              "sum_length_m",
+              "desc"
+            ],
+            [
+              "pressure_level",
+              "asc"
+            ]
+          ],
+          "include_zero_length": true
+        },
+        "depends_on": [
+          "s4"
+        ]
+      },
+      {
+        "id": "s6",
+        "action": "query_features",
+        "params": {
+          "table": "water_pipelines",
+          "filter": "ST_Intersects(geom, A001.geom)",
+          "fields": [
+            "id",
+            "code",
+            "pipe_type",
+            "geom"
+          ]
+        },
+        "depends_on": [
+          "s1"
+        ]
+      },
+      {
+        "id": "s7",
+        "action": "clip_features",
+        "params": {
+          "input": "s6",
+          "clip_geom": "s1.geom",
+          "output_geom_field": "clipped_geom"
+        },
+        "depends_on": [
+          "s6"
+        ]
+      },
+      {
+        "id": "s8",
+        "action": "measure_geometry",
+        "params": {
+          "input": "s7",
+          "geom_field": "clipped_geom",
+          "unit": "meter",
+          "output_field": "length_m"
+        },
+        "depends_on": [
+          "s7"
+        ]
+      },
+      {
+        "id": "s9",
+        "action": "summarize_features",
+        "params": {
+          "input": "s8",
+          "aggregate": "sum",
+          "value_field": "length_m",
+          "group_by": "pipe_type",
+          "sort": [
+            [
+              "sum_length_m",
+              "desc"
+            ],
+            [
+              "pipe_type",
+              "asc"
+            ]
+          ],
+          "include_zero_length": true
+        },
+        "depends_on": [
+          "s8"
+        ]
+      },
+      {
+        "id": "s10",
+        "action": "merge_results",
+        "params": {
+          "inputs": [
+            "s5",
+            "s9"
+          ],
+          "output_format": "分组名称与总长度列表"
+        },
+        "depends_on": [
+          "s5",
+          "s9"
+        ]
+      }
+    ],
+    "edges": [
+      [
+        "s1",
+        "s2"
+      ],
+      [
+        "s2",
+        "s3"
+      ],
+      [
+        "s3",
+        "s4"
+      ],
+      [
+        "s4",
+        "s5"
+      ],
+      [
+        "s1",
+        "s6"
+      ],
+      [
+        "s6",
+        "s7"
+      ],
+      [
+        "s7",
+        "s8"
+      ],
+      [
+        "s8",
+        "s9"
+      ],
+      [
+        "s5",
+        "s10"
+      ],
+      [
+        "s9",
+        "s10"
+      ]
+    ]
+  },
+  "result_summary": "{\"unit\": \"meter\", \"gas_groups\": [{\"group\": {\"pressure_level\": \"高压\"}, \"value\": 2414.213562373095, \"feature_count\": 2}, {\"group\": {\"pressure_level\": \"中压\"}, \"value\": 2400.0, \"feature_count\": 3}, {\"group\"",
+  "outcome": "success",
+  "error": "",
+  "ts": "2026-11-06 15:52:16"
+}

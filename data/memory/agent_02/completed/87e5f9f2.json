@@ -1,0 +1,104 @@
+{
+  "id": "87e5f9f2",
+  "agent_id": "agent_02",
+  "question_feat": "计算燃气管线 G006（gas_pipelines.code = 'G006'）位于施工区 A003（construction_areas.code = 'A003'）实体部分内的长度（米），排除孔洞，并返回参与量测的原管线数量。",
+  "plan": {
+    "nodes": [
+      {
+        "id": "s1",
+        "action": "query_features",
+        "params": {
+          "layer_name": "gas_pipelines",
+          "filters": {
+            "code": "G006"
+          },
+          "target": "geometry"
+        },
+        "depends_on": []
+      },
+      {
+        "id": "s2",
+        "action": "query_features",
+        "params": {
+          "layer_name": "construction_areas",
+          "filters": {
+            "code": "A003"
+          },
+          "target": "geometry"
+        },
+        "depends_on": []
+      },
+      {
+        "id": "s3",
+        "action": "clip_features",
+        "params": {
+          "line_layer": "gas_pipelines",
+          "line_filter": {
+            "code": "G006"
+          },
+          "clip_layer": "construction_areas",
+          "clip_filter": {
+            "code": "A003"
+          },
+          "exclude_holes": true,
+          "boundary_inclusive": true
+        },
+        "depends_on": [
+          "s1",
+          "s2"
+        ]
+      },
+      {
+        "id": "s4",
+        "action": "measure_features",
+        "params": {
+          "layer_name": "clipped_gas_pipelines",
+          "measure": "length",
+          "unit": "meter",
+          "srid": 3857
+        },
+        "depends_on": [
+          "s3"
+        ]
+      },
+      {
+        "id": "s5",
+        "action": "summarize_features",
+        "params": {
+          "layer_name": "measured_clipped_pipelines",
+          "aggregate": "sum",
+          "field": "length_m",
+          "output": [
+            "total_length_m",
+            "feature_count"
+          ]
+        },
+        "depends_on": [
+          "s4"
+        ]
+      }
+    ],
+    "edges": [
+      [
+        "s1",
+        "s3"
+      ],
+      [
+        "s2",
+        "s3"
+      ],
+      [
+        "s3",
+        "s4"
+      ],
+      [
+        "s4",
+        "s5"
+      ]
+    ]
+  },
+  "result_summary": "{\"length\": {\"unit\": \"meter\", \"value\": 600.0, \"measure\": \"length\", \"measure_srid\": 3857, \"feature_count\": 1}}",
+  "outcome": "success",
+  "error": "",
+  "ts": "2026-11-06 15:49:39"
+}

@@ -1,0 +1,869 @@
+{
+  "schema_version": 1,
+  "initial_capability": 0.5,
+  "dimensions": [
+    "spatial_compute",
+    "attribute_query",
+    "statistics",
+    "mapping"
+  ],
+  "agents": {
+    "agent_01": {
+      "name": "01",
+      "capabilities": {
+        "spatial_compute": 0.5,
+        "attribute_query": 0.5,
+        "statistics": 0.5,
+        "mapping": 0.5
+      },
+      "preferred_tools": [],
+      "stats": {
+        "attempts": 0,
+        "successes": 0,
+        "failures": 0
+      }
+    },
+    "agent_02": {
+      "name": "02",
+      "capabilities": {
+        "spatial_compute": 0.8048,
+        "attribute_query": 0.7684,
+        "statistics": 0.7341,
+        "mapping": 0.5
+      },
+      "preferred_tools": [
+        "clip_features",
+        "measure_features",
+        "summarize_features",
+        "union_features",
+        "intersection_geometry"
+      ],
+      "stats": {
+        "attempts": 20,
+        "successes": 18,
+        "failures": 2
+      }
+    },
+    "agent_03": {
+      "name": "03",
+      "capabilities": {
+        "spatial_compute": 0.5,
+        "attribute_query": 0.5,
+        "statistics": 0.5,
+        "mapping": 0.5
+      },
+      "preferred_tools": [],
+      "stats": {
+        "attempts": 0,
+        "successes": 0,
+        "failures": 0
+      }
+    },
+    "agent_04": {
+      "name": "04",
+      "capabilities": {
+        "spatial_compute": 0.5,
+        "attribute_query": 0.5,
+        "statistics": 0.5,
+        "mapping": 0.5
+      },
+      "preferred_tools": [],
+      "stats": {
+        "attempts": 0,
+        "successes": 0,
+        "failures": 0
+      }
+    }
+  },
+  "history": [
+    {
+      "ts": "2026-11-06 15:48:52",
+      "agent_id": "agent_02",
+      "agent_name": "02",
+      "dims": [
+        "spatial_compute",
+        "attribute_query",
+        "statistics"
+      ],
+      "outcome": "success",
+      "question": "统计 gas_devices 表中 status = '正常' 且 geom 严格位于 construction_areas 表中 code = 'A001' 的施工区面要素内部的燃气设备数量（使用 ST_Within，边界上的设备不计入）。",
+      "task_signature": "gas/统计分析",
+      "before": {
+        "spatial_compute": 0.5,
+        "attribute_query": 0.5,
+        "statistics": 0.5
+      },
+      "after": {
+        "spatial_compute": 0.549,
+        "attribute_query": 0.549,
+        "statistics": 0.549
+      },
+      "delta": {
+        "spatial_compute": 0.049,
+        "attribute_query": 0.049,
+        "statistics": 0.049
+      },
+      "vector_before": {
+        "spatial_compute": 0.5,
+        "attribute_query": 0.5,
+        "statistics": 0.5,
+        "mapping": 0.5
+      },
+      "vector_after": {
+        "spatial_compute": 0.549,
+        "attribute_query": 0.549,
+        "statistics": 0.549,
+        "mapping": 0.5
+      },
+      "note": "",
+      "index": 0
+    },
+    {
+      "ts": "2026-11-06 15:49:00",
+      "agent_id": "agent_02",
+      "agent_name": "02",
+      "dims": [
+        "spatial_compute",
+        "attribute_query",
+        "statistics"
+      ],
+      "outcome": "success",
+      "question": "统计 gas_devices 中与 construction_areas.code = 'A001' 的施工区几何相交（ST_Intersects，包含边界）且 status 为 '正常' 或 '告警' 的设备数量，同一设备仅计一次。",
+      "task_signature": "gas/统计分析",
+      "before": {
+        "spatial_compute": 0.549,
+        "attribute_query": 0.549,
+        "statistics": 0.549
+      },
+      "after": {
+        "spatial_compute": 0.5931,
+        "attribute_query": 0.5931,
+        "statistics": 0.5931
+      },
+      "delta": {
+        "spatial_compute": 0.0441,
+        "attribute_query": 0.0441,
+        "statistics": 0.0441
+      },
+      "vector_before": {
+        "spatial_compute": 0.549,
+        "attribute_query": 0.549,
+        "statistics": 0.549,
+        "mapping": 0.5
+      },
+      "vector_after": {
+        "spatial_compute": 0.5931,
+        "attribute_query": 0.5931,
+        "statistics": 0.5931,
+        "mapping": 0.5
+      },
+      "note": "",
+      "index": 1
+    },
+    {
+      "ts": "2026-11-06 15:49:08",
+      "agent_id": "agent_02",
+      "agent_name": "02",
+      "dims": [
+        "spatial_compute",
+        "attribute_query",
+        "statistics"
+      ],
+      "outcome": "success",
+      "question": "统计 gas_devices 中满足以下条件的设备数量：设备 geom 与 construction_areas 中 code='A003' 的施工区实体区域（排除孔洞，边界接触计入）相交，且 status='正常'。",
+      "task_signature": "gas/统计分析",
+      "before": {
+        "spatial_compute": 0.5931,
+        "attribute_query": 0.5931,
+        "statistics": 0.5931
+      },
+      "after": {
+        "spatial_compute": 0.6328,
+        "attribute_query": 0.6328,
+        "statistics": 0.6328
+      },
+      "delta": {
+        "spatial_compute": 0.0397,
+        "attribute_query": 0.0397,
+        "statistics": 0.0397
+      },
+      "vector_before": {
+        "spatial_compute": 0.5931,
+        "attribute_query": 0.5931,
+        "statistics": 0.5931,
+        "mapping": 0.5
+      },
+      "vector_after": {
+        "spatial_compute": 0.6328,
+        "attribute_query": 0.6328,
+        "statistics": 0.6328,
+        "mapping": 0.5
+      },
+      "note": "",
+      "index": 2
+    },
+    {
+      "ts": "2026-11-06 15:49:16",
+      "agent_id": "agent_02",
+      "agent_name": "02",
+      "dims": [
+        "attribute_query",
+        "statistics"
+      ],
+      "outcome": "success",
+      "question": "查询 gas_devices 表中 status 为 '正常' 的全部设备，按 device_type 分组计数，并按 device_type 升序输出全部分组。",
+      "task_signature": "gas/统计分析",
+      "before": {
+        "attribute_query": 0.6328,
+        "statistics": 0.6328
+      },
+      "after": {
+        "attribute_query": 0.6685,
+        "statistics": 0.6685
+      },
+      "delta": {
+        "attribute_query": 0.0357,
+        "statistics": 0.0357
+      },
+      "vector_before": {
+        "spatial_compute": 0.6328,
+        "attribute_query": 0.6328,
+        "statistics": 0.6328,
+        "mapping": 0.5
+      },
+      "vector_after": {
+        "spatial_compute": 0.6328,
+        "attribute_query": 0.6685,
+        "statistics": 0.6685,
+        "mapping": 0.5
+      },
+      "note": "",
+      "index": 3
+    },
+    {
+      "ts": "2026-11-06 15:49:28",
+      "agent_id": "agent_02",
+      "agent_name": "02",
+      "dims": [
+        "spatial_compute",
+        "attribute_query",
+        "statistics"
+      ],
+      "outcome": "success",
+      "question": "从 gas_pipelines 表中筛选与施工区 A001 相交（ST_Intersects，含边界接触）的燃气管线，将其裁剪到 A001 范围内，计算每条管线在区内的长度（米），然后按 pressure_level 分组汇总区内总长度，输出所有压力等级分组及其总长度，按总长度降序、同长按压力等级名称升序排列。",
+      "task_signature": "gas/统计分析",
+      "before": {
+        "spatial_compute": 0.6328,
+        "attribute_query": 0.6685,
+        "statistics": 0.6685
+      },
+      "after": {
+        "spatial_compute": 0.6685,
+        "attribute_query": 0.7006,
+        "statistics": 0.7006
+      },
+      "delta": {
+        "spatial_compute": 0.0357,
+        "attribute_query": 0.0321,
+        "statistics": 0.0321
+      },
+      "vector_before": {
+        "spatial_compute": 0.6328,
+        "attribute_query": 0.6685,
+        "statistics": 0.6685,
+        "mapping": 0.5
+      },
+      "vector_after": {
+        "spatial_compute": 0.6685,
+        "attribute_query": 0.7006,
+        "statistics": 0.7006,
+        "mapping": 0.5
+      },
+      "note": "",
+      "index": 4
+    },
+    {
+      "ts": "2026-11-06 15:49:39",
+      "agent_id": "agent_02",
+      "agent_name": "02",
+      "dims": [
+        "spatial_compute",
+        "attribute_query"
+      ],
+      "outcome": "success",
+      "question": "计算燃气管线 G006（gas_pipelines.code = 'G006'）位于施工区 A003（construction_areas.code = 'A003'）实体部分内的长度（米），排除孔洞，并返回参与量测的原管线数量。",
+      "task_signature": "gas/空间计算",
+      "before": {
+        "spatial_compute": 0.6685,
+        "attribute_query": 0.7006
+      },
+      "after": {
+        "spatial_compute": 0.7006,
+        "attribute_query": 0.7295
+      },
+      "delta": {
+        "spatial_compute": 0.0321,
+        "attribute_query": 0.0289
+      },
+      "vector_before": {
+        "spatial_compute": 0.6685,
+        "attribute_query": 0.7006,
+        "statistics": 0.7006,
+        "mapping": 0.5
+      },
+      "vector_after": {
+        "spatial_compute": 0.7006,
+        "attribute_query": 0.7295,
+        "statistics": 0.7006,
+        "mapping": 0.5
+      },
+      "note": "",
+      "index": 5
+    },
+    {
+      "ts": "2026-11-06 15:49:49",
+      "agent_id": "agent_02",
+      "agent_name": "02",
+      "dims": [
+        "spatial_compute",
+        "statistics"
+      ],
+      "outcome": "success",
+      "question": "计算所有水管（water_pipelines）位于施工区 A003（construction_areas.code = 'A003'）实体部分内的总长度（米），排除孔洞，包含边界接触，并返回非空裁剪结果的源水管数量。",
+      "task_signature": "water/空间计算",
+      "before": {
+        "spatial_compute": 0.7006,
+        "statistics": 0.7006
+      },
+      "after": {
+        "spatial_compute": 0.7295,
+        "statistics": 0.7295
+      },
+      "delta": {
+        "spatial_compute": 0.0289,
+        "statistics": 0.0289
+      },
+      "vector_before": {
+        "spatial_compute": 0.7006,
+        "attribute_query": 0.7295,
+        "statistics": 0.7006,
+        "mapping": 0.5
+      },
+      "vector_after": {
+        "spatial_compute": 0.7295,
+        "attribute_query": 0.7295,
+        "statistics": 0.7295,
+        "mapping": 0.5
+      },
+      "note": "",
+      "index": 6
+    },
+    {
+      "ts": "2026-11-06 15:50:00",
+      "agent_id": "agent_02",
+      "agent_name": "02",
+      "dims": [
+        "spatial_compute"
+      ],
+      "outcome": "success",
+      "question": "以 gas_devices 表中 code='D011' 的燃气设备点要素为中心，在 EPSG:3857 坐标系下建立半径 300 米的缓冲区，与 construction_areas 表中 code='A001' 的施工区面要素求交，计算交集区域的面积（平方米）。",
+      "task_signature": "gas/空间计算",
+      "before": {
+        "spatial_compute": 0.7295
+      },
+      "after": {
+        "spatial_compute": 0.7556
+      },
+      "delta": {
+        "spatial_compute": 0.0261
+      },
+      "vector_before": {
+        "spatial_compute": 0.7295,
+        "attribute_query": 0.7295,
+        "statistics": 0.7295,
+        "mapping": 0.5
+      },
+      "vector_after": {
+        "spatial_compute": 0.7556,
+        "attribute_query": 0.7295,
+        "statistics": 0.7295,
+        "mapping": 0.5
+      },
+      "note": "",
+      "index": 7
+    },
+    {
+      "ts": "2026-11-06 15:50:12",
+      "agent_id": "agent_02",
+      "agent_name": "02",
+      "dims": [
+        "spatial_compute",
+        "attribute_query"
+      ],
+      "outcome": "success",
+      "question": "以 gas_devices 表中 code='D011' 的燃气设备点要素为圆心，在 EPSG:3857 坐标系下建立半径 700 米的缓冲区，与 construction_areas 表中 code='A001' 的施工区面要素求交，计算交集面积（平方米）。",
+      "task_signature": "gas/空间计算",
+      "before": {
+        "spatial_compute": 0.7556,
+        "attribute_query": 0.7295
+      },
+      "after": {
+        "spatial_compute": 0.779,
+        "attribute_query": 0.7556
+      },
+      "delta": {
+        "spatial_compute": 0.0234,
+        "attribute_query": 0.0261
+      },
+      "vector_before": {
+        "spatial_compute": 0.7556,
+        "attribute_query": 0.7295,
+        "statistics": 0.7295,
+        "mapping": 0.5
+      },
+      "vector_after": {
+        "spatial_compute": 0.779,
+        "attribute_query": 0.7556,
+        "statistics": 0.7295,
+        "mapping": 0.5
+      },
+      "note": "",
+      "index": 8
+    },
+    {
+      "ts": "2026-11-06 15:50:21",
+      "agent_id": "agent_02",
+      "agent_name": "02",
+      "dims": [
+        "spatial_compute"
+      ],
+      "outcome": "success",
+      "question": "计算 construction_areas 表中 code 为 A001 与 A002 的两个面要素 geom 的交集长度（单位：米，EPSG:3857）；当两区仅共边（交集为线）时，返回公共边界长度而非面积。",
+      "task_signature": "general/空间计算",
+      "before": {
+        "spatial_compute": 0.779
+      },
+      "after": {
+        "spatial_compute": 0.8001
+      },
+      "delta": {
+        "spatial_compute": 0.0211
+      },
+      "vector_before": {
+        "spatial_compute": 0.779,
+        "attribute_query": 0.7556,
+        "statistics": 0.7295,
+        "mapping": 0.5
+      },
+      "vector_after": {
+        "spatial_compute": 0.8001,
+        "attribute_query": 0.7556,
+        "statistics": 0.7295,
+        "mapping": 0.5
+      },
+      "note": "",
+      "index": 9
+    },
+    {
+      "ts": "2026-11-06 15:50:31",
+      "agent_id": "agent_02",
+      "agent_name": "02",
+      "dims": [
+        "spatial_compute"
+      ],
+      "outcome": "success",
+      "question": "查询 construction_areas 表中 code='A001' 与 code='A008' 的 geom，对两几何求交（intersection_geometry），并量测交集面积（平方米，measure_geometry）。",
+      "task_signature": "general/空间计算",
+      "before": {
+        "spatial_compute": 0.8001
+      },
+      "after": {
+        "spatial_compute": 0.8191
+      },
+      "delta": {
+        "spatial_compute": 0.019
+      },
+      "vector_before": {
+        "spatial_compute": 0.8001,
+        "attribute_query": 0.7556,
+        "statistics": 0.7295,
+        "mapping": 0.5
+      },
+      "vector_after": {
+        "spatial_compute": 0.8191,
+        "attribute_query": 0.7556,
+        "statistics": 0.7295,
+        "mapping": 0.5
+      },
+      "note": "",
+      "index": 10
+    },
+    {
+      "ts": "2026-11-06 15:50:42",
+      "agent_id": "agent_02",
+      "agent_name": "02",
+      "dims": [
+        "spatial_compute",
+        "statistics"
+      ],
+      "outcome": "success",
+      "question": "计算所有水管（water_pipelines.geom）严格位于孤立施工区 A009（construction_areas.code = 'A009'）内的总长度（米），并返回非空裁剪结果的源水管数量；若无匹配水管，长度和数量均返回 0。",
+      "task_signature": "water/空间计算",
+      "before": {
+        "spatial_compute": 0.8191,
+        "statistics": 0.7295
+      },
+      "after": {
+        "spatial_compute": 0.8362,
+        "statistics": 0.7556
+      },
+      "delta": {
+        "spatial_compute": 0.0171,
+        "statistics": 0.0261
+      },
+      "vector_before": {
+        "spatial_compute": 0.8191,
+        "attribute_query": 0.7556,
+        "statistics": 0.7295,
+        "mapping": 0.5
+      },
+      "vector_after": {
+        "spatial_compute": 0.8362,
+        "attribute_query": 0.7556,
+        "statistics": 0.7556,
+        "mapping": 0.5
+      },
+      "note": "",
+      "index": 11
+    },
+    {
+      "ts": "2026-11-06 15:50:59",
+      "agent_id": "agent_02",
+      "agent_name": "02",
+      "dims": [
+        "spatial_compute",
+        "attribute_query",
+        "statistics"
+      ],
+      "outcome": "success",
+      "question": "在 gas_devices 中筛选与 construction_areas.code='A001' 的几何相交（边界接触计入）且 status 为 '正常' 或 '告警' 的燃气设备点，分别对每个设备以 300 米建立缓冲区，将所有缓冲区合并去重后裁剪到 A001 的几何范围内，计算裁剪结果的覆盖面积（平方米）以及该面积占 A001 面积的百分比。",
+      "task_signature": "gas/空间计算",
+      "before": {
+        "spatial_compute": 0.8362,
+        "attribute_query": 0.7556,
+        "statistics": 0.7556
+      },
+      "after": {
+        "spatial_compute": 0.8516,
+        "attribute_query": 0.779,
+        "statistics": 0.779
+      },
+      "delta": {
+        "spatial_compute": 0.0154,
+        "attribute_query": 0.0234,
+        "statistics": 0.0234
+      },
+      "vector_before": {
+        "spatial_compute": 0.8362,
+        "attribute_query": 0.7556,
+        "statistics": 0.7556,
+        "mapping": 0.5
+      },
+      "vector_after": {
+        "spatial_compute": 0.8516,
+        "attribute_query": 0.779,
+        "statistics": 0.779,
+        "mapping": 0.5
+      },
+      "note": "",
+      "index": 12
+    },
+    {
+      "ts": "2026-11-06 15:51:18",
+      "agent_id": "agent_02",
+      "agent_name": "02",
+      "dims": [
+        "spatial_compute",
+        "attribute_query",
+        "statistics"
+      ],
+      "outcome": "failure",
+      "question": "从 gas_pipelines 中筛选 pressure_level='高压' 且与施工区 A001 相交的燃气管线，裁剪至 A001 后分别缓冲 50 米并合并，得到影响范围；计算 water_pipelines 中各水管在该影响范围内且在 A001 内的长度（米），保留非空的零长度边界接触记录，按长度降序、同长按水管编码升序输出全部水管及总长度。",
+      "task_signature": "water/空间计算",
+      "before": {
+        "spatial_compute": 0.8516,
+        "attribute_query": 0.779,
+        "statistics": 0.779
+      },
+      "after": {
+        "spatial_compute": 0.7875,
+        "attribute_query": 0.7207,
+        "statistics": 0.7207
+      },
+      "delta": {
+        "spatial_compute": -0.0641,
+        "attribute_query": -0.0583,
+        "statistics": -0.0583
+      },
+      "vector_before": {
+        "spatial_compute": 0.8516,
+        "attribute_query": 0.779,
+        "statistics": 0.779,
+        "mapping": 0.5
+      },
+      "vector_after": {
+        "spatial_compute": 0.7875,
+        "attribute_query": 0.7207,
+        "statistics": 0.7207,
+        "mapping": 0.5
+      },
+      "note": "$.groups: 长度 10，期望 3；$.total_length.feature_count: 10，期望 3",
+      "index": 13
+    },
+    {
+      "ts": "2026-11-06 15:51:31",
+      "agent_id": "agent_02",
+      "agent_name": "02",
+      "dims": [
+        "spatial_compute",
+        "attribute_query"
+      ],
+      "outcome": "success",
+      "question": "对表 gas_devices 中与设备 A001（按 code 引用）相交（ST_Intersects）且 status = '正常' 的设备，分别以每个设备几何为中心建立 200 米缓冲区（不裁剪），复用同一批缓冲结果，分别计算所有缓冲面积直接相加的总和（平方米）以及缓冲合并去重后的总面积（平方米）。",
+      "task_signature": "general/空间计算",
+      "before": {
+        "spatial_compute": 0.7875,
+        "attribute_query": 0.7207
+      },
+      "after": {
+        "spatial_compute": 0.8077,
+        "attribute_query": 0.7476
+      },
+      "delta": {
+        "spatial_compute": 0.0202,
+        "attribute_query": 0.0269
+      },
+      "vector_before": {
+        "spatial_compute": 0.7875,
+        "attribute_query": 0.7207,
+        "statistics": 0.7207,
+        "mapping": 0.5
+      },
+      "vector_after": {
+        "spatial_compute": 0.8077,
+        "attribute_query": 0.7476,
+        "statistics": 0.7207,
+        "mapping": 0.5
+      },
+      "note": "",
+      "index": 14
+    },
+    {
+      "ts": "2026-11-06 15:51:43",
+      "agent_id": "agent_02",
+      "agent_name": "02",
+      "dims": [
+        "spatial_compute",
+        "attribute_query"
+      ],
+      "outcome": "success",
+      "question": "针对 construction_areas 表中 code 为 A001 与 A008 的两个面要素，基于同一份区域查询结果（一次查询同时取出 A001、A008 的 geom），分别计算：(1) 两区面积直接相加值（ST_Area(A001.geom)+ST_Area(A008.geom)，单位 square_meter）；(2) 联合覆盖去重面积（ST_Area(ST_Union(A001.geom, A008.geom))，单位 square_meter）；(3) 重叠面积（ST_Area(ST_Intersection(A001.geom, A008.geom))，单位 square_meter）。三者分别输出、不得混淆，且 (1)(2) 必须复用同一份查询结果。",
+      "task_signature": "general/空间计算",
+      "before": {
+        "spatial_compute": 0.8077,
+        "attribute_query": 0.7476
+      },
+      "after": {
+        "spatial_compute": 0.8259,
+        "attribute_query": 0.7718
+      },
+      "delta": {
+        "spatial_compute": 0.0182,
+        "attribute_query": 0.0242
+      },
+      "vector_before": {
+        "spatial_compute": 0.8077,
+        "attribute_query": 0.7476,
+        "statistics": 0.7207,
+        "mapping": 0.5
+      },
+      "vector_after": {
+        "spatial_compute": 0.8259,
+        "attribute_query": 0.7718,
+        "statistics": 0.7207,
+        "mapping": 0.5
+      },
+      "note": "",
+      "index": 15
+    },
+    {
+      "ts": "2026-11-06 15:52:02",
+      "agent_id": "agent_02",
+      "agent_name": "02",
+      "dims": [
+        "spatial_compute",
+        "attribute_query",
+        "statistics"
+      ],
+      "outcome": "success",
+      "question": "在 gas_devices 中筛选与施工区 A001 相交且 status 为'正常'或'告警'的设备，对其 geom 分别按 300 米缓冲，合并（union）去重后裁剪（clip）到 A001 的几何范围，得到覆盖几何；复用该覆盖几何分别计算覆盖面积（平方米）以及其中 gas_pipelines 全部燃气管线的总长度（米），保留非空零长度接触记录。",
+      "task_signature": "gas/空间计算",
+      "before": {
+        "spatial_compute": 0.8259,
+        "attribute_query": 0.7718,
+        "statistics": 0.7207
+      },
+      "after": {
+        "spatial_compute": 0.8423,
+        "attribute_query": 0.7936,
+        "statistics": 0.7476
+      },
+      "delta": {
+        "spatial_compute": 0.0164,
+        "attribute_query": 0.0218,
+        "statistics": 0.0269
+      },
+      "vector_before": {
+        "spatial_compute": 0.8259,
+        "attribute_query": 0.7718,
+        "statistics": 0.7207,
+        "mapping": 0.5
+      },
+      "vector_after": {
+        "spatial_compute": 0.8423,
+        "attribute_query": 0.7936,
+        "statistics": 0.7476,
+        "mapping": 0.5
+      },
+      "note": "",
+      "index": 16
+    },
+    {
+      "ts": "2026-11-06 15:52:16",
+      "agent_id": "agent_02",
+      "agent_name": "02",
+      "dims": [
+        "spatial_compute",
+        "attribute_query",
+        "statistics"
+      ],
+      "outcome": "success",
+      "question": "在施工区 A001 内，分别对 gas_pipelines 按 pressure_level 分组、对 water_pipelines 按 pipe_type 分组，统计裁剪到 A001 后的线长度之和（单位：米）；每组输出分组名称与总长度，按总长度降序、同长按分组名称升序排列，输出全部分组，保留零长度但非空接触的记录。",
+      "task_signature": "gas/统计分析",
+      "before": {
+        "spatial_compute": 0.8423,
+        "attribute_query": 0.7936,
+        "statistics": 0.7476
+      },
+      "after": {
+        "spatial_compute": 0.8571,
+        "attribute_query": 0.8132,
+        "statistics": 0.7718
+      },
+      "delta": {
+        "spatial_compute": 0.0148,
+        "attribute_query": 0.0196,
+        "statistics": 0.0242
+      },
+      "vector_before": {
+        "spatial_compute": 0.8423,
+        "attribute_query": 0.7936,
+        "statistics": 0.7476,
+        "mapping": 0.5
+      },
+      "vector_after": {
+        "spatial_compute": 0.8571,
+        "attribute_query": 0.8132,
+        "statistics": 0.7718,
+        "mapping": 0.5
+      },
+      "note": "",
+      "index": 17
+    },
+    {
+      "ts": "2026-11-06 15:52:34",
+      "agent_id": "agent_02",
+      "agent_name": "02",
+      "dims": [
+        "spatial_compute",
+        "attribute_query",
+        "statistics"
+      ],
+      "outcome": "success",
+      "question": "分别统计与施工区 A001、A002 相交（ST_Intersects，含边界）且 gas_devices.status = '正常' 的设备数量；再将 A001 与 A002 的几何合并（union）后，统计与合并几何相交（ST_Intersects）且 status = '正常' 的设备去重数量。",
+      "task_signature": "general/空间计算",
+      "before": {
+        "spatial_compute": 0.8571,
+        "attribute_query": 0.8132,
+        "statistics": 0.7718
+      },
+      "after": {
+        "spatial_compute": 0.8704,
+        "attribute_query": 0.8309,
+        "statistics": 0.7936
+      },
+      "delta": {
+        "spatial_compute": 0.0133,
+        "attribute_query": 0.0177,
+        "statistics": 0.0218
+      },
+      "vector_before": {
+        "spatial_compute": 0.8571,
+        "attribute_query": 0.8132,
+        "statistics": 0.7718,
+        "mapping": 0.5
+      },
+      "vector_after": {
+        "spatial_compute": 0.8704,
+        "attribute_query": 0.8309,
+        "statistics": 0.7936,
+        "mapping": 0.5
+      },
+      "note": "",
+      "index": 18
+    },
+    {
+      "ts": "2026-11-06 15:52:56",
+      "agent_id": "agent_02",
+      "agent_name": "02",
+      "dims": [
+        "spatial_compute",
+        "attribute_query",
+        "statistics"
+      ],
+      "outcome": "failure",
+      "question": "从 gas_pipelines 中筛选 pressure_level='高压' 且与施工区 construction_areas.code='A001' 相交的燃气管线，裁剪至 A001 边界后分别缓冲 50 米并合并为同一影响范围；复用该范围：(1) 统计 A001 内 gas_devices 中 status 为 '正常' 或 '告警' 的设备，按 status 升序分组计数；(2) 计算 A001 内 water_pipelines 各管线的受影响长度（米），按长度降序、同长按 code 升序输出，并给出总长度；边界计入，非空零长度接触记录保留。",
+      "task_signature": "gas/综合",
+      "before": {
+        "spatial_compute": 0.8704,
+        "attribute_query": 0.8309,
+        "statistics": 0.7936
+      },
+      "after": {
+        "spatial_compute": 0.8048,
+        "attribute_query": 0.7684,
+        "statistics": 0.7341
+      },
+      "delta": {
+        "spatial_compute": -0.0656,
+        "attribute_query": -0.0625,
+        "statistics": -0.0595
+      },
+      "vector_before": {
+        "spatial_compute": 0.8704,
+        "attribute_query": 0.8309,
+        "statistics": 0.7936,
+        "mapping": 0.5
+      },
+      "vector_after": {
+        "spatial_compute": 0.8048,
+        "attribute_query": 0.7684,
+        "statistics": 0.7341,
+        "mapping": 0.5
+      },
+      "note": "$.device_groups[1].value: 3，期望 2；$.device_groups[1].feature_count: 3，期望 2",
+      "index": 19
+    }
+  ],
+  "updated_at": "2026-11-06 15:52:56"
+}
