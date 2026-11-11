@@ -1,0 +1,14 @@
+# 运行依赖（Python 3.11+）
+langgraph>=1.0
+langchain-core>=1.0
+langchain-deepseek>=1.0
+python-dotenv>=1.0
+pyyaml>=6.0
+psycopg[binary]>=3.1
+pydantic>=2.6
+
+# 可选：只用于生成能力向量图的 PNG 快照；不装也能正常出 HTML 动态图
+matplotlib>=3.7
+
+# 测试
+pytest>=8.0
