@@ -8,7 +8,19 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 load_dotenv(BASE_DIR / ".env")
 
 DATA_DIR = BASE_DIR / "data"
+
+# 智能体专属记忆（AgentMemory，短期步骤级cache和长期任务级record） 对应 memory/agent_memory.py
 AGENT_MEMORY_BASE = DATA_DIR / "memory"      # 各智能体专属记忆空间根目录
+AGENT_MEMORY_CACHE_MAX = 5                  # 短期步骤缓存条数上限（FIFO 淘汰）
+AGENT_MEMORY_RECORD_MAX = 10              # 长期任务记录容量上限（FIFO 淘汰）
+AGENT_MEMORY_CACEH_TOP_K = 3                    # 注入 prompt 的最近缓存条数
+AGENT_MEMORY_RECORD_TOP_K = 2                  # 相似任务检索返回的最大记录数
+
+# 经验池配置
+EXPERIENCE_PATH = DATA_DIR / "experience.json"
+EXPERIENCE_MAX_SIZE = 100          # 经验池容量上限
+EXPERIENCE_SIMILAR_THRESHOLD = 0.85  # 相似度超过该值视为同类任务，只更新不新增
+EXPERIENCE_TOP_K = 3               # 规划时检索最相关经验条数
 
 # 能力向量与进化状态
 AGENTS_CONFIG_PATH = BASE_DIR / "config" / "agents_capability.yaml"
@@ -21,14 +33,8 @@ CAPABILITY_CHART_HTML = DATA_DIR / "capability_vector_chart.html"
 CAPABILITY_CHART_PNG = DATA_DIR / "capability_vector_chart.png"
 
 # 能力路由
-ROUTING_TIE_EPSILON = 0.0        # 得分差 <= 该容差视为能力均等 → 随机抽取
+ROUTING_TIE_EPSILON = 0.1        # 得分差 <= 该容差视为能力均等 → 随机抽取
 ROUTING_RANDOM_SEED = None       # None 表示真随机
-
-# 经验池配置
-EXPERIENCE_PATH = DATA_DIR / "experience.json"
-EXPERIENCE_MAX_SIZE = 100          # 经验池容量上限
-EXPERIENCE_SIMILAR_THRESHOLD = 0.85  # 相似度超过该值视为同类任务，只更新不新增
-EXPERIENCE_TOP_K = 3               # 规划时检索最相关经验条数
 
 # 上下文注入配置（表结构与 skill 都按余弦相似度检索）
 SCHEMA_TOP_K = 5                   # 注入 prompt 的相关表数量上限
