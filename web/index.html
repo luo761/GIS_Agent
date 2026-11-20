@@ -1,0 +1,209 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="GIS 多智能体任务架构 · 能力进化控制台">
+<title>GIS 多智能体控制台 · 能力进化</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230b1220'/%3E%3Ccircle cx='32' cy='32' r='7' fill='%2322d3ee'/%3E%3Ccircle cx='32' cy='13' r='4' fill='%2360a5fa'/%3E%3Ccircle cx='50' cy='42' r='4' fill='%2334d399'/%3E%3Ccircle cx='14' cy='42' r='4' fill='%23f59e0b'/%3E%3Cpath d='M32 20v5M38 35l8 4M26 35l-8 4' stroke='%2394a3b8' stroke-width='2'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="assets/app.css?v=10">
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-grid" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.6"/><rect x="14" y="3" width="7" height="7" rx="1.6"/><rect x="3" y="14" width="7" height="7" rx="1.6"/><rect x="14" y="14" width="7" height="7" rx="1.6"/></symbol>
+  <symbol id="i-play" viewBox="0 0 24 24"><path d="M7 4.8v14.4a1 1 0 0 0 1.53.85l11.2-7.2a1 1 0 0 0 0-1.7L8.53 3.95A1 1 0 0 0 7 4.8Z"/></symbol>
+  <symbol id="i-flow" viewBox="0 0 24 24"><circle cx="5" cy="6" r="2.4"/><circle cx="19" cy="6" r="2.4"/><circle cx="12" cy="18" r="2.4"/><path d="M7.4 6h9.2M6.2 8.2l4.6 7.6M17.8 8.2l-4.6 7.6"/></symbol>
+  <symbol id="i-radar" viewBox="0 0 24 24"><path d="M12 3.2 20.4 9.2 17.2 19H6.8L3.6 9.2 12 3.2Z"/><path d="M12 8.2 16.4 11.4 14.7 16.6H9.3L7.6 11.4 12 8.2Z"/></symbol>
+  <symbol id="i-tools" viewBox="0 0 24 24"><path d="M14.5 6.5a3.8 3.8 0 0 1 5.2 4.9l-7.8 7.8-2.3.6.6-2.3 7.8-7.8a1.6 1.6 0 0 0-2.2-2.2l-1.4 1.4-1.4-1.4 1.5-1Z"/><path d="M4 17.2 9.6 11.6l1.4 1.4L5.4 18.6 4 19l.3-1.4Z"/></symbol>
+  <symbol id="i-db" viewBox="0 0 24 24"><ellipse cx="12" cy="5.4" rx="7.4" ry="2.9"/><path d="M4.6 5.4v6.2c0 1.6 3.3 2.9 7.4 2.9s7.4-1.3 7.4-2.9V5.4M4.6 11.6v6.2c0 1.6 3.3 2.9 7.4 2.9s7.4-1.3 7.4-2.9v-6.2"/></symbol>
+  <symbol id="i-memory" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M8.5 9h7M8.5 12.5h7M8.5 16h4.5"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M4.5 12.5 9.5 17.5 19.5 6.5"/></symbol>
+  <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M20 11a8 8 0 1 0-2.3 6.7M20 5v6h-6"/></symbol>
+  <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.8v2M12 19.2v2M21.2 12h-2M4.8 12h-2M18.5 5.5l-1.4 1.4M6.9 17.1l-1.4 1.4M18.5 18.5l-1.4-1.4M6.9 6.9 5.5 5.5"/></symbol>
+  <symbol id="i-moon" viewBox="0 0 24 24"><path d="M20 14.6A8.6 8.6 0 0 1 9.4 4a8.6 8.6 0 1 0 10.6 10.6Z"/></symbol>
+  <symbol id="i-menu" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></symbol>
+  <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 4 4"/></symbol>
+  <symbol id="i-close" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></symbol>
+  <symbol id="i-copy" viewBox="0 0 24 24"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M15 5.5V4H5.5A1.5 1.5 0 0 0 4 5.5V15h1.5"/></symbol>
+  <symbol id="i-chevron" viewBox="0 0 24 24"><path d="m8 10 4 4 4-4"/></symbol>
+  <symbol id="i-spark" viewBox="0 0 24 24"><path d="M12 3v4M12 17v4M3 12h4M17 12h4M5.6 5.6l2.8 2.8M15.6 15.6l2.8 2.8M18.4 5.6l-2.8 2.8M8.4 15.6l-2.8 2.8"/></symbol>
+  <symbol id="i-book" viewBox="0 0 24 24"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v16H6.5A2.5 2.5 0 0 0 4 21.5V5.5Z"/><path d="M4 18.5A2.5 2.5 0 0 1 6.5 16H20"/></symbol>
+  <symbol id="i-bolt" viewBox="0 0 24 24"><path d="M13 2 4.5 13.5H11l-1 8.5 8.5-11.5H12l1-8.5Z"/></symbol>
+  <symbol id="i-reset" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 2.6-6.4M3 4v5h5"/></symbol>
+  <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 3v12M7 10l5 5 5-5M4 20h16"/></symbol>
+  <symbol id="i-pause" viewBox="0 0 24 24"><rect x="7" y="5" width="3.5" height="14" rx="1"/><rect x="13.5" y="5" width="3.5" height="14" rx="1"/></symbol>
+  <symbol id="i-step" viewBox="0 0 24 24"><path d="M6 5v14M11 12l7-6M11 12l7 6"/></symbol>
+  <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 7h16M9 7V4.5h6V7M6.5 7l1 13h9l1-13M10 11v5M14 11v5"/></symbol>
+</svg>
+
+<div id="boot" class="boot">
+  <div class="boot-logo">
+    <span class="boot-orbit"></span><span class="boot-core"></span>
+  </div>
+  <div class="boot-title">GIS 多智能体控制台</div>
+  <div class="boot-sub">正在装载能力向量与知识库…</div>
+</div>
+
+<div class="app" id="app" hidden>
+  <aside class="sidebar" id="sidebar">
+    <div class="brand">
+      <div class="brand-mark">
+        <span class="brand-dot"></span>
+        <svg><use href="#i-flow"></use></svg>
+      </div>
+      <div class="brand-text">
+        <strong>GIS Agent</strong>
+        <span>能力进化控制台</span>
+      </div>
+    </div>
+
+    <nav class="nav" aria-label="主导航">
+      <div class="nav-label">工作台</div>
+      <a class="nav-item" href="#/overview" data-route="overview">
+        <svg><use href="#i-grid"></use></svg><span>总览</span>
+      </a>
+      <a class="nav-item" href="#/workbench" data-route="workbench">
+        <svg><use href="#i-play"></use></svg><span>任务台</span><em class="nav-pulse" id="navWorkbenchPulse"></em>
+      </a>
+      <a class="nav-item" href="#/history" data-route="history">
+        <svg><use href="#i-flow"></use></svg><span>执行流</span><em class="nav-count" id="navRunCount">0</em>
+      </a>
+      <div class="nav-label">知识资产</div>
+      <a class="nav-item" href="#/capability" data-route="capability">
+        <svg><use href="#i-radar"></use></svg><span>能力进化</span>
+      </a>
+      <a class="nav-item" href="#/skills" data-route="skills">
+        <svg><use href="#i-tools"></use></svg><span>技能库</span><em class="nav-count" id="navSkillCount">0</em>
+      </a>
+      <a class="nav-item" href="#/knowledge" data-route="knowledge">
+        <svg><use href="#i-db"></use></svg><span>知识库</span>
+      </a>
+      <a class="nav-item" href="#/memory" data-route="memory">
+        <svg><use href="#i-memory"></use></svg><span>记忆库</span><em class="nav-count" id="navMemoryCount">0</em>
+      </a>
+      <div class="nav-label">质量</div>
+      <a class="nav-item" href="#/benchmark" data-route="benchmark">
+        <svg><use href="#i-check"></use></svg><span>评测报告</span>
+      </a>
+    </nav>
+
+    <div class="sidebar-foot">
+      <div class="server-chip" id="serverChip">
+        <span class="status-dot"></span><span id="serverMode">连接中…</span>
+      </div>
+      <div class="side-meta">
+        <span>演示会话 · v1.0</span>
+        <span id="sideUpdated">—</span>
+      </div>
+    </div>
+  </aside>
+
+  <div class="main">
+    <header class="topbar">
+      <button class="icon-btn menu-btn" id="menuBtn" aria-label="打开导航">
+        <svg><use href="#i-menu"></use></svg>
+      </button>
+      <div class="page-head">
+        <h1 id="pageTitle">总览</h1>
+        <p id="pageSub">多智能体能力进化全景</p>
+      </div>
+      <div class="top-actions">
+        <div class="quick-search">
+          <svg><use href="#i-search"></use></svg>
+          <input id="globalSearch" type="search" placeholder="检索 skill / 表 / 记忆…" aria-label="全局检索">
+          <kbd>⌘K</kbd>
+        </div>
+        <button class="icon-btn" id="themeBtn" title="切换明暗主题" aria-label="切换主题">
+          <svg class="ic-sun"><use href="#i-sun"></use></svg>
+          <svg class="ic-moon"><use href="#i-moon"></use></svg>
+        </button>
+        <button class="icon-btn" id="refreshBtn" title="重新加载数据" aria-label="重新加载数据">
+          <svg><use href="#i-refresh"></use></svg>
+        </button>
+      </div>
+    </header>
+
+    <div id="staticBanner" class="banner" hidden>
+      <strong>静态预览模式</strong>：未连接到本地服务，页面使用快照数据只读展示。运行
+      <code>python web/server/app.py --open</code> 可启用任务运行与能力进化。
+    </div>
+
+    <main id="view" class="view" tabindex="-1"></main>
+
+    <footer class="footer">
+      <span>GIS 多智能体任务架构 · 五阶段流水线（Understand → Decompose → Plan → Execute → Evaluate）</span>
+      <span id="footerHealth">—</span>
+    </footer>
+  </div>
+</div>
+
+<div id="drawer" class="drawer" hidden>
+  <div class="drawer-mask" data-close="drawer"></div>
+  <aside class="drawer-panel" role="dialog" aria-modal="true" aria-labelledby="drawerTitle">
+    <header class="drawer-head">
+      <h2 id="drawerTitle">详情</h2>
+      <button class="icon-btn" data-close="drawer" aria-label="关闭"><svg><use href="#i-close"></use></svg></button>
+    </header>
+    <div class="drawer-body" id="drawerBody"></div>
+  </aside>
+</div>
+
+<div id="toasts" class="toasts" aria-live="polite"></div>
+
+<div id="capResetModal" class="modal" hidden>
+  <div class="modal-mask" data-close="capreset"></div>
+  <div class="modal-card reset-card" role="alertdialog" aria-modal="true" aria-labelledby="capResetTitle">
+    <div class="row" style="gap:10px;align-items:flex-start">
+      <span class="card-title-icon" style="background:var(--err-soft);color:var(--err)">
+        <svg><use href="#i-reset"></use></svg>
+      </span>
+      <div>
+        <h3 id="capResetTitle">重置所有智能体能力向量</h3>
+        <p class="small muted" style="margin:3px 0 0">将全部编号智能体的能力值恢复为初始均衡值，用于重新演示“从零开始的能力分化”。</p>
+      </div>
+    </div>
+    <div class="reset-preview" id="capResetPreview"></div>
+    <label class="check-row">
+      <input type="checkbox" id="capResetRuns">
+      <span>同时清空演示运行记录（<span id="capResetRunCount">0</span> 条）</span>
+    </label>
+    <div class="reset-note">
+      将清空进化历史、执行统计与工具偏好，并把每个维度的能力值设为 <b class="mono" id="capResetTarget">0.500</b>。
+      该操作只作用于演示会话 <span class="mono">web/data/demo_state.json</span>，不会修改项目
+      <span class="mono">data/agent_capabilities.json</span>。
+    </div>
+    <div class="modal-actions">
+      <button class="btn ghost" id="capResetCancel">取消</button>
+      <button class="btn danger" id="capResetOk">确认重置</button>
+    </div>
+  </div>
+</div>
+
+<div id="confirm" class="modal" hidden>
+  <div class="modal-mask" data-close="confirm"></div>
+  <div class="modal-card" role="alertdialog" aria-modal="true" aria-labelledby="confirmTitle">
+    <h3 id="confirmTitle">确认操作</h3>
+    <p id="confirmText"></p>
+    <div class="modal-actions">
+      <button class="btn ghost" id="confirmCancel">取消</button>
+      <button class="btn danger" id="confirmOk">确认</button>
+    </div>
+  </div>
+</div>
+
+<script src="data/snapshot.js"></script>
+<script src="assets/js/core.js?v=10"></script>
+<script src="assets/js/charts.js?v=10"></script>
+<script src="assets/js/flow.js?v=10"></script>
+<script src="assets/js/views/overview.js?v=10"></script>
+<script src="assets/js/views/workbench.js?v=10"></script>
+<script src="assets/js/views/history.js?v=10"></script>
+<script src="assets/js/views/capability.js?v=10"></script>
+<script src="assets/js/views/skills.js?v=10"></script>
+<script src="assets/js/views/knowledge.js?v=10"></script>
+<script src="assets/js/views/memory.js?v=10"></script>
+<script src="assets/js/views/benchmark.js?v=10"></script>
+<script src="assets/js/app.js?v=10"></script>
+</body>
+</html>

@@ -1,0 +1,75 @@
+{
+  "schema_version": 1,
+  "initial_capability": 0.5,
+  "dimensions": [
+    "spatial_compute",
+    "attribute_query",
+    "statistics",
+    "mapping"
+  ],
+  "agents": {
+    "agent_01": {
+      "name": "01",
+      "capabilities": {
+        "spatial_compute": 0.5,
+        "attribute_query": 0.5,
+        "statistics": 0.5,
+        "mapping": 0.5
+      },
+      "preferred_tools": [],
+      "stats": {
+        "attempts": 0,
+        "successes": 0,
+        "failures": 0
+      }
+    },
+    "agent_02": {
+      "name": "02",
+      "capabilities": {
+        "spatial_compute": 0.5,
+        "attribute_query": 0.5,
+        "statistics": 0.5,
+        "mapping": 0.5
+      },
+      "preferred_tools": [],
+      "stats": {
+        "attempts": 0,
+        "successes": 0,
+        "failures": 0
+      }
+    },
+    "agent_03": {
+      "name": "03",
+      "capabilities": {
+        "spatial_compute": 0.5,
+        "attribute_query": 0.5,
+        "statistics": 0.5,
+        "mapping": 0.5
+      },
+      "preferred_tools": [],
+      "stats": {
+        "attempts": 0,
+        "successes": 0,
+        "failures": 0
+      }
+    },
+    "agent_04": {
+      "name": "04",
+      "capabilities": {
+        "spatial_compute": 0.5,
+        "attribute_query": 0.5,
+        "statistics": 0.5,
+        "mapping": 0.5
+      },
+      "preferred_tools": [],
+      "stats": {
+        "attempts": 0,
+        "successes": 0,
+        "failures": 0
+      }
+    }
+  },
+  "history": [],
+  "updated_at": "2026-11-19 19:37:41",
+  "source": "initial"
+}
