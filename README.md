@@ -213,7 +213,8 @@ Test/
 │   └── test_capability_evolution.py     # 34 项测试
 ├── data/                                # agent_capabilities.json、capability_vector_chart.*
 ├── docs/                                # 演示图表
-└── reports/dev20/                       # 评测报告与原始结果
+├── reports/dev20/                       # 评测报告与原始结果
+└── web/                                 # Web 控制台（零依赖前端 + 本地演示服务）
 ```
 
 ## 运行
@@ -243,6 +244,23 @@ python scripts/reset_agent_state.py --yes
 ```bash
 python -m pytest tests -q
 ```
+
+## Web 控制台（可视化演示）
+
+`web/` 下提供零依赖的本地 Web 控制台，用于交互式演示五阶段执行流、能力进化与知识资产：
+
+```powershell
+# Windows
+web\start.bat
+# 或
+python web/server/app.py --open
+```
+
+浏览器打开 `http://127.0.0.1:8765`，包含：总览、任务台、执行流回放、能力进化、
+技能库、知识库、记忆库、dev20 评测报告。执行流与工具返回值由本地模拟引擎生成，
+但检索（TF-IDF 余弦）、路由得分/并列随机、能力进化公式均直接复用项目实现；
+演示数据只写入 `web/data/`，不会修改 `data/` 下的能力、经验与记忆。
+详细说明见 [`web/README.md`](web/README.md)。
 
 ## 说明
 
