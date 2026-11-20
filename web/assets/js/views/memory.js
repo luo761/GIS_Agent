@@ -193,6 +193,7 @@
     const groups = cacheGroups(cache);
     const rMax = recordMax(agentId);
     const cMax = cacheMax(agentId);
+    const groups = cacheGroups(cache);
     const q = S.search.trim().toLowerCase();
     const list = q ? recs.filter((r) => ((r.question_feat || "") + " " + (r.result_summary || "") + " " + (r.error || "")).toLowerCase().includes(q)) : recs;
     return "<div class='stack-lg'>" + agentStatsHTML(agentId) +
@@ -208,14 +209,9 @@
       "</div></div>" +
 
       "<div class='stack'>" +
-      "<div class='card'><div class='card-head'><div><h3>短期步骤缓存</h3><p class='sub'>同一子任务在阶段③写入「规划」、阶段④写入「执行」，按子任务合并展示</p></div>" +
-      "<div class='right'><span class='chip mono'>" + cache.length + " 条 / " + groups.length + " 组</span></div></div>" +
-      limitNotice("cache", cacheAll.length, cMax, S.showAllCache) +
-      (groups.length
-        ? "<div class='tiny faint' style='margin:-2px 0 6px;line-height:1.65'>原始缓存按「规划 → 执行」成对出现；下方把同一子任务的两条上下文合并成一张卡片，计划和执行结果都能看到。" +
-          (groups.some((g) => g.items.length === 1) ? " 由于生效上限截断，边界处可能只保留其中一条上下文。" : "") + "</div>" +
-          groups.slice().reverse().map(cacheHTML).join("")
-        : "<div class='tiny muted'>暂无缓存。</div>") + "</div>" +
+      "<div class='card'><div class='card-head'><div><h3>短期步骤缓存</h3><p class='sub'>最近 5 条步骤级上下文，规划时注入</p></div>" +
+      "<div class='right'><span class='chip mono'>" + cache.length + "</span></div></div>" +
+      (cache.length ? cache.slice(-5).reverse().map(cacheHTML).join("") : "<div class='tiny muted'>暂无缓存。</div>") + "</div>" +
 
       "<div class='card'><div class='card-head'><div><h3>记忆检索</h3><p class='sub'>仅检索该智能体自己的记录</p></div></div>" +
       "<div class='searchbar' style='margin-bottom:8px'>" + GIS.ui.icon("search") +
