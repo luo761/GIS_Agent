@@ -64,12 +64,77 @@
       "</div>";
   }
 
-  function cacheHTML(item, i) {
-    return "<div class='cache-item'><span class='cache-idx'>" + (i + 1) + "</span><div style='min-width:0'>" +
-      "<div style='font-size:11.5px'>" + esc(U.truncate(item.question || item.step_question || "", 100)) + "</div>" +
-      "<div class='tiny faint'>" + esc(item.note || item.lesson || "") +
-      (item.step_alias ? " · 别名 " + esc(item.step_alias) : "") +
-      " · " + esc(item.ts || "") + "</div></div></div>";
+  function cacheQuestion(item) {
+    return String(item.question || item.step_question || "").trim();
+  }
+
+  function cacheGroups(cache) {
+    const groups = [];
+    (cache || []).forEach((item) => {
+      const question = cacheQuestion(item);
+      const last = groups[groups.length - 1];
+      if (last && last.question === question) last.items.push(item);
+      else groups.push({ question, items: [item] });
+    });
+    return groups;
+  }
+
+  function noteInfo(item) {
+    const note = String(item.note || "");
+    const lower = note.toLowerCase();
+    if (lower.includes("planned") || note.includes("计划")) {
+      return { label: "规划", kind: "plan" };
+    }
+    if (lower.includes("executed") || note.includes("执行")) {
+      const failed = item.outcome === "failed" || note.includes("失败");
+      return { label: failed ? "执行 · 失败" : (item.outcome === "success" ? "执行 · 成功" : "执行"), kind: "exec" + (failed ? " failed" : "") };
+    }
+    return { label: note || item.lesson || "步骤", kind: "" };
+  }
+
+  function planNodeCount(plan) {
+    if (!plan) return null;
+    if (Array.isArray(plan.nodes)) return plan.nodes.length;
+    let count = 0;
+    Object.keys(plan).forEach((k) => {
+      const sub = plan[k];
+      if (sub && Array.isArray(sub.nodes)) count += sub.nodes.length;
+    });
+    return count || null;
+  }
+
+  function timeOnly(ts) {
+    const m = String(ts || "").match(/(\d{2}:\d{2}:\d{2})/);
+    return m ? m[1] : String(ts || "");
+  }
+
+  function cacheHTML(group, i) {
+    const items = group.items || [];
+    const planItem = items.find((it) => it.plan);
+    const execItem = items.slice().reverse().find((it) =>
+      it.outcome != null || String(it.note || "").toLowerCase().includes("executed") || String(it.note || "").includes("执行"));
+    const stages = items.map((it) => {
+      const info = noteInfo(it);
+      return "<span class='cache-stage " + info.kind + "'>" + esc(info.label) +
+        " <b>" + esc(timeOnly(it.ts)) + "</b></span>";
+    }).join("<span class='cache-arrow'>→</span>");
+    const planText = planItem ? planSummary(planItem.plan) : "—";
+    const nodes = planItem ? planNodeCount(planItem.plan) : null;
+    const outcomeChip = execItem && execItem.outcome
+      ? "<span class='chip " + (execItem.outcome === "success" ? "ok" : "err") + "'>" +
+        (execItem.outcome === "success" ? "成功" : "失败") + "</span>"
+      : "";
+    return "<div class='cache-item'><span class='cache-idx'>" + (i + 1) + "</span><div style='min-width:0;flex:1'>" +
+      "<div class='cache-q'>" + esc(U.truncate(group.question || "（无问题文本）", 130)) + "</div>" +
+      "<div class='cache-stages'>" + stages + outcomeChip + "</div>" +
+      (planText && planText !== "—"
+        ? "<div class='tiny faint' style='margin-top:3px'>计划" + (nodes ? "（" + nodes + " 个节点）" : "") +
+          "：" + esc(U.truncate(planText, 110)) + "</div>"
+        : "") +
+      (execItem && execItem.error
+        ? "<div class='tiny' style='color:var(--err);margin-top:2px'>教训：" + esc(U.truncate(execItem.error, 100)) + "</div>"
+        : "") +
+      "</div></div>";
   }
 
   function retrievalHTML(kind, agentId) {
@@ -88,6 +153,7 @@
   function agentBody(agentId) {
     const recs = recordsOf(agentId);
     const cache = cacheOf(agentId);
+    const groups = cacheGroups(cache);
     const q = S.search.trim().toLowerCase();
     const list = q ? recs.filter((r) => ((r.question_feat || "") + " " + (r.result_summary || "") + " " + (r.error || "")).toLowerCase().includes(q)) : recs;
     return "<div class='stack-lg'>" + agentStatsHTML(agentId) +
@@ -102,9 +168,12 @@
       "</div></div>" +
 
       "<div class='stack'>" +
-      "<div class='card'><div class='card-head'><div><h3>短期步骤缓存</h3><p class='sub'>最近 5 条步骤级上下文，规划时注入</p></div>" +
-      "<div class='right'><span class='chip mono'>" + cache.length + "</span></div></div>" +
-      (cache.length ? cache.slice(-5).reverse().map(cacheHTML).join("") : "<div class='tiny muted'>暂无缓存。</div>") + "</div>" +
+      "<div class='card'><div class='card-head'><div><h3>短期步骤缓存</h3><p class='sub'>同一子任务在阶段③写入「规划」、阶段④写入「执行」，按子任务合并展示</p></div>" +
+      "<div class='right'><span class='chip mono'>" + cache.length + " 条 / " + groups.length + " 组</span></div></div>" +
+      (groups.length
+        ? "<div class='tiny faint' style='margin:-2px 0 6px;line-height:1.65'>原始缓存按「规划 → 执行」成对出现；下方把同一子任务的两条上下文合并成一张卡片，计划和执行结果都能看到。</div>" +
+          groups.slice(-5).reverse().map(cacheHTML).join("")
+        : "<div class='tiny muted'>暂无缓存。</div>") + "</div>" +
 
       "<div class='card'><div class='card-head'><div><h3>记忆检索</h3><p class='sub'>仅检索该智能体自己的记录</p></div></div>" +
       "<div class='searchbar' style='margin-bottom:8px'>" + GIS.ui.icon("search") +
