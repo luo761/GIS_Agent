@@ -497,12 +497,52 @@ def reset_demo_capability(*, seed: str = "initial") -> dict[str, Any]:
 # ---------------------------------------------------------------------------
 # 记忆 / 经验 / 评测报告
 # ---------------------------------------------------------------------------
+def _load_memory_limits() -> dict[str, int]:
+    """从 config/settings.py 读取记忆容量与注入条数（用 ast，不导入模块）。"""
+    defaults = {
+        "AGENT_MEMORY_CACHE_MAX": 5,
+        "AGENT_MEMORY_RECORD_MAX": 10,
+        "AGENT_MEMORY_CACHE_TOP_K": 3,
+        "AGENT_MEMORY_RECORD_TOP_K": 2,
+    }
+    try:
+        tree = ast.parse((CONFIG_DIR / "settings.py").read_text(encoding="utf-8"))
+    except (OSError, SyntaxError):
+        return defaults
+    for node in tree.body:
+        if isinstance(node, ast.Assign):
+            targets = [t.id for t in node.targets if isinstance(t, ast.Name)]
+            value_node = node.value
+        elif isinstance(node, ast.AnnAssign) and isinstance(node.target, ast.Name):
+            targets = [node.target.id]
+            value_node = node.value
+        else:
+            continue
+        for name in targets:
+            if name not in defaults:
+                continue
+            try:
+                value = ast.literal_eval(value_node)
+            except (ValueError, SyntaxError, TypeError):
+                continue
+            if isinstance(value, int) and value >= 0:
+                defaults[name] = value
+    return defaults
+
+
+MEMORY_LIMITS = _load_memory_limits()
+
+
 def _memory_root() -> Path:
     return DATA_DIR / "memory"
 
 
 def load_memory() -> dict[str, Any]:
     out: dict[str, Any] = {}
+    cache_max = int(MEMORY_LIMITS["AGENT_MEMORY_CACHE_MAX"])
+    record_max = int(MEMORY_LIMITS["AGENT_MEMORY_RECORD_MAX"])
+    cache_top_k = int(MEMORY_LIMITS["AGENT_MEMORY_CACHE_TOP_K"])
+    record_top_k = int(MEMORY_LIMITS["AGENT_MEMORY_RECORD_TOP_K"])
     for aid in sorted(CONFIG.agent_defs):
         root = _memory_root() / aid
         records: list[dict[str, Any]] = []
@@ -523,10 +563,15 @@ def load_memory() -> dict[str, Any]:
         out[aid] = {
             "agent_id": aid,
             "name": str((CONFIG.agent_defs.get(aid) or {}).get("name", aid)),
+            # 原始文件内容 + 生效容量：文件可能来自旧版本配置，条数会暂时超过上限
             "records": records,
-            "cache": cache[-10:],
-            "record_max": 10,
-            "cache_max": 5,
+            "records_total": len(records),
+            "record_max": record_max,
+            "record_top_k": record_top_k,
+            "cache": cache,
+            "cache_total": len(cache),
+            "cache_max": cache_max,
+            "cache_top_k": cache_top_k,
         }
     return out
 

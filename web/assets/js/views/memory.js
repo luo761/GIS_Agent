@@ -13,17 +13,50 @@
     retrieval: null,
     retrievalLoading: false,
     query: "",
+    showAllRecords: false,
+    showAllCache: false,
   };
 
   function memory() { return (GIS.state.data || {}).memory || {}; }
   function agents() { return GIS.meta.agents(); }
-  function recordsOf(agentId) { return ((memory()[agentId] || {}).records) || []; }
-  function cacheOf(agentId) { return ((memory()[agentId] || {}).cache) || []; }
+  function memoryMeta(agentId) { return memory()[agentId] || {}; }
+  function recordMax(agentId) { return Number(memoryMeta(agentId).record_max != null ? memoryMeta(agentId).record_max : 10); }
+  function cacheMax(agentId) { return Number(memoryMeta(agentId).cache_max != null ? memoryMeta(agentId).cache_max : 5); }
+  function recordsOf(agentId) { return (memoryMeta(agentId).records) || []; }
+  function cacheOf(agentId) { return (memoryMeta(agentId).cache) || []; }
+  function visibleRecords(agentId) {
+    const all = recordsOf(agentId);
+    return S.showAllRecords ? all : all.slice(0, recordMax(agentId));
+  }
+  function visibleCache(agentId) {
+    const all = cacheOf(agentId);
+    const max = cacheMax(agentId);
+    return S.showAllCache ? all : (max > 0 ? all.slice(-max) : []);
+  }
+
+  function limitNotice(kind, total, max, showAll) {
+    if (total <= max && !showAll) return "";
+    const noun = kind === "records" ? "长期记录" : "缓存";
+    const attr = kind === "records" ? "data-toggle-records" : "data-toggle-cache";
+    if (showAll) {
+      return "<div class='limit-notice'>已显示全部 " + total + " 条" + noun + "；超出上限 " + max +
+        " 条的 " + Math.max(0, total - max) + " 条会在项目下一次写入时按 FIFO 淘汰。" +
+        "<button class='link-btn' " + attr + ">只看最近 " + max + " 条</button></div>";
+    }
+    return "<div class='limit-notice'>磁盘文件中有 " + total + " 条" + noun + "，超过上限 " + max +
+      " 条（容量只在写入时裁剪）。当前按上限显示最近 " + max + " 条。" +
+      "<button class='link-btn' " + attr + ">查看全部 " + total + " 条</button></div>";
+  }
 
   function agentStatsHTML(agentId) {
     const stats = GIS.meta.agentStats(agentId);
-    const recs = recordsOf(agentId);
-    const cache = cacheOf(agentId);
+    const recs = visibleRecords(agentId);
+    const cache = visibleCache(agentId);
+    const recTotal = recordsOf(agentId).length;
+    const cacheTotal = cacheOf(agentId).length;
+    const rMax = recordMax(agentId);
+    const cMax = cacheMax(agentId);
+    const cTop = Number(memoryMeta(agentId).cache_top_k != null ? memoryMeta(agentId).cache_top_k : 3);
     const agent = (GIS.state.data.capability.agents || {})[agentId] || {};
     const prefs = agent.preferred_tools || [];
     const prefText = prefs.length
@@ -31,8 +64,10 @@
         (prefs.length > 2 ? "<span class='chip muted'>+" + (prefs.length - 2) + "</span>" : "")
       : "<span class='muted small'>暂无</span>";
     return "<div class='grid grid-4' style='gap:12px'>" +
-      "<div class='kv'><dt>长期任务记录</dt><dd class='mono'>" + recs.length + " 条</dd><div class='tiny faint'>容量上限 10 条</div></div>" +
-      "<div class='kv'><dt>短期步骤缓存</dt><dd class='mono'>" + cache.length + " 条</dd><div class='tiny faint'>注入最近 3 条</div></div>" +
+      "<div class='kv'><dt>长期任务记录</dt><dd class='mono'>" + recs.length + " 条</dd><div class='tiny faint'>上限 " + rMax + " 条" +
+      (recTotal > rMax ? " · <span style='color:var(--warn)'>磁盘 " + recTotal + " 条</span>" : "") + "</div></div>" +
+      "<div class='kv'><dt>短期步骤缓存</dt><dd class='mono'>" + cache.length + " 条</dd><div class='tiny faint'>上限 " + cMax + " 条 · 注入最近 " + cTop + " 条" +
+      (cacheTotal > cMax ? " · <span style='color:var(--warn)'>磁盘 " + cacheTotal + " 条</span>" : "") + "</div></div>" +
       "<div class='kv'><dt>能力统计（演示）</dt><dd class='mono'>" + (stats.attempts || 0) + " 尝试 · " + (stats.successes || 0) + " 成功</dd></div>" +
       "<div class='kv'><dt>工具偏好</dt><dd>" + prefText + "</dd></div>" +
       "</div>";
@@ -64,12 +99,77 @@
       "</div>";
   }
 
-  function cacheHTML(item, i) {
-    return "<div class='cache-item'><span class='cache-idx'>" + (i + 1) + "</span><div style='min-width:0'>" +
-      "<div style='font-size:11.5px'>" + esc(U.truncate(item.question || item.step_question || "", 100)) + "</div>" +
-      "<div class='tiny faint'>" + esc(item.note || item.lesson || "") +
-      (item.step_alias ? " · 别名 " + esc(item.step_alias) : "") +
-      " · " + esc(item.ts || "") + "</div></div></div>";
+  function cacheQuestion(item) {
+    return String(item.question || item.step_question || "").trim();
+  }
+
+  function cacheGroups(cache) {
+    const groups = [];
+    (cache || []).forEach((item) => {
+      const question = cacheQuestion(item);
+      const last = groups[groups.length - 1];
+      if (last && last.question === question) last.items.push(item);
+      else groups.push({ question, items: [item] });
+    });
+    return groups;
+  }
+
+  function noteInfo(item) {
+    const note = String(item.note || "");
+    const lower = note.toLowerCase();
+    if (lower.includes("planned") || note.includes("计划")) {
+      return { label: "规划", kind: "plan" };
+    }
+    if (lower.includes("executed") || note.includes("执行")) {
+      const failed = item.outcome === "failed" || note.includes("失败");
+      return { label: failed ? "执行 · 失败" : (item.outcome === "success" ? "执行 · 成功" : "执行"), kind: "exec" + (failed ? " failed" : "") };
+    }
+    return { label: note || item.lesson || "步骤", kind: "" };
+  }
+
+  function planNodeCount(plan) {
+    if (!plan) return null;
+    if (Array.isArray(plan.nodes)) return plan.nodes.length;
+    let count = 0;
+    Object.keys(plan).forEach((k) => {
+      const sub = plan[k];
+      if (sub && Array.isArray(sub.nodes)) count += sub.nodes.length;
+    });
+    return count || null;
+  }
+
+  function timeOnly(ts) {
+    const m = String(ts || "").match(/(\d{2}:\d{2}:\d{2})/);
+    return m ? m[1] : String(ts || "");
+  }
+
+  function cacheHTML(group, i) {
+    const items = group.items || [];
+    const planItem = items.find((it) => it.plan);
+    const execItem = items.slice().reverse().find((it) =>
+      it.outcome != null || String(it.note || "").toLowerCase().includes("executed") || String(it.note || "").includes("执行"));
+    const stages = items.map((it) => {
+      const info = noteInfo(it);
+      return "<span class='cache-stage " + info.kind + "'>" + esc(info.label) +
+        " <b>" + esc(timeOnly(it.ts)) + "</b></span>";
+    }).join("<span class='cache-arrow'>→</span>");
+    const planText = planItem ? planSummary(planItem.plan) : "—";
+    const nodes = planItem ? planNodeCount(planItem.plan) : null;
+    const outcomeChip = execItem && execItem.outcome
+      ? "<span class='chip " + (execItem.outcome === "success" ? "ok" : "err") + "'>" +
+        (execItem.outcome === "success" ? "成功" : "失败") + "</span>"
+      : "";
+    return "<div class='cache-item'><span class='cache-idx'>" + (i + 1) + "</span><div style='min-width:0;flex:1'>" +
+      "<div class='cache-q'>" + esc(U.truncate(group.question || "（无问题文本）", 130)) + "</div>" +
+      "<div class='cache-stages'>" + stages + outcomeChip + "</div>" +
+      (planText && planText !== "—"
+        ? "<div class='tiny faint' style='margin-top:3px'>计划" + (nodes ? "（" + nodes + " 个节点）" : "") +
+          "：" + esc(U.truncate(planText, 110)) + "</div>"
+        : "") +
+      (execItem && execItem.error
+        ? "<div class='tiny' style='color:var(--err);margin-top:2px'>教训：" + esc(U.truncate(execItem.error, 100)) + "</div>"
+        : "") +
+      "</div></div>";
   }
 
   function retrievalHTML(kind, agentId) {
@@ -86,15 +186,21 @@
   }
 
   function agentBody(agentId) {
-    const recs = recordsOf(agentId);
-    const cache = cacheOf(agentId);
+    const recsAll = recordsOf(agentId);
+    const cacheAll = cacheOf(agentId);
+    const recs = visibleRecords(agentId);
+    const cache = visibleCache(agentId);
+    const groups = cacheGroups(cache);
+    const rMax = recordMax(agentId);
+    const cMax = cacheMax(agentId);
     const q = S.search.trim().toLowerCase();
     const list = q ? recs.filter((r) => ((r.question_feat || "") + " " + (r.result_summary || "") + " " + (r.error || "")).toLowerCase().includes(q)) : recs;
     return "<div class='stack-lg'>" + agentStatsHTML(agentId) +
       "<div class='grid' style='grid-template-columns:minmax(0,1.25fr) minmax(300px,.75fr);align-items:start'>" +
       "<div class='card'><div class='card-head'><span class='card-title-icon'>" + GIS.ui.icon("memory") + "</span>" +
-      "<div><h2>长期任务记录</h2><p class='sub'>该智能体完成过的完整案例；容量上限 10 条，FIFO 淘汰</p></div>" +
+      "<div><h2>长期任务记录</h2><p class='sub'>该智能体完成过的完整案例；容量上限 " + rMax + " 条，FIFO 淘汰</p></div>" +
       "<div class='right'><span class='chip mono'>" + recs.length + "</span></div></div>" +
+      limitNotice("records", recsAll.length, rMax, S.showAllRecords) +
       "<div class='searchbar' style='margin-bottom:10px'>" + GIS.ui.icon("search") +
       "<input id='memSearch' placeholder='搜索本人完成过的任务…' value='" + esc(S.search) + "'></div>" +
       "<div class='stack' style='max-height:620px;overflow:auto;padding-right:4px'>" +
@@ -102,9 +208,14 @@
       "</div></div>" +
 
       "<div class='stack'>" +
-      "<div class='card'><div class='card-head'><div><h3>短期步骤缓存</h3><p class='sub'>最近 5 条步骤级上下文，规划时注入</p></div>" +
-      "<div class='right'><span class='chip mono'>" + cache.length + "</span></div></div>" +
-      (cache.length ? cache.slice(-5).reverse().map(cacheHTML).join("") : "<div class='tiny muted'>暂无缓存。</div>") + "</div>" +
+      "<div class='card'><div class='card-head'><div><h3>短期步骤缓存</h3><p class='sub'>同一子任务在阶段③写入「规划」、阶段④写入「执行」，按子任务合并展示</p></div>" +
+      "<div class='right'><span class='chip mono'>" + cache.length + " 条 / " + groups.length + " 组</span></div></div>" +
+      limitNotice("cache", cacheAll.length, cMax, S.showAllCache) +
+      (groups.length
+        ? "<div class='tiny faint' style='margin:-2px 0 6px;line-height:1.65'>原始缓存按「规划 → 执行」成对出现；下方把同一子任务的两条上下文合并成一张卡片，计划和执行结果都能看到。" +
+          (groups.some((g) => g.items.length === 1) ? " 由于生效上限截断，边界处可能只保留其中一条上下文。" : "") + "</div>" +
+          groups.slice().reverse().map(cacheHTML).join("")
+        : "<div class='tiny muted'>暂无缓存。</div>") + "</div>" +
 
       "<div class='card'><div class='card-head'><div><h3>记忆检索</h3><p class='sub'>仅检索该智能体自己的记录</p></div></div>" +
       "<div class='searchbar' style='margin-bottom:8px'>" + GIS.ui.icon("search") +
@@ -146,7 +257,7 @@
   function render() {
     let tabs = agents().map((a) => {
       const key = "agent_" + a.id.replace("agent_", "");
-      const count = recordsOf(a.id).length;
+      const count = visibleRecords(a.id).length;
       return "<button class='mem-tab " + (S.tab === a.id ? "active" : "") + "' data-mem-tab='" + a.id + "'>" +
         "<span class='dot' style='background:" + GIS.meta.agentColor(a.id) + "'></span>智能体 " + esc(a.name) +
         "<span class='count'>" + count + " 条</span></button>";
@@ -184,6 +295,12 @@
   function bindBody() {
     document.querySelectorAll("[data-record]").forEach((el) => {
       el.addEventListener("click", () => openRecord(el.dataset.record, S.tab));
+    });
+    document.querySelectorAll("[data-toggle-records]").forEach((btn) => {
+      btn.addEventListener("click", () => { S.showAllRecords = !S.showAllRecords; GIS.refreshView(); });
+    });
+    document.querySelectorAll("[data-toggle-cache]").forEach((btn) => {
+      btn.addEventListener("click", () => { S.showAllCache = !S.showAllCache; GIS.refreshView(); });
     });
     const search = document.getElementById("memSearch");
     if (search) {
@@ -226,6 +343,8 @@
         S.tab = btn.dataset.memTab;
         S.search = "";
         S.retrieval = null;
+        S.showAllRecords = false;
+        S.showAllCache = false;
         document.querySelectorAll("[data-mem-tab]").forEach((b) => b.classList.toggle("active", b === btn));
         const body = document.getElementById("memBody");
         if (body) {

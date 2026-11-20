@@ -1,5 +1,2292 @@
 [
   {
+    "run_id": "run_20261120_102318_118b",
+    "created_at": "2026-11-20 10:23:19",
+    "mode": "demo",
+    "question": "以燃气设备 D011 为中心建立 300 米缓冲区，计算缓冲区位于 A001 内的面积（平方米）。",
+    "truth": "",
+    "verdict_mode": "auto",
+    "domain": "gas",
+    "domain_label": "燃气",
+    "task_type": "空间计算",
+    "dimensions": [
+      "spatial_compute",
+      "attribute_query",
+      "statistics",
+      "mapping"
+    ],
+    "labels": {
+      "spatial_compute": "空间计算",
+      "attribute_query": "属性查询",
+      "statistics": "统计分析",
+      "mapping": "制图可视化"
+    },
+    "flow": {
+      "understand": {
+        "stage": "understand",
+        "status": "done",
+        "elapsed_ms": 641,
+        "domain": "gas",
+        "domain_label": "燃气",
+        "task_type": "空间计算",
+        "refined_question": "在 PostGIS 数据集上，基于 construction_areas、gas_devices 图层完成：以燃气设备 D011 为中心建立 300 米缓冲区，计算缓冲区位于 A001 内的面积（平方米）。（语义约束：平面坐标 EPSG:3857，长度 meter / 面积 square_meter。）",
+        "tables": [
+          {
+            "name": "gas_devices",
+            "note": "燃气设备（点要素），按 code 引用，如 D001/D011",
+            "fields": [
+              {
+                "name": "id",
+                "type": "integer",
+                "note": "主键"
+              },
+              {
+                "name": "code",
+                "type": "text",
+                "note": "业务编号",
+                "samples": [
+                  "D001",
+                  "D011",
+                  "D016"
+                ]
+              },
+              {
+                "name": "device_type",
+                "type": "text",
+                "note": "设备类型",
+                "samples": [
+                  "调压箱",
+                  "阀井",
+                  "计量表"
+                ]
+              },
+              {
+                "name": "status",
+                "type": "text",
+                "note": "运行状态",
+                "samples": [
+                  "正常",
+                  "告警",
+                  "停用"
+                ]
+              },
+              {
+                "name": "geom",
+                "type": "geometry(Point,3857)",
+                "note": "空间几何（EPSG:3857）"
+              }
+            ],
+            "score": 0.3678
+          },
+          {
+            "name": "construction_areas",
+            "note": "施工区（面要素），按 code 引用，如 A001/A003",
+            "fields": [
+              {
+                "name": "id",
+                "type": "integer",
+                "note": "主键"
+              },
+              {
+                "name": "code",
+                "type": "text",
+                "note": "业务编号",
+                "samples": [
+                  "A001",
+                  "A002",
+                  "A003",
+                  "A008",
+                  "A009"
+                ]
+              },
+              {
+                "name": "name",
+                "type": "text",
+                "note": "施工区名称",
+                "samples": [
+                  "滨江路施工段",
+                  "科技园施工区"
+                ]
+              },
+              {
+                "name": "area_type",
+                "type": "text",
+                "note": "区域类型",
+                "samples": [
+                  "道路",
+                  "管网",
+                  "综合"
+                ]
+              },
+              {
+                "name": "geom",
+                "type": "geometry(MultiPolygon,3857)",
+                "note": "空间几何；A003 含孔洞"
+              }
+            ],
+            "score": 0.1636
+          }
+        ],
+        "skills": [
+          {
+            "id": "buffer_intersect_measure",
+            "name": "缓冲区求交量测",
+            "desc": "以某要素为中心建立缓冲区，与另一区域求交后量测面积或长度",
+            "operators": [
+              "buffer_geometry",
+              "intersection_geometry",
+              "measure_geometry"
+            ],
+            "steps": "buffer_geometry → intersection_geometry → measure_geometry",
+            "scenes": "缓冲区落在某施工区内的面积、距离影响范围",
+            "score": 0.4734,
+            "group": "空间"
+          },
+          {
+            "id": "buffer_union_clip",
+            "name": "缓冲合并后裁剪",
+            "desc": "对设备批量缓冲、合并去重，再裁剪到某施工区，得到影响范围的覆盖面积或覆盖管线长度",
+            "operators": [
+              "query_features",
+              "buffer_features",
+              "union_features",
+              "clip_features",
+              "measure_features"
+            ],
+            "steps": "query_features → buffer_features → union_features → clip_features → measure_features",
+            "scenes": "多设备影响范围覆盖面积、范围内管线长度",
+            "score": 0.2342,
+            "group": "空间"
+          }
+        ],
+        "knowledge": "燃气图层：gas_devices 按 status（正常/告警/停用）区分，gas_pipelines 按 pressure_level（低压/中压/高压）区分；施工区用 construction_areas.code（A001…）引用。",
+        "context": "【数据库相关表结构（按余弦相似度检索）】\n\n表 gas_devices（燃气设备（点要素），按 code 引用，如 D001/D011）\n  - id: 主键（integer）\n  - code: 业务编号（text）；样例：D001/D011/D016\n  - device_type: 设备类型（text）；样例：调压箱/阀井/计量表\n  - status: 运行状态（text）；样例：正常/告警/停用\n  - geom: 空间几何（EPSG:3857）（geometry(Point,3857)）\n\n表 construction_areas（施工区（面要素），按 code 引用，如 A001/A003）\n  - id: 主键（integer）\n  - code: 业务编号（text）；样例：A001/A002/A003/A008/A009\n  - name: 施工区名称（text）；样例：滨江路施工段/科技园施工区\n  - area_type: 区域类型（text）；样例：道路/管网/综合\n  - geom: 空间几何；A003 含孔洞（geometry(MultiPolygon,3857)）",
+        "summary": "识别为「燃气 / 空间计算」，命中 2 张表、2 个 skill"
+      },
+      "decompose": {
+        "stage": "decompose",
+        "status": "done",
+        "elapsed_ms": 820,
+        "refined_question": "在 PostGIS 数据集上，基于 construction_areas、gas_devices 图层完成：以燃气设备 D011 为中心建立 300 米缓冲区，计算缓冲区位于 A001 内的面积（平方米）。（语义约束：平面坐标 EPSG:3857，长度 meter / 面积 square_meter。）",
+        "subtasks": [
+          {
+            "subtask_id": "t1",
+            "question": "在 PostGIS 数据集上，基于 construction_areas、gas_devices 图层完成：以燃气设备 D011 为中心建立 300 米缓冲区，计算缓冲区位于 A001 内的面积（平方米）。（语义约束：平面坐标 EPSG:3857，长度 meter / 面积 square_meter。）",
+            "required_capabilities": [
+              "spatial_compute"
+            ],
+            "agent_id": "agent_01",
+            "agent_name": "01",
+            "routing": {
+              "agent_id": "agent_01",
+              "agent_name": "01",
+              "required": [
+                "spatial_compute"
+              ],
+              "scores": {
+                "agent_01": 0.5,
+                "agent_02": 0.5,
+                "agent_03": 0.5,
+                "agent_04": 0.5
+              },
+              "best_score": 0.5,
+              "tied": [
+                "agent_01",
+                "agent_02",
+                "agent_03",
+                "agent_04"
+              ],
+              "random_pick": true,
+              "epsilon": 0.0,
+              "pool": [
+                "agent_01",
+                "agent_02",
+                "agent_03",
+                "agent_04"
+              ]
+            },
+            "plan": {
+              "nodes": [
+                {
+                  "id": "s1",
+                  "action": "query_features",
+                  "label": "要素查询",
+                  "params": {
+                    "layer_name": "construction_areas",
+                    "filters": [
+                      {
+                        "field": "code",
+                        "operator": "eq",
+                        "value": "A001"
+                      }
+                    ],
+                    "fields": [
+                      "code",
+                      "geom"
+                    ]
+                  },
+                  "depends_on": []
+                },
+                {
+                  "id": "s2",
+                  "action": "query_features",
+                  "label": "要素查询",
+                  "params": {
+                    "layer_name": "gas_devices",
+                    "filters": [
+                      {
+                        "field": "code",
+                        "operator": "eq",
+                        "value": "D011"
+                      }
+                    ],
+                    "fields": [
+                      "code",
+                      "device_type",
+                      "geom"
+                    ],
+                    "relation": "ST_Intersects",
+                    "target": {
+                      "$ref": "s1.result.geometry"
+                    }
+                  },
+                  "depends_on": [
+                    "s1"
+                  ]
+                },
+                {
+                  "id": "s3",
+                  "action": "buffer_features",
+                  "label": "批量缓冲",
+                  "params": {
+                    "input": {
+                      "$ref": "s2.result.feature_set"
+                    },
+                    "distance_m": 300,
+                    "segments": 32
+                  },
+                  "depends_on": [
+                    "s2"
+                  ]
+                },
+                {
+                  "id": "s4",
+                  "action": "clip_features",
+                  "label": "裁剪到区域",
+                  "params": {
+                    "input": {
+                      "$ref": "s3.result.feature_set"
+                    },
+                    "clip_geom": {
+                      "$ref": "s1.result.geometry"
+                    }
+                  },
+                  "depends_on": [
+                    "s3",
+                    "s1"
+                  ]
+                },
+                {
+                  "id": "s5",
+                  "action": "measure_features",
+                  "label": "要素集量测",
+                  "params": {
+                    "input": {
+                      "$ref": "s4.result.feature_set"
+                    },
+                    "operation": "ST_Area",
+                    "unit": "square_meter"
+                  },
+                  "depends_on": [
+                    "s4"
+                  ]
+                }
+              ],
+              "edges": [
+                [
+                  "s1",
+                  "s2"
+                ],
+                [
+                  "s2",
+                  "s3"
+                ],
+                [
+                  "s3",
+                  "s4"
+                ],
+                [
+                  "s1",
+                  "s4"
+                ],
+                [
+                  "s4",
+                  "s5"
+                ]
+              ]
+            },
+            "skill": {
+              "id": "buffer_intersect_measure",
+              "name": "缓冲区求交量测",
+              "score": 0.4734,
+              "operators": [
+                "buffer_geometry",
+                "intersection_geometry",
+                "measure_geometry"
+              ]
+            },
+            "memory_hits": [],
+            "experience_hits": [
+              {
+                "task_signature": "gas/综合",
+                "question_feat": "从 gas_pipelines 中筛选 pressure_level='高压' 且与施工区 construction_areas.code='A001' 相交的燃气管线，裁剪至 A001 边界后分别缓冲 50 米并合并为同一影响范围；复用该范围：(1) 统计 A001 内 gas_devices 中 status 为 '正常' 或 '告警' 的设备，按 status 升序分组计数；(2) 计算 A001 内 water_pipelines 各管线的受影响长度（米），按长度降序、同长按 code 升序输出，并给出总长度；边界计入，非空零长度接触记录保留。",
+                "plan": {
+                  "t1": {
+                    "nodes": [
+                      {
+                        "id": "s1",
+                        "action": "query_features",
+                        "params": {
+                          "table": "construction_areas",
+                          "where": "code = 'A001'",
+                          "select": "geom"
+                        },
+                        "depends_on": []
+                      },
+                      {
+                        "id": "s2",
+                        "action": "query_features",
+                        "params": {
+                          "table": "gas_pipelines",
+                          "where": "pressure_level = '高压'",
+                          "select": "id, code, geom"
+                        },
+                        "depends_on": []
+                      },
+                      {
+                        "id": "s3",
+                        "action": "intersection_geometry",
+                        "params": {
+                          "left": "s2",
+                          "right": "s1",
+                          "predicate": "ST_Intersects",
+                          "include_boundary": true
+                        },
+                        "depends_on": [
+                          "s1",
+                          "s2"
+                        ]
+                      },
+                      {
+                        "id": "s4",
+                        "action": "clip_features",
+                        "params": {
+                          "input": "s3",
+                          "clip_geom": "s1"
+                        },
+                        "depends_on": [
+                          "s3",
+                          "s1"
+                        ]
+                      },
+                      {
+                        "id": "s5",
+                        "action": "buffer_features",
+                        "params": {
+                          "input": "s4",
+                          "distance": 50,
+                          "unit": "meter"
+                        },
+                        "depends_on": [
+                          "s4"
+                        ]
+                      },
+                      {
+                        "id": "s6",
+                        "action": "union_features",
+                        "params": {
+                          "input": "s5",
+                          "dissolve": true
+                        },
+                        "depends_on": [
+                          "s5"
+                        ]
+                      },
+                      {
+                        "id": "s7",
+                        "action": "query_features",
+                        "params": {
+                          "table": "gas_devices",
+                          "where": "status IN ('正常','告警')",
+                          "select": "id, code, status, geom"
+                        },
+                        "depends_on": []
+                      },
+                      {
+                        "id": "s8",
+                        "action": "intersection_geometry",
+                        "params": {
+                          "left": "s7",
+                          "right": "s1",
+                          "predicate": "ST_Intersects",
+                          "include_boundary": true
+                        },
+                        "depends_on": [
+                          "s7",
+                          "s1"
+                        ]
+                      },
+                      {
+                        "id": "s9",
+                        "action": "summarize_features",
+                        "params": {
+                          "input": "s8",
+                          "aggregate": "count",
+                          "group_by": "status",
+                          "sort": "status ASC",
+                          "output": "status, count"
+                        },
+                        "depends_on": [
+                          "s8"
+                        ]
+                      },
+                      {
+                        "id": "s10",
+                        "action": "query_features",
+                        "params": {
+                          "table": "water_pipelines",
+                          "select": "id, code, geom"
+                        },
+                        "depends_on": []
+                      },
+                      {
+                        "id": "s11",
+                        "action": "intersection_geometry",
+                        "params": {
+                          "left": "s10",
+                          "right": "s6",
+                          "predicate": "ST_Intersects",
+                          "include_boundary": true
+                        },
+                        "depends_on": [
+                          "s10",
+                          "s6"
+                        ]
+                      },
+                      {
+                        "id": "s12",
+                        "action": "intersection_geometry",
+                        "params": {
+                          "left": "s11",
+                          "right": "s1",
+                          "predicate": "ST_Intersects",
+                          "include_boundary": true
+                        },
+                        "depends_on": [
+                          "s11",
+                          "s1"
+                        ]
+                      },
+                      {
+                        "id": "s13",
+                        "action": "clip_features",
+                        "params": {
+                          "input": "s12",
+                          "clip_geom": "s6"
+                        },
+                        "depends_on": [
+                          "s12",
+                          "s6"
+                        ]
+                      },
+                      {
+                        "id": "s14",
+                        "action": "measure_features",
+                        "params": {
+                          "input": "s13",
+                          "measure": "length",
+                          "unit": "meter",
+                          "keep_zero_length_nonempty": true,
+                          "output": "code, length_m"
+                        },
+                        "depends_on": [
+                          "s13"
+                        ]
+                      },
+                      {
+                        "id": "s15",
+                        "action": "summarize_features",
+                        "params": {
+                          "input": "s14",
+                          "aggregate": "sum",
+                          "group_by": "code",
+                          "value_field": "length_m",
+                          "sort": "length_m DESC, code ASC",
+                          "output": "code, length_m"
+                        },
+                        "depends_on": [
+                          "s14"
+                        ]
+                      },
+                      {
+                        "id": "s16",
+                        "action": "summarize_features",
+                        "params": {
+                          "input": "s14",
+                          "aggregate": "sum",
+                          "value_field": "length_m",
+                          "output": "total_length_m"
+                        },
+                        "depends_on": [
+                          "s14"
+                        ]
+                      }
+                    ],
+                    "edges": [
+                      [
+                        "s1",
+                        "s3"
+                      ],
+                      [
+                        "s2",
+                        "s3"
+                      ],
+                      [
+                        "s3",
+                        "s4"
+                      ],
+                      [
+                        "s1",
+                        "s4"
+                      ],
+                      [
+                        "s4",
+                        "s5"
+                      ],
+                      [
+                        "s5",
+                        "s6"
+                      ],
+                      [
+                        "s7",
+                        "s8"
+                      ],
+                      [
+                        "s1",
+                        "s8"
+                      ],
+                      [
+                        "s8",
+                        "s9"
+                      ],
+                      [
+                        "s10",
+                        "s11"
+                      ],
+                      [
+                        "s6",
+                        "s11"
+                      ],
+                      [
+                        "s11",
+                        "s12"
+                      ],
+                      [
+                        "s1",
+                        "s12"
+                      ],
+                      [
+                        "s12",
+                        "s13"
+                      ],
+                      [
+                        "s6",
+                        "s13"
+                      ],
+                      [
+                        "s13",
+                        "s14"
+                      ],
+                      [
+                        "s14",
+                        "s15"
+                      ],
+                      [
+                        "s14",
+                        "s16"
+                      ]
+                    ]
+                  }
+                },
+                "trace": "先筛选高压燃气管线并与A001施工区相交，裁剪至边界后缓冲50米并合并为影响范围；复用该范围统计A001内正常/告警设备按status升序分组计数，并计算water_pipelines各管线受影响长度，按长度降序、同长按code升序输出及总长度，边界计入、零长度接触保留。算子顺序：query→clip→buffer→union→query→clip→measure→summarize。",
+                "outcome": "error",
+                "error_lesson": "$.device_groups[1].value: 3，期望 2；$.device_groups[1].feature_count: 3，期望 2",
+                "id": "5188b4ff",
+                "hits": 0,
+                "updated_at": "2026-11-06 15:52:58",
+                "score": 0.3485
+              },
+              {
+                "task_signature": "general/空间计算",
+                "question_feat": "分别统计与施工区 A001、A002 相交（ST_Intersects，含边界）且 gas_devices.status = '正常' 的设备数量；再将 A001 与 A002 的几何合并（union）后，统计与合并几何相交（ST_Intersects）且 status = '正常' 的设备去重数量。",
+                "plan": {
+                  "t1": {
+                    "nodes": [
+                      {
+                        "id": "s1",
+                        "action": "query_features",
+                        "params": {
+                          "layer_name": "construction_areas",
+                          "filters": {
+                            "code": "A001"
+                          },
+                          "fields": [
+                            "code",
+                            "geom"
+                          ]
+                        },
+                        "depends_on": []
+                      },
+                      {
+                        "id": "s2",
+                        "action": "query_features",
+                        "params": {
+                          "layer_name": "construction_areas",
+                          "filters": {
+                            "code": "A002"
+                          },
+                          "fields": [
+                            "code",
+                            "geom"
+                          ]
+                        },
+                        "depends_on": []
+                      },
+                      {
+                        "id": "s3",
+                        "action": "query_features",
+                        "params": {
+                          "layer_name": "gas_devices",
+                          "filters": {
+                            "status": "正常"
+                          },
+                          "target": "s1.geom",
+                          "relation": "ST_Intersects",
+                          "fields": [
+                            "id",
+                            "code",
+                            "geom"
+                          ]
+                        },
+                        "depends_on": [
+                          "s1"
+                        ]
+                      },
+                      {
+                        "id": "s4",
+                        "action": "query_features",
+                        "params": {
+                          "layer_name": "gas_devices",
+                          "filters": {
+                            "status": "正常"
+                          },
+                          "target": "s2.geom",
+                          "relation": "ST_Intersects",
+                          "fields": [
+                            "id",
+                            "code",
+                            "geom"
+                          ]
+                        },
+                        "depends_on": [
+                          "s2"
+                        ]
+                      },
+                      {
+                        "id": "s5",
+                        "action": "summarize_features",
+                        "params": {
+                          "input": "s3",
+                          "aggregate": "count",
+                          "distinct_by": "id"
+                        },
+                        "depends_on": [
+                          "s3"
+                        ]
+                      },
+                      {
+                        "id": "s6",
+                        "action": "summarize_features",
+                        "params": {
+                          "input": "s4",
+                          "aggregate": "count",
+                          "distinct_by": "id"
+                        },
+                        "depends_on": [
+                          "s4"
+                        ]
+                      },
+                      {
+                        "id": "s7",
+                        "action": "union_features",
+                        "params": {
+                          "inputs": [
+                            "s1.geom",
+                            "s2.geom"
+                          ],
+                          "output": "merged_geom"
+                        },
+                        "depends_on": [
+                          "s1",
+                          "s2"
+                        ]
+                      },
+                      {
+                        "id": "s8",
+                        "action": "query_features",
+                        "params": {
+                          "layer_name": "gas_devices",
+                          "filters": {
+                            "status": "正常"
+                          },
+                          "target": "s7.merged_geom",
+                          "relation": "ST_Intersects",
+                          "fields": [
+                            "id",
+                            "code",
+                            "geom"
+                          ]
+                        },
+                        "depends_on": [
+                          "s7"
+                        ]
+                      },
+                      {
+                        "id": "s9",
+                        "action": "summarize_features",
+                        "params": {
+                          "input": "s8",
+                          "aggregate": "count",
+                          "distinct_by": "id"
+                        },
+                        "depends_on": [
+                          "s8"
+                        ]
+                      }
+                    ],
+                    "edges": [
+                      [
+                        "s1",
+                        "s3"
+                      ],
+                      [
+                        "s2",
+                        "s4"
+                      ],
+                      [
+                        "s3",
+                        "s5"
+                      ],
+                      [
+                        "s4",
+                        "s6"
+                      ],
+                      [
+                        "s1",
+                        "s7"
+                      ],
+                      [
+                        "s2",
+                        "s7"
+                      ],
+                      [
+                        "s7",
+                        "s8"
+                      ],
+                      [
+                        "s8",
+                        "s9"
+                      ]
+                    ]
+                  }
+                },
+                "trace": "先分别用ST_Intersects统计与A001、A002相交且status='正常'的设备数；再union两区几何，用ST_Intersects统计与合并几何相交且status='正常'的去重设备数。算子顺序：query_features×4→union_features×2→query_features×2→summarize_features×2→intersection_geometry→query_features×2；结果均为数量。",
+                "outcome": "success",
+                "error_lesson": "",
+                "id": "80fa5212",
+                "hits": 12,
+                "updated_at": "2026-11-06 15:52:36",
+                "score": 0.1886
+              }
+            ],
+            "preferred_tools": [],
+            "capability_line": "空间计算 0.50、属性查询 0.50、统计分析 0.50、制图可视化 0.50",
+            "trace": [
+              {
+                "step": "s1",
+                "tool": "query_features",
+                "label": "要素查询",
+                "args": {
+                  "layer_name": "construction_areas",
+                  "filters": [
+                    {
+                      "field": "code",
+                      "operator": "eq",
+                      "value": "A001"
+                    }
+                  ],
+                  "fields": [
+                    "code",
+                    "geom"
+                  ]
+                },
+                "refs": [],
+                "ok": true,
+                "brief": {
+                  "feature_count": 8
+                },
+                "elapsed_ms": 544
+              },
+              {
+                "step": "s2",
+                "tool": "query_features",
+                "label": "要素查询",
+                "args": {
+                  "layer_name": "gas_devices",
+                  "filters": [
+                    {
+                      "field": "code",
+                      "operator": "eq",
+                      "value": "D011"
+                    }
+                  ],
+                  "fields": [
+                    "code",
+                    "device_type",
+                    "geom"
+                  ],
+                  "relation": "ST_Intersects",
+                  "target": {
+                    "$ref": "s1.result.geometry"
+                  }
+                },
+                "refs": [
+                  "s1"
+                ],
+                "ok": true,
+                "brief": {
+                  "feature_count": 11
+                },
+                "elapsed_ms": 1242
+              },
+              {
+                "step": "s3",
+                "tool": "buffer_features",
+                "label": "批量缓冲",
+                "args": {
+                  "input": {
+                    "$ref": "s2.result.feature_set"
+                  },
+                  "distance_m": 300,
+                  "segments": 32
+                },
+                "refs": [
+                  "s2"
+                ],
+                "ok": true,
+                "brief": {
+                  "feature_count": 7,
+                  "distance_m": 300
+                },
+                "elapsed_ms": 799
+              },
+              {
+                "step": "s4",
+                "tool": "clip_features",
+                "label": "裁剪到区域",
+                "args": {
+                  "input": {
+                    "$ref": "s3.result.feature_set"
+                  },
+                  "clip_geom": {
+                    "$ref": "s1.result.geometry"
+                  }
+                },
+                "refs": [
+                  "s3",
+                  "s1"
+                ],
+                "ok": true,
+                "brief": {
+                  "feature_count": 1,
+                  "total_length_m": 7389.2
+                },
+                "elapsed_ms": 780
+              },
+              {
+                "step": "s5",
+                "tool": "measure_features",
+                "label": "要素集量测",
+                "args": {
+                  "input": {
+                    "$ref": "s4.result.feature_set"
+                  },
+                  "operation": "ST_Area",
+                  "unit": "square_meter"
+                },
+                "refs": [
+                  "s4"
+                ],
+                "ok": true,
+                "brief": {
+                  "value": 6311.6,
+                  "unit": "square_meter",
+                  "feature_count": 1
+                },
+                "elapsed_ms": 788
+              }
+            ],
+            "tools_used": [
+              "query_features",
+              "buffer_features",
+              "clip_features",
+              "measure_features"
+            ],
+            "status": "success",
+            "error": "",
+            "outcome": "unknown",
+            "note": "未提供参考答案：本次按「未判定」处理，不写入成功/失败经验，能力向量保持不变。"
+          }
+        ],
+        "summary": "拆分为 1 个子任务，按能力向量完成路由"
+      },
+      "plan": {
+        "stage": "plan",
+        "status": "done",
+        "elapsed_ms": 985,
+        "subtasks": [
+          {
+            "subtask_id": "t1",
+            "agent_id": "agent_01",
+            "agent_name": "01",
+            "plan": {
+              "nodes": [
+                {
+                  "id": "s1",
+                  "action": "query_features",
+                  "label": "要素查询",
+                  "params": {
+                    "layer_name": "construction_areas",
+                    "filters": [
+                      {
+                        "field": "code",
+                        "operator": "eq",
+                        "value": "A001"
+                      }
+                    ],
+                    "fields": [
+                      "code",
+                      "geom"
+                    ]
+                  },
+                  "depends_on": []
+                },
+                {
+                  "id": "s2",
+                  "action": "query_features",
+                  "label": "要素查询",
+                  "params": {
+                    "layer_name": "gas_devices",
+                    "filters": [
+                      {
+                        "field": "code",
+                        "operator": "eq",
+                        "value": "D011"
+                      }
+                    ],
+                    "fields": [
+                      "code",
+                      "device_type",
+                      "geom"
+                    ],
+                    "relation": "ST_Intersects",
+                    "target": {
+                      "$ref": "s1.result.geometry"
+                    }
+                  },
+                  "depends_on": [
+                    "s1"
+                  ]
+                },
+                {
+                  "id": "s3",
+                  "action": "buffer_features",
+                  "label": "批量缓冲",
+                  "params": {
+                    "input": {
+                      "$ref": "s2.result.feature_set"
+                    },
+                    "distance_m": 300,
+                    "segments": 32
+                  },
+                  "depends_on": [
+                    "s2"
+                  ]
+                },
+                {
+                  "id": "s4",
+                  "action": "clip_features",
+                  "label": "裁剪到区域",
+                  "params": {
+                    "input": {
+                      "$ref": "s3.result.feature_set"
+                    },
+                    "clip_geom": {
+                      "$ref": "s1.result.geometry"
+                    }
+                  },
+                  "depends_on": [
+                    "s3",
+                    "s1"
+                  ]
+                },
+                {
+                  "id": "s5",
+                  "action": "measure_features",
+                  "label": "要素集量测",
+                  "params": {
+                    "input": {
+                      "$ref": "s4.result.feature_set"
+                    },
+                    "operation": "ST_Area",
+                    "unit": "square_meter"
+                  },
+                  "depends_on": [
+                    "s4"
+                  ]
+                }
+              ],
+              "edges": [
+                [
+                  "s1",
+                  "s2"
+                ],
+                [
+                  "s2",
+                  "s3"
+                ],
+                [
+                  "s3",
+                  "s4"
+                ],
+                [
+                  "s1",
+                  "s4"
+                ],
+                [
+                  "s4",
+                  "s5"
+                ]
+              ]
+            },
+            "skill": {
+              "id": "buffer_intersect_measure",
+              "name": "缓冲区求交量测",
+              "score": 0.4734,
+              "operators": [
+                "buffer_geometry",
+                "intersection_geometry",
+                "measure_geometry"
+              ]
+            },
+            "memory_hits": [],
+            "experience_hits": [
+              {
+                "task_signature": "gas/综合",
+                "question_feat": "从 gas_pipelines 中筛选 pressure_level='高压' 且与施工区 construction_areas.code='A001' 相交的燃气管线，裁剪至 A001 边界后分别缓冲 50 米并合并为同一影响范围；复用该范围：(1) 统计 A001 内 gas_devices 中 status 为 '正常' 或 '告警' 的设备，按 status 升序分组计数；(2) 计算 A001 内 water_pipelines 各管线的受影响长度（米），按长度降序、同长按 code 升序输出，并给出总长度；边界计入，非空零长度接触记录保留。",
+                "plan": {
+                  "t1": {
+                    "nodes": [
+                      {
+                        "id": "s1",
+                        "action": "query_features",
+                        "params": {
+                          "table": "construction_areas",
+                          "where": "code = 'A001'",
+                          "select": "geom"
+                        },
+                        "depends_on": []
+                      },
+                      {
+                        "id": "s2",
+                        "action": "query_features",
+                        "params": {
+                          "table": "gas_pipelines",
+                          "where": "pressure_level = '高压'",
+                          "select": "id, code, geom"
+                        },
+                        "depends_on": []
+                      },
+                      {
+                        "id": "s3",
+                        "action": "intersection_geometry",
+                        "params": {
+                          "left": "s2",
+                          "right": "s1",
+                          "predicate": "ST_Intersects",
+                          "include_boundary": true
+                        },
+                        "depends_on": [
+                          "s1",
+                          "s2"
+                        ]
+                      },
+                      {
+                        "id": "s4",
+                        "action": "clip_features",
+                        "params": {
+                          "input": "s3",
+                          "clip_geom": "s1"
+                        },
+                        "depends_on": [
+                          "s3",
+                          "s1"
+                        ]
+                      },
+                      {
+                        "id": "s5",
+                        "action": "buffer_features",
+                        "params": {
+                          "input": "s4",
+                          "distance": 50,
+                          "unit": "meter"
+                        },
+                        "depends_on": [
+                          "s4"
+                        ]
+                      },
+                      {
+                        "id": "s6",
+                        "action": "union_features",
+                        "params": {
+                          "input": "s5",
+                          "dissolve": true
+                        },
+                        "depends_on": [
+                          "s5"
+                        ]
+                      },
+                      {
+                        "id": "s7",
+                        "action": "query_features",
+                        "params": {
+                          "table": "gas_devices",
+                          "where": "status IN ('正常','告警')",
+                          "select": "id, code, status, geom"
+                        },
+                        "depends_on": []
+                      },
+                      {
+                        "id": "s8",
+                        "action": "intersection_geometry",
+                        "params": {
+                          "left": "s7",
+                          "right": "s1",
+                          "predicate": "ST_Intersects",
+                          "include_boundary": true
+                        },
+                        "depends_on": [
+                          "s7",
+                          "s1"
+                        ]
+                      },
+                      {
+                        "id": "s9",
+                        "action": "summarize_features",
+                        "params": {
+                          "input": "s8",
+                          "aggregate": "count",
+                          "group_by": "status",
+                          "sort": "status ASC",
+                          "output": "status, count"
+                        },
+                        "depends_on": [
+                          "s8"
+                        ]
+                      },
+                      {
+                        "id": "s10",
+                        "action": "query_features",
+                        "params": {
+                          "table": "water_pipelines",
+                          "select": "id, code, geom"
+                        },
+                        "depends_on": []
+                      },
+                      {
+                        "id": "s11",
+                        "action": "intersection_geometry",
+                        "params": {
+                          "left": "s10",
+                          "right": "s6",
+                          "predicate": "ST_Intersects",
+                          "include_boundary": true
+                        },
+                        "depends_on": [
+                          "s10",
+                          "s6"
+                        ]
+                      },
+                      {
+                        "id": "s12",
+                        "action": "intersection_geometry",
+                        "params": {
+                          "left": "s11",
+                          "right": "s1",
+                          "predicate": "ST_Intersects",
+                          "include_boundary": true
+                        },
+                        "depends_on": [
+                          "s11",
+                          "s1"
+                        ]
+                      },
+                      {
+                        "id": "s13",
+                        "action": "clip_features",
+                        "params": {
+                          "input": "s12",
+                          "clip_geom": "s6"
+                        },
+                        "depends_on": [
+                          "s12",
+                          "s6"
+                        ]
+                      },
+                      {
+                        "id": "s14",
+                        "action": "measure_features",
+                        "params": {
+                          "input": "s13",
+                          "measure": "length",
+                          "unit": "meter",
+                          "keep_zero_length_nonempty": true,
+                          "output": "code, length_m"
+                        },
+                        "depends_on": [
+                          "s13"
+                        ]
+                      },
+                      {
+                        "id": "s15",
+                        "action": "summarize_features",
+                        "params": {
+                          "input": "s14",
+                          "aggregate": "sum",
+                          "group_by": "code",
+                          "value_field": "length_m",
+                          "sort": "length_m DESC, code ASC",
+                          "output": "code, length_m"
+                        },
+                        "depends_on": [
+                          "s14"
+                        ]
+                      },
+                      {
+                        "id": "s16",
+                        "action": "summarize_features",
+                        "params": {
+                          "input": "s14",
+                          "aggregate": "sum",
+                          "value_field": "length_m",
+                          "output": "total_length_m"
+                        },
+                        "depends_on": [
+                          "s14"
+                        ]
+                      }
+                    ],
+                    "edges": [
+                      [
+                        "s1",
+                        "s3"
+                      ],
+                      [
+                        "s2",
+                        "s3"
+                      ],
+                      [
+                        "s3",
+                        "s4"
+                      ],
+                      [
+                        "s1",
+                        "s4"
+                      ],
+                      [
+                        "s4",
+                        "s5"
+                      ],
+                      [
+                        "s5",
+                        "s6"
+                      ],
+                      [
+                        "s7",
+                        "s8"
+                      ],
+                      [
+                        "s1",
+                        "s8"
+                      ],
+                      [
+                        "s8",
+                        "s9"
+                      ],
+                      [
+                        "s10",
+                        "s11"
+                      ],
+                      [
+                        "s6",
+                        "s11"
+                      ],
+                      [
+                        "s11",
+                        "s12"
+                      ],
+                      [
+                        "s1",
+                        "s12"
+                      ],
+                      [
+                        "s12",
+                        "s13"
+                      ],
+                      [
+                        "s6",
+                        "s13"
+                      ],
+                      [
+                        "s13",
+                        "s14"
+                      ],
+                      [
+                        "s14",
+                        "s15"
+                      ],
+                      [
+                        "s14",
+                        "s16"
+                      ]
+                    ]
+                  }
+                },
+                "trace": "先筛选高压燃气管线并与A001施工区相交，裁剪至边界后缓冲50米并合并为影响范围；复用该范围统计A001内正常/告警设备按status升序分组计数，并计算water_pipelines各管线受影响长度，按长度降序、同长按code升序输出及总长度，边界计入、零长度接触保留。算子顺序：query→clip→buffer→union→query→clip→measure→summarize。",
+                "outcome": "error",
+                "error_lesson": "$.device_groups[1].value: 3，期望 2；$.device_groups[1].feature_count: 3，期望 2",
+                "id": "5188b4ff",
+                "hits": 0,
+                "updated_at": "2026-11-06 15:52:58",
+                "score": 0.3485
+              },
+              {
+                "task_signature": "general/空间计算",
+                "question_feat": "分别统计与施工区 A001、A002 相交（ST_Intersects，含边界）且 gas_devices.status = '正常' 的设备数量；再将 A001 与 A002 的几何合并（union）后，统计与合并几何相交（ST_Intersects）且 status = '正常' 的设备去重数量。",
+                "plan": {
+                  "t1": {
+                    "nodes": [
+                      {
+                        "id": "s1",
+                        "action": "query_features",
+                        "params": {
+                          "layer_name": "construction_areas",
+                          "filters": {
+                            "code": "A001"
+                          },
+                          "fields": [
+                            "code",
+                            "geom"
+                          ]
+                        },
+                        "depends_on": []
+                      },
+                      {
+                        "id": "s2",
+                        "action": "query_features",
+                        "params": {
+                          "layer_name": "construction_areas",
+                          "filters": {
+                            "code": "A002"
+                          },
+                          "fields": [
+                            "code",
+                            "geom"
+                          ]
+                        },
+                        "depends_on": []
+                      },
+                      {
+                        "id": "s3",
+                        "action": "query_features",
+                        "params": {
+                          "layer_name": "gas_devices",
+                          "filters": {
+                            "status": "正常"
+                          },
+                          "target": "s1.geom",
+                          "relation": "ST_Intersects",
+                          "fields": [
+                            "id",
+                            "code",
+                            "geom"
+                          ]
+                        },
+                        "depends_on": [
+                          "s1"
+                        ]
+                      },
+                      {
+                        "id": "s4",
+                        "action": "query_features",
+                        "params": {
+                          "layer_name": "gas_devices",
+                          "filters": {
+                            "status": "正常"
+                          },
+                          "target": "s2.geom",
+                          "relation": "ST_Intersects",
+                          "fields": [
+                            "id",
+                            "code",
+                            "geom"
+                          ]
+                        },
+                        "depends_on": [
+                          "s2"
+                        ]
+                      },
+                      {
+                        "id": "s5",
+                        "action": "summarize_features",
+                        "params": {
+                          "input": "s3",
+                          "aggregate": "count",
+                          "distinct_by": "id"
+                        },
+                        "depends_on": [
+                          "s3"
+                        ]
+                      },
+                      {
+                        "id": "s6",
+                        "action": "summarize_features",
+                        "params": {
+                          "input": "s4",
+                          "aggregate": "count",
+                          "distinct_by": "id"
+                        },
+                        "depends_on": [
+                          "s4"
+                        ]
+                      },
+                      {
+                        "id": "s7",
+                        "action": "union_features",
+                        "params": {
+                          "inputs": [
+                            "s1.geom",
+                            "s2.geom"
+                          ],
+                          "output": "merged_geom"
+                        },
+                        "depends_on": [
+                          "s1",
+                          "s2"
+                        ]
+                      },
+                      {
+                        "id": "s8",
+                        "action": "query_features",
+                        "params": {
+                          "layer_name": "gas_devices",
+                          "filters": {
+                            "status": "正常"
+                          },
+                          "target": "s7.merged_geom",
+                          "relation": "ST_Intersects",
+                          "fields": [
+                            "id",
+                            "code",
+                            "geom"
+                          ]
+                        },
+                        "depends_on": [
+                          "s7"
+                        ]
+                      },
+                      {
+                        "id": "s9",
+                        "action": "summarize_features",
+                        "params": {
+                          "input": "s8",
+                          "aggregate": "count",
+                          "distinct_by": "id"
+                        },
+                        "depends_on": [
+                          "s8"
+                        ]
+                      }
+                    ],
+                    "edges": [
+                      [
+                        "s1",
+                        "s3"
+                      ],
+                      [
+                        "s2",
+                        "s4"
+                      ],
+                      [
+                        "s3",
+                        "s5"
+                      ],
+                      [
+                        "s4",
+                        "s6"
+                      ],
+                      [
+                        "s1",
+                        "s7"
+                      ],
+                      [
+                        "s2",
+                        "s7"
+                      ],
+                      [
+                        "s7",
+                        "s8"
+                      ],
+                      [
+                        "s8",
+                        "s9"
+                      ]
+                    ]
+                  }
+                },
+                "trace": "先分别用ST_Intersects统计与A001、A002相交且status='正常'的设备数；再union两区几何，用ST_Intersects统计与合并几何相交且status='正常'的去重设备数。算子顺序：query_features×4→union_features×2→query_features×2→summarize_features×2→intersection_geometry→query_features×2；结果均为数量。",
+                "outcome": "success",
+                "error_lesson": "",
+                "id": "80fa5212",
+                "hits": 12,
+                "updated_at": "2026-11-06 15:52:36",
+                "score": 0.1886
+              }
+            ],
+            "capability_line": "空间计算 0.50、属性查询 0.50、统计分析 0.50、制图可视化 0.50",
+            "preferred_tools": []
+          }
+        ],
+        "summary": "生成 5 个 DAG 节点"
+      },
+      "execute": {
+        "stage": "execute",
+        "status": "done",
+        "elapsed_ms": 1601,
+        "subtasks": [
+          {
+            "subtask_id": "t1",
+            "agent_id": "agent_01",
+            "agent_name": "01",
+            "status": "success",
+            "trace": [
+              {
+                "step": "s1",
+                "tool": "query_features",
+                "label": "要素查询",
+                "args": {
+                  "layer_name": "construction_areas",
+                  "filters": [
+                    {
+                      "field": "code",
+                      "operator": "eq",
+                      "value": "A001"
+                    }
+                  ],
+                  "fields": [
+                    "code",
+                    "geom"
+                  ]
+                },
+                "refs": [],
+                "ok": true,
+                "brief": {
+                  "feature_count": 8
+                },
+                "elapsed_ms": 544
+              },
+              {
+                "step": "s2",
+                "tool": "query_features",
+                "label": "要素查询",
+                "args": {
+                  "layer_name": "gas_devices",
+                  "filters": [
+                    {
+                      "field": "code",
+                      "operator": "eq",
+                      "value": "D011"
+                    }
+                  ],
+                  "fields": [
+                    "code",
+                    "device_type",
+                    "geom"
+                  ],
+                  "relation": "ST_Intersects",
+                  "target": {
+                    "$ref": "s1.result.geometry"
+                  }
+                },
+                "refs": [
+                  "s1"
+                ],
+                "ok": true,
+                "brief": {
+                  "feature_count": 11
+                },
+                "elapsed_ms": 1242
+              },
+              {
+                "step": "s3",
+                "tool": "buffer_features",
+                "label": "批量缓冲",
+                "args": {
+                  "input": {
+                    "$ref": "s2.result.feature_set"
+                  },
+                  "distance_m": 300,
+                  "segments": 32
+                },
+                "refs": [
+                  "s2"
+                ],
+                "ok": true,
+                "brief": {
+                  "feature_count": 7,
+                  "distance_m": 300
+                },
+                "elapsed_ms": 799
+              },
+              {
+                "step": "s4",
+                "tool": "clip_features",
+                "label": "裁剪到区域",
+                "args": {
+                  "input": {
+                    "$ref": "s3.result.feature_set"
+                  },
+                  "clip_geom": {
+                    "$ref": "s1.result.geometry"
+                  }
+                },
+                "refs": [
+                  "s3",
+                  "s1"
+                ],
+                "ok": true,
+                "brief": {
+                  "feature_count": 1,
+                  "total_length_m": 7389.2
+                },
+                "elapsed_ms": 780
+              },
+              {
+                "step": "s5",
+                "tool": "measure_features",
+                "label": "要素集量测",
+                "args": {
+                  "input": {
+                    "$ref": "s4.result.feature_set"
+                  },
+                  "operation": "ST_Area",
+                  "unit": "square_meter"
+                },
+                "refs": [
+                  "s4"
+                ],
+                "ok": true,
+                "brief": {
+                  "value": 6311.6,
+                  "unit": "square_meter",
+                  "feature_count": 1
+                },
+                "elapsed_ms": 788
+              }
+            ],
+            "tools_used": [
+              "query_features",
+              "buffer_features",
+              "clip_features",
+              "measure_features"
+            ],
+            "error": ""
+          }
+        ],
+        "summary": "完成 5 次工具调用"
+      },
+      "evaluate": {
+        "stage": "evaluate",
+        "status": "done",
+        "elapsed_ms": 720,
+        "evaluation": "unknown",
+        "correct": null,
+        "reason": "未提供参考答案：本次按「未判定」处理，不写入成功/失败经验，能力向量保持不变。",
+        "final_answer": "{\n  \"area_square_meter\": 6311.6\n}",
+        "answer": {
+          "area_square_meter": 6311.6
+        },
+        "answer_kind": "量测",
+        "changes": [],
+        "summary": "未提供参考答案 · 按未知处理，能力向量保持不变"
+      }
+    },
+    "subtasks": [
+      {
+        "subtask_id": "t1",
+        "question": "在 PostGIS 数据集上，基于 construction_areas、gas_devices 图层完成：以燃气设备 D011 为中心建立 300 米缓冲区，计算缓冲区位于 A001 内的面积（平方米）。（语义约束：平面坐标 EPSG:3857，长度 meter / 面积 square_meter。）",
+        "required_capabilities": [
+          "spatial_compute"
+        ],
+        "agent_id": "agent_01",
+        "agent_name": "01",
+        "routing": {
+          "agent_id": "agent_01",
+          "agent_name": "01",
+          "required": [
+            "spatial_compute"
+          ],
+          "scores": {
+            "agent_01": 0.5,
+            "agent_02": 0.5,
+            "agent_03": 0.5,
+            "agent_04": 0.5
+          },
+          "best_score": 0.5,
+          "tied": [
+            "agent_01",
+            "agent_02",
+            "agent_03",
+            "agent_04"
+          ],
+          "random_pick": true,
+          "epsilon": 0.0,
+          "pool": [
+            "agent_01",
+            "agent_02",
+            "agent_03",
+            "agent_04"
+          ]
+        },
+        "plan": {
+          "nodes": [
+            {
+              "id": "s1",
+              "action": "query_features",
+              "label": "要素查询",
+              "params": {
+                "layer_name": "construction_areas",
+                "filters": [
+                  {
+                    "field": "code",
+                    "operator": "eq",
+                    "value": "A001"
+                  }
+                ],
+                "fields": [
+                  "code",
+                  "geom"
+                ]
+              },
+              "depends_on": []
+            },
+            {
+              "id": "s2",
+              "action": "query_features",
+              "label": "要素查询",
+              "params": {
+                "layer_name": "gas_devices",
+                "filters": [
+                  {
+                    "field": "code",
+                    "operator": "eq",
+                    "value": "D011"
+                  }
+                ],
+                "fields": [
+                  "code",
+                  "device_type",
+                  "geom"
+                ],
+                "relation": "ST_Intersects",
+                "target": {
+                  "$ref": "s1.result.geometry"
+                }
+              },
+              "depends_on": [
+                "s1"
+              ]
+            },
+            {
+              "id": "s3",
+              "action": "buffer_features",
+              "label": "批量缓冲",
+              "params": {
+                "input": {
+                  "$ref": "s2.result.feature_set"
+                },
+                "distance_m": 300,
+                "segments": 32
+              },
+              "depends_on": [
+                "s2"
+              ]
+            },
+            {
+              "id": "s4",
+              "action": "clip_features",
+              "label": "裁剪到区域",
+              "params": {
+                "input": {
+                  "$ref": "s3.result.feature_set"
+                },
+                "clip_geom": {
+                  "$ref": "s1.result.geometry"
+                }
+              },
+              "depends_on": [
+                "s3",
+                "s1"
+              ]
+            },
+            {
+              "id": "s5",
+              "action": "measure_features",
+              "label": "要素集量测",
+              "params": {
+                "input": {
+                  "$ref": "s4.result.feature_set"
+                },
+                "operation": "ST_Area",
+                "unit": "square_meter"
+              },
+              "depends_on": [
+                "s4"
+              ]
+            }
+          ],
+          "edges": [
+            [
+              "s1",
+              "s2"
+            ],
+            [
+              "s2",
+              "s3"
+            ],
+            [
+              "s3",
+              "s4"
+            ],
+            [
+              "s1",
+              "s4"
+            ],
+            [
+              "s4",
+              "s5"
+            ]
+          ]
+        },
+        "trace": [
+          {
+            "step": "s1",
+            "tool": "query_features",
+            "label": "要素查询",
+            "args": {
+              "layer_name": "construction_areas",
+              "filters": [
+                {
+                  "field": "code",
+                  "operator": "eq",
+                  "value": "A001"
+                }
+              ],
+              "fields": [
+                "code",
+                "geom"
+              ]
+            },
+            "refs": [],
+            "ok": true,
+            "brief": {
+              "feature_count": 8
+            },
+            "elapsed_ms": 544
+          },
+          {
+            "step": "s2",
+            "tool": "query_features",
+            "label": "要素查询",
+            "args": {
+              "layer_name": "gas_devices",
+              "filters": [
+                {
+                  "field": "code",
+                  "operator": "eq",
+                  "value": "D011"
+                }
+              ],
+              "fields": [
+                "code",
+                "device_type",
+                "geom"
+              ],
+              "relation": "ST_Intersects",
+              "target": {
+                "$ref": "s1.result.geometry"
+              }
+            },
+            "refs": [
+              "s1"
+            ],
+            "ok": true,
+            "brief": {
+              "feature_count": 11
+            },
+            "elapsed_ms": 1242
+          },
+          {
+            "step": "s3",
+            "tool": "buffer_features",
+            "label": "批量缓冲",
+            "args": {
+              "input": {
+                "$ref": "s2.result.feature_set"
+              },
+              "distance_m": 300,
+              "segments": 32
+            },
+            "refs": [
+              "s2"
+            ],
+            "ok": true,
+            "brief": {
+              "feature_count": 7,
+              "distance_m": 300
+            },
+            "elapsed_ms": 799
+          },
+          {
+            "step": "s4",
+            "tool": "clip_features",
+            "label": "裁剪到区域",
+            "args": {
+              "input": {
+                "$ref": "s3.result.feature_set"
+              },
+              "clip_geom": {
+                "$ref": "s1.result.geometry"
+              }
+            },
+            "refs": [
+              "s3",
+              "s1"
+            ],
+            "ok": true,
+            "brief": {
+              "feature_count": 1,
+              "total_length_m": 7389.2
+            },
+            "elapsed_ms": 780
+          },
+          {
+            "step": "s5",
+            "tool": "measure_features",
+            "label": "要素集量测",
+            "args": {
+              "input": {
+                "$ref": "s4.result.feature_set"
+              },
+              "operation": "ST_Area",
+              "unit": "square_meter"
+            },
+            "refs": [
+              "s4"
+            ],
+            "ok": true,
+            "brief": {
+              "value": 6311.6,
+              "unit": "square_meter",
+              "feature_count": 1
+            },
+            "elapsed_ms": 788
+          }
+        ],
+        "tools_used": [
+          "query_features",
+          "buffer_features",
+          "clip_features",
+          "measure_features"
+        ],
+        "status": "success",
+        "outcome": "unknown",
+        "error": "",
+        "skill": {
+          "id": "buffer_intersect_measure",
+          "name": "缓冲区求交量测",
+          "score": 0.4734,
+          "operators": [
+            "buffer_geometry",
+            "intersection_geometry",
+            "measure_geometry"
+          ]
+        }
+      }
+    ],
+    "capability_before": {
+      "agents": {
+        "agent_01": {
+          "name": "01",
+          "capabilities": {
+            "spatial_compute": 0.5,
+            "attribute_query": 0.5,
+            "statistics": 0.5,
+            "mapping": 0.5
+          },
+          "preferred_tools": [],
+          "stats": {
+            "attempts": 0,
+            "successes": 0,
+            "failures": 0
+          }
+        },
+        "agent_02": {
+          "name": "02",
+          "capabilities": {
+            "spatial_compute": 0.5,
+            "attribute_query": 0.5,
+            "statistics": 0.5,
+            "mapping": 0.5
+          },
+          "preferred_tools": [],
+          "stats": {
+            "attempts": 0,
+            "successes": 0,
+            "failures": 0
+          }
+        },
+        "agent_03": {
+          "name": "03",
+          "capabilities": {
+            "spatial_compute": 0.5,
+            "attribute_query": 0.5,
+            "statistics": 0.5,
+            "mapping": 0.5
+          },
+          "preferred_tools": [],
+          "stats": {
+            "attempts": 0,
+            "successes": 0,
+            "failures": 0
+          }
+        },
+        "agent_04": {
+          "name": "04",
+          "capabilities": {
+            "spatial_compute": 0.5,
+            "attribute_query": 0.5,
+            "statistics": 0.5,
+            "mapping": 0.5
+          },
+          "preferred_tools": [],
+          "stats": {
+            "attempts": 0,
+            "successes": 0,
+            "failures": 0
+          }
+        }
+      },
+      "history_len": 0
+    },
+    "capability_after": {
+      "agents": {
+        "agent_01": {
+          "name": "01",
+          "capabilities": {
+            "spatial_compute": 0.5,
+            "attribute_query": 0.5,
+            "statistics": 0.5,
+            "mapping": 0.5
+          },
+          "preferred_tools": [],
+          "stats": {
+            "attempts": 0,
+            "successes": 0,
+            "failures": 0
+          }
+        },
+        "agent_02": {
+          "name": "02",
+          "capabilities": {
+            "spatial_compute": 0.5,
+            "attribute_query": 0.5,
+            "statistics": 0.5,
+            "mapping": 0.5
+          },
+          "preferred_tools": [],
+          "stats": {
+            "attempts": 0,
+            "successes": 0,
+            "failures": 0
+          }
+        },
+        "agent_03": {
+          "name": "03",
+          "capabilities": {
+            "spatial_compute": 0.5,
+            "attribute_query": 0.5,
+            "statistics": 0.5,
+            "mapping": 0.5
+          },
+          "preferred_tools": [],
+          "stats": {
+            "attempts": 0,
+            "successes": 0,
+            "failures": 0
+          }
+        },
+        "agent_04": {
+          "name": "04",
+          "capabilities": {
+            "spatial_compute": 0.5,
+            "attribute_query": 0.5,
+            "statistics": 0.5,
+            "mapping": 0.5
+          },
+          "preferred_tools": [],
+          "stats": {
+            "attempts": 0,
+            "successes": 0,
+            "failures": 0
+          }
+        }
+      },
+      "history_len": 0
+    },
+    "timeline": [
+      {
+        "stage": "understand",
+        "title": "领域识别",
+        "detail": "gas / 空间计算",
+        "kind": "ok",
+        "at_ms": 1
+      },
+      {
+        "stage": "understand",
+        "title": "检索相关表结构",
+        "detail": "gas_devices、construction_areas",
+        "kind": "info",
+        "at_ms": 1
+      },
+      {
+        "stage": "understand",
+        "title": "检索任务级 skill",
+        "detail": "缓冲区求交量测(0.47)、缓冲合并后裁剪(0.23)",
+        "kind": "info",
+        "at_ms": 1
+      },
+      {
+        "stage": "decompose",
+        "title": "子任务 1 路由",
+        "detail": "所需能力 spatial_compute → 智能体 01（能力并列，随机抽取）",
+        "kind": "warn",
+        "at_ms": 1
+      },
+      {
+        "stage": "plan",
+        "title": "子任务 t1 生成 DAG",
+        "detail": "query_features → query_features → buffer_features → clip_features → measure_features",
+        "kind": "ok",
+        "at_ms": 6
+      },
+      {
+        "stage": "execute",
+        "title": "t1 · query_features",
+        "detail": "01 调用成功",
+        "kind": "ok",
+        "at_ms": 7
+      },
+      {
+        "stage": "execute",
+        "title": "t1 · query_features",
+        "detail": "01 调用成功，引用 s1",
+        "kind": "ok",
+        "at_ms": 7
+      },
+      {
+        "stage": "execute",
+        "title": "t1 · buffer_features",
+        "detail": "01 调用成功，引用 s2",
+        "kind": "ok",
+        "at_ms": 7
+      },
+      {
+        "stage": "execute",
+        "title": "t1 · clip_features",
+        "detail": "01 调用成功，引用 s3/s1",
+        "kind": "ok",
+        "at_ms": 7
+      },
+      {
+        "stage": "execute",
+        "title": "t1 · measure_features",
+        "detail": "01 调用成功，引用 s4",
+        "kind": "ok",
+        "at_ms": 7
+      },
+      {
+        "stage": "evaluate",
+        "title": "子任务 t1 未判定",
+        "detail": "未知结果 · 跳过能力进化",
+        "kind": "warn",
+        "at_ms": 7
+      },
+      {
+        "stage": "evaluate",
+        "title": "评估结论",
+        "detail": "未提供参考答案：本次按「未判定」处理，不写入成功/失败经验，能力向量保持不变。",
+        "kind": "warn",
+        "at_ms": 7
+      }
+    ],
+    "metrics": {
+      "elapsed_ms": 7,
+      "tool_calls": 5,
+      "tool_errors": 0,
+      "retrieval_hits": 4,
+      "subtasks": 1,
+      "agents_used": [
+        "agent_01"
+      ]
+    },
+    "notes": [
+      "演示会话：执行流与工具返回值为本地模拟，不调用 LLM、数据库或外部工具集。",
+      "表结构 / skill / 经验 / 记忆检索、路由与能力进化公式均取自项目真实实现。",
+      "本运行只写入 web/data/，不会修改项目 data/ 下的能力、经验与记忆文件。"
+    ]
+  },
+  {
     "run_id": "run_20261119_202821_3d85",
     "created_at": "2026-11-19 20:28:21",
     "mode": "demo",
