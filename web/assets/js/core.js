@@ -187,6 +187,28 @@
         timeout: 15000,
       });
     },
+    admin() { return request("/api/admin", { timeout: 15000 }); },
+    resetRealCapability() {
+      return request("/api/admin/capability/reset", {
+        method: "POST",
+        body: { confirm: true },
+        timeout: 20000,
+      });
+    },
+    updateTieEpsilon(value) {
+      return request("/api/admin/routing", {
+        method: "POST",
+        body: { confirm: true, tie_epsilon: value },
+        timeout: 15000,
+      });
+    },
+    memoryAction(agentId, scope, mode) {
+      return request("/api/admin/memory", {
+        method: "POST",
+        body: { confirm: true, agent_id: agentId, scope, mode },
+        timeout: 20000,
+      });
+    },
     reports() { return request("/api/reports"); },
     report(name) { return request("/api/reports/" + encodeURIComponent(name), { timeout: 20000 }); },
     runs() { return request("/api/runs"); },

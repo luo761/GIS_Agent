@@ -193,7 +193,6 @@
     const groups = cacheGroups(cache);
     const rMax = recordMax(agentId);
     const cMax = cacheMax(agentId);
-    const groups = cacheGroups(cache);
     const q = S.search.trim().toLowerCase();
     const list = q ? recs.filter((r) => ((r.question_feat || "") + " " + (r.result_summary || "") + " " + (r.error || "")).toLowerCase().includes(q)) : recs;
     return "<div class='stack-lg'>" + agentStatsHTML(agentId) +

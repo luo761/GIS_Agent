@@ -193,6 +193,9 @@ class Handler(BaseHTTPRequestHandler):
                 },
             )
             return
+        if path == "/api/admin":
+            _json_response(self, ds.admin_payload())
+            return
         if path == "/api/skills":
             _json_response(self, {"skills": ds.SKILLS, "tools": ds.TOOL_CATALOG})
             return
@@ -227,6 +230,55 @@ class Handler(BaseHTTPRequestHandler):
             with _LOCK:
                 run = demo_engine.run_demo(question, truth=truth, verdict=verdict)
             _json_response(self, run)
+            return
+        if path == "/api/admin/capability/reset":
+            if payload.get("confirm") is not True:
+                _error(self, 400, "危险操作需要 confirm=true")
+                return
+            with _LOCK:
+                before = ds.real_capability()
+                state = ds.reset_real_capability()
+            _json_response(
+                self,
+                {
+                    "ok": True,
+                    "path": ds._path_label(ds.CAPABILITY_PATH),
+                    "initial_capability": state.get("initial_capability"),
+                    "agent_count": len(state.get("agents") or {}),
+                    "agents_reset": sorted(state.get("agents") or {}),
+                    "cleared_history": len(before.get("history") or []),
+                    "before": {
+                        aid: (item or {}).get("capabilities") or {}
+                        for aid, item in (before.get("agents") or {}).items()
+                    },
+                    "capability": ds.capability_payload(state, source="real"),
+                },
+            )
+            return
+        if path == "/api/admin/routing":
+            if payload.get("confirm") is not True:
+                _error(self, 400, "修改路由参数需要 confirm=true")
+                return
+            if "tie_epsilon" not in payload:
+                _error(self, 400, "缺少 tie_epsilon")
+                return
+            with _LOCK:
+                result = ds.update_tie_epsilon(payload.get("tie_epsilon"))
+            _json_response(self, result)
+            return
+        if path == "/api/admin/memory":
+            if payload.get("confirm") is not True:
+                _error(self, 400, "危险操作需要 confirm=true")
+                return
+            agent_id = str(payload.get("agent_id") or "").strip()
+            if not agent_id:
+                _error(self, 400, "缺少 agent_id")
+                return
+            scope = str(payload.get("scope") or "all").strip()
+            mode = str(payload.get("mode") or "clear").strip()
+            with _LOCK:
+                result = ds.mutate_agent_memory(agent_id, scope=scope, mode=mode)
+            _json_response(self, result)
             return
         if path == "/api/retrieve":
             query = str(payload.get("query") or "").strip()

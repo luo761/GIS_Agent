@@ -19,6 +19,7 @@ import ast
 import copy
 import importlib.util
 import json
+import math
 import os
 import re
 import shutil
@@ -40,6 +41,13 @@ DEMO_STATE_PATH = WEB_DATA_DIR / "demo_state.json"
 DEMO_RUNS_PATH = WEB_DATA_DIR / "demo_runs.json"
 SNAPSHOT_PATH = WEB_DATA_DIR / "snapshot.js"
 DEMO_RUN_LIMIT = 40
+
+# 系统管理页直接操作的项目真实文件
+CAPABILITY_PATH = DATA_DIR / "agent_capabilities.json"
+AGENTS_CONFIG_PATH = CONFIG_DIR / "agents_capability.yaml"
+MEMORY_ROOT = DATA_DIR / "memory"
+# 记忆长期记录目录（唯一规范目录）
+RECORD_DIR_NAMES = ("record",)
 
 # ---------------------------------------------------------------------------
 # 项目检索模块（stdlib only）——与项目内所有检索点共用同一实现
@@ -83,10 +91,14 @@ class Config:
         self.domains_raw: dict[str, Any] = {}
         self._load()
 
+    def reload(self) -> None:
+        """重新读取 config/*.yaml（系统管理页修改 tie_epsilon 后调用）。"""
+        self._load()
+
     def _load(self) -> None:
         try:
             self.agents_raw = parse_yaml(
-                (CONFIG_DIR / "agents_capability.yaml").read_text(encoding="utf-8")
+                AGENTS_CONFIG_PATH.read_text(encoding="utf-8")
             ) or {}
         except OSError:
             self.agents_raw = {}
@@ -495,6 +507,153 @@ def reset_demo_capability(*, seed: str = "initial") -> dict[str, Any]:
 
 
 # ---------------------------------------------------------------------------
+# 系统管理：真实能力向量 / 路由容差 / 记忆空间
+# ---------------------------------------------------------------------------
+def reset_real_capability(target: float | None = None) -> dict[str, Any]:
+    """把项目真实能力向量表恢复到初始均衡值（默认 0.5）。
+
+    同时清空进化历史、执行统计和工具偏好，保证能力值与历史记录一致。
+    只写 data/agent_capabilities.json，不影响演示会话。
+    """
+    value = float(CONFIG.initial_capability if target is None else target)
+    state = _default_capability_state()
+    state["initial_capability"] = value
+    for agent in state["agents"].values():
+        agent["capabilities"] = {dim: value for dim in CONFIG.dimensions}
+        agent["stats"] = {"attempts": 0, "successes": 0, "failures": 0}
+        agent["preferred_tools"] = []
+    state["history"] = []
+    state["source"] = "reset_real"
+    state["updated_at"] = _now()
+    _write_json(CAPABILITY_PATH, state)
+    return _normalize_capability(state)
+
+
+def update_tie_epsilon(value: float) -> dict[str, Any]:
+    """把 routing.tie_epsilon 写回 config/agents_capability.yaml，保留注释与排版。"""
+    try:
+        epsilon = float(value)
+    except (TypeError, ValueError) as exc:
+        raise ValueError("tie_epsilon 必须是数字") from exc
+    if not math.isfinite(epsilon) or epsilon < 0 or epsilon > 1:
+        raise ValueError("tie_epsilon 必须在 0 到 1 之间")
+    if not AGENTS_CONFIG_PATH.exists():
+        raise ValueError("找不到 config/agents_capability.yaml")
+    # newline="" 保留文件原有的 CRLF/LF，避免只改一个参数却重写整个文件的换行符
+    with AGENTS_CONFIG_PATH.open("r", encoding="utf-8", newline="") as fp:
+        text = fp.read()
+    pattern = re.compile(
+        r"(?m)^([ \t]*tie_epsilon[ \t]*:[ \t]*)"
+        r"([-+]?(?:\d+\.\d*|\.\d+|\d+)(?:[eE][-+]?\d+)?)"
+        r"([ \t]*(?:#.*)?)(\r?)$"
+    )
+    matches = list(pattern.finditer(text))
+    if len(matches) != 1:
+        raise ValueError("配置文件中未找到唯一的 routing.tie_epsilon")
+    formatted = ("%.6f" % epsilon).rstrip("0").rstrip(".")
+    if "." not in formatted and "e" not in formatted.lower():
+        formatted += ".0"
+    match = matches[0]
+    new_text = (
+        text[: match.start()] + match.group(1) + formatted
+        + match.group(3) + match.group(4) + text[match.end():]
+    )
+    tmp = AGENTS_CONFIG_PATH.with_suffix(AGENTS_CONFIG_PATH.suffix + ".tmp")
+    with tmp.open("w", encoding="utf-8", newline="") as fp:
+        fp.write(new_text)
+    tmp.replace(AGENTS_CONFIG_PATH)
+    CONFIG.reload()
+    effective = float(CONFIG.routing.get("tie_epsilon", epsilon))
+    return {
+        "ok": True,
+        "tie_epsilon": effective,
+        "path": _path_label(AGENTS_CONFIG_PATH),
+        "routing": CONFIG.routing,
+    }
+
+
+def _remove_memory_path(path: Path) -> None:
+    if path.is_symlink() or path.is_file():
+        path.unlink(missing_ok=True)
+    elif path.is_dir():
+        shutil.rmtree(path)
+
+
+def mutate_agent_memory(agent_id: str, *, scope: str = "all", mode: str = "clear") -> dict[str, Any]:
+    """清空或删除某个智能体的长期记录 / 短期缓存。
+
+    scope: records | cache | all
+    mode:  clear  = 保留目录/文件容器，只清内容（cache.json 写成 []）
+           delete = 删除记录目录 / 缓存文件本身
+    """
+    if scope not in ("records", "cache", "all"):
+        raise ValueError("scope 只能是 records / cache / all")
+    if mode not in ("clear", "delete"):
+        raise ValueError("mode 只能是 clear / delete")
+    root = _agent_memory_root(agent_id)
+    removed_files = 0
+    freed_bytes = 0
+    removed_records = 0
+    removed_cache_entries = 0
+
+    if scope in ("records", "all"):
+        for record_dir in _record_dirs(root):
+            if not record_dir.exists():
+                continue
+            removed_files += sum(1 for p in record_dir.rglob("*") if p.is_file())
+            removed_records += sum(1 for _ in record_dir.glob("*.json"))
+            freed_bytes += _dir_size(record_dir)
+            _remove_memory_path(record_dir)
+            if mode == "clear":
+                record_dir.mkdir(parents=True, exist_ok=True)
+
+    if scope in ("cache", "all"):
+        cache_file = root / "cache.json"
+        if cache_file.exists():
+            cache = _read_json(cache_file, [])
+            if isinstance(cache, list):
+                removed_cache_entries = len(cache)
+            removed_files += 1
+            freed_bytes += _dir_size(cache_file)
+            if mode == "delete":
+                cache_file.unlink(missing_ok=True)
+            else:
+                _write_json(cache_file, [])
+        elif mode == "clear":
+            # 文件本来就不存在时，"清空"仍写入空缓存，保持一个明确的空状态
+            _write_json(cache_file, [])
+
+    return {
+        "ok": True,
+        "agent_id": agent_id,
+        "scope": scope,
+        "mode": mode,
+        "root": _path_label(root),
+        "removed_records": removed_records,
+        "removed_cache_entries": removed_cache_entries,
+        "removed_files": removed_files,
+        "freed_bytes": freed_bytes,
+        "memory": load_memory().get(agent_id) or {},
+    }
+
+
+def admin_payload() -> dict[str, Any]:
+    """系统管理页所需的真实文件状态与可编辑参数。"""
+    real = real_capability()
+    return {
+        "generated_at": _now(),
+        "capability": capability_payload(real, source="real"),
+        "capability_path": _path_label(CAPABILITY_PATH),
+        "capability_exists": CAPABILITY_PATH.exists(),
+        "routing": CONFIG.routing,
+        "tie_epsilon": float(CONFIG.routing.get("tie_epsilon", 0.1)),
+        "routing_path": _path_label(AGENTS_CONFIG_PATH),
+        "memory": load_memory(),
+        "memory_limits": MEMORY_LIMITS,
+    }
+
+
+# ---------------------------------------------------------------------------
 # 记忆 / 经验 / 评测报告
 # ---------------------------------------------------------------------------
 def _load_memory_limits() -> dict[str, int]:
@@ -533,8 +692,53 @@ def _load_memory_limits() -> dict[str, int]:
 MEMORY_LIMITS = _load_memory_limits()
 
 
-def _memory_root() -> Path:
-    return DATA_DIR / "memory"
+def _path_label(path: Path) -> str:
+    """把项目内路径显示为相对路径，避免前端出现机器绝对路径。"""
+    try:
+        return str(path.resolve().relative_to(PROJECT_ROOT)).replace("\\", "/")
+    except ValueError:
+        return str(path)
+
+
+def _agent_memory_root(agent_id: str) -> Path:
+    """解析某智能体的记忆根目录，并限制在项目 data/memory 下，防止误删。"""
+    if agent_id not in CONFIG.agent_defs:
+        raise ValueError(f"未知智能体: {agent_id}")
+    cfg = CONFIG.agent_defs.get(agent_id) or {}
+    raw = cfg.get("memory_dir")
+    if raw:
+        root = Path(str(raw))
+        if not root.is_absolute():
+            root = PROJECT_ROOT / root
+    else:
+        root = MEMORY_ROOT / agent_id
+    root = root.resolve()
+    allowed = MEMORY_ROOT.resolve()
+    if root != allowed and allowed not in root.parents:
+        raise ValueError(f"拒绝操作 data/memory 之外的目录: {root}")
+    return root
+
+
+def _record_dirs(root: Path) -> list[Path]:
+    return [root / name for name in RECORD_DIR_NAMES]
+
+
+def _dir_size(path: Path) -> int:
+    if not path.exists():
+        return 0
+    if path.is_file():
+        try:
+            return path.stat().st_size
+        except OSError:
+            return 0
+    total = 0
+    for child in path.rglob("*"):
+        if child.is_file():
+            try:
+                total += child.stat().st_size
+            except OSError:
+                continue
+    return total
 
 
 def load_memory() -> dict[str, Any]:
@@ -544,32 +748,48 @@ def load_memory() -> dict[str, Any]:
     cache_top_k = int(MEMORY_LIMITS["AGENT_MEMORY_CACHE_TOP_K"])
     record_top_k = int(MEMORY_LIMITS["AGENT_MEMORY_RECORD_TOP_K"])
     for aid in sorted(CONFIG.agent_defs):
-        root = _memory_root() / aid
+        root = _agent_memory_root(aid)
         records: list[dict[str, Any]] = []
-        record_dir = root / "record"
-        if record_dir.exists():
-            for path in sorted(record_dir.glob("*.json"), key=lambda p: p.stat().st_mtime, reverse=True):
+        seen_ids: set[str] = set()
+        # 长期记录统一落在 record/ 目录
+        for record_dir in _record_dirs(root):
+            if not record_dir.exists():
+                continue
+            for path in record_dir.glob("*.json"):
                 record = _read_json(path)
-                if isinstance(record, dict):
-                    record.setdefault("id", path.stem)
-                    record["_file"] = path.name
-                    record["_mtime"] = time.strftime(
-                        "%Y-%m-%d %H:%M:%S", time.localtime(path.stat().st_mtime)
-                    )
-                    records.append(record)
-        cache = _read_json(root / "cache.json", [])
+                if not isinstance(record, dict):
+                    continue
+                record.setdefault("id", path.stem)
+                rid = str(record.get("id"))
+                if rid in seen_ids:
+                    continue
+                seen_ids.add(rid)
+                record["_file"] = path.name
+                record["_dir"] = record_dir.name
+                record["_mtime"] = time.strftime(
+                    "%Y-%m-%d %H:%M:%S", time.localtime(path.stat().st_mtime)
+                )
+                records.append(record)
+        records.sort(key=lambda r: (str(r.get("_mtime") or ""), str(r.get("id") or "")), reverse=True)
+        cache_file = root / "cache.json"
+        cache = _read_json(cache_file, [])
         if not isinstance(cache, list):
             cache = []
         out[aid] = {
             "agent_id": aid,
             "name": str((CONFIG.agent_defs.get(aid) or {}).get("name", aid)),
+            "root": _path_label(root),
             # 原始文件内容 + 生效容量：文件可能来自旧版本配置，条数会暂时超过上限
             "records": records,
             "records_total": len(records),
+            "records_bytes": sum(_dir_size(d) for d in _record_dirs(root)),
+            "record_dirs": [d.name for d in _record_dirs(root) if d.exists()],
             "record_max": record_max,
             "record_top_k": record_top_k,
             "cache": cache,
             "cache_total": len(cache),
+            "cache_bytes": _dir_size(cache_file),
+            "cache_exists": cache_file.exists(),
             "cache_max": cache_max,
             "cache_top_k": cache_top_k,
         }

@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="zh-CN" data-theme="light">
 <head>
 <meta charset="utf-8">
@@ -6,7 +6,7 @@
 <meta name="description" content="GIS 多智能体任务架构 · 能力进化控制台">
 <title>GIS 多智能体控制台 · 能力进化</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230b1220'/%3E%3Ccircle cx='32' cy='32' r='7' fill='%2322d3ee'/%3E%3Ccircle cx='32' cy='13' r='4' fill='%2360a5fa'/%3E%3Ccircle cx='50' cy='42' r='4' fill='%2334d399'/%3E%3Ccircle cx='14' cy='42' r='4' fill='%23f59e0b'/%3E%3Cpath d='M32 20v5M38 35l8 4M26 35l-8 4' stroke='%2394a3b8' stroke-width='2'/%3E%3C/svg%3E">
-<link rel="stylesheet" href="assets/app.css?v=10">
+<link rel="stylesheet" href="assets/app.css?v=12">
 </head>
 <body>
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
@@ -35,6 +35,7 @@
   <symbol id="i-pause" viewBox="0 0 24 24"><rect x="7" y="5" width="3.5" height="14" rx="1"/><rect x="13.5" y="5" width="3.5" height="14" rx="1"/></symbol>
   <symbol id="i-step" viewBox="0 0 24 24"><path d="M6 5v14M11 12l7-6M11 12l7 6"/></symbol>
   <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 7h16M9 7V4.5h6V7M6.5 7l1 13h9l1-13M10 11v5M14 11v5"/></symbol>
+  <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 3 20 6v5.4c0 4.7-3.2 8.1-8 9.6-4.8-1.5-8-4.9-8-9.6V6l8-3Z"/><path d="m8.5 12 2.3 2.3 4.7-4.7"/></symbol>
 </svg>
 
 <div id="boot" class="boot">
@@ -85,6 +86,10 @@
       <div class="nav-label">质量</div>
       <a class="nav-item" href="#/benchmark" data-route="benchmark">
         <svg><use href="#i-check"></use></svg><span>评测报告</span>
+      </a>
+      <div class="nav-label">系统</div>
+      <a class="nav-item" href="#/admin" data-route="admin">
+        <svg><use href="#i-shield"></use></svg><span>系统管理</span>
       </a>
     </nav>
 
@@ -193,17 +198,18 @@
 </div>
 
 <script src="data/snapshot.js"></script>
-<script src="assets/js/core.js?v=10"></script>
-<script src="assets/js/charts.js?v=10"></script>
-<script src="assets/js/flow.js?v=10"></script>
-<script src="assets/js/views/overview.js?v=10"></script>
-<script src="assets/js/views/workbench.js?v=10"></script>
-<script src="assets/js/views/history.js?v=10"></script>
-<script src="assets/js/views/capability.js?v=10"></script>
-<script src="assets/js/views/skills.js?v=10"></script>
-<script src="assets/js/views/knowledge.js?v=10"></script>
-<script src="assets/js/views/memory.js?v=10"></script>
-<script src="assets/js/views/benchmark.js?v=10"></script>
-<script src="assets/js/app.js?v=10"></script>
+<script src="assets/js/core.js?v=12"></script>
+<script src="assets/js/charts.js?v=12"></script>
+<script src="assets/js/flow.js?v=12"></script>
+<script src="assets/js/views/overview.js?v=12"></script>
+<script src="assets/js/views/workbench.js?v=12"></script>
+<script src="assets/js/views/history.js?v=12"></script>
+<script src="assets/js/views/capability.js?v=12"></script>
+<script src="assets/js/views/skills.js?v=12"></script>
+<script src="assets/js/views/knowledge.js?v=12"></script>
+<script src="assets/js/views/memory.js?v=12"></script>
+<script src="assets/js/views/benchmark.js?v=12"></script>
+<script src="assets/js/views/admin.js?v=12"></script>
+<script src="assets/js/app.js?v=12"></script>
 </body>
 </html>

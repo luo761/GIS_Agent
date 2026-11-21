@@ -2,7 +2,7 @@
 
 多智能体能力差异的来源之一：即使底层是同一个 LLM，
 每个智能体拥有独立的记忆空间，包含两部分：
-1. 长期任务记录（completed/）——自己完成过的完整任务案例（问题特征、计划、结果摘要、成败），
+1. 长期任务记录（record/）——自己完成过的完整任务案例（问题特征、计划、结果摘要、成败），
    容量上限由 settings.AGENT_MEMORY_RECORD_MAX 统一管理，超限按 FIFO 淘汰最旧。
    只收录结果明确（success/failed）或已被确认的记录；
    结果不确定的任务默认不归档——执行期间的单步碎片会自然留在缓存里，完整案例绝不进缓存。
@@ -49,12 +49,12 @@ class AgentMemory:
         if not root.is_absolute():
             root = settings.BASE_DIR / root
         self.root = root
-        self.completed_dir = self.root / "completed"
+        self.record_dir = self.root / "record"
         self.cache_file = self.root / "cache.json"
         # 容量上限：未显式传入时一律读全局配置，本文件不出现魔法数字
         self.cache_max = settings.AGENT_MEMORY_CACHE_MAX if cache_max is None else cache_max
         self.record_max = settings.AGENT_MEMORY_RECORD_MAX if record_max is None else record_max
-        self.completed_dir.mkdir(parents=True, exist_ok=True)
+        self.record_dir.mkdir(parents=True, exist_ok=True)
         # 短期缓存常驻内存，启动时加载
         self.cache: list[dict] = []
         if self.cache_file.exists():
@@ -120,16 +120,16 @@ class AgentMemory:
             "error": error,
             "ts": time.strftime("%Y-%m-%d %H:%M:%S"),
         }
-        (self.completed_dir / f"{tid}.json").write_text(
+        (self.record_dir / f"{tid}.json").write_text(
             json.dumps(record, ensure_ascii=False, indent=2), encoding="utf-8"
         )
-        self._evict_completed()
+        self._evict_records()
         return tid
 
-    def _evict_completed(self):
+    def _evict_records(self):
         """长期记录超上限（settings.AGENT_MEMORY_RECORD_MAX）时，
         按文件修改时间从旧到新淘汰（FIFO）。"""
-        files = sorted(self.completed_dir.glob("*.json"), key=lambda f: f.stat().st_mtime)
+        files = sorted(self.record_dir.glob("*.json"), key=lambda f: f.stat().st_mtime)
         overflow = len(files) - self.record_max
         for f in files[:max(0, overflow)]:
             f.unlink()
@@ -148,7 +148,7 @@ class AgentMemory:
         if top_k is None:
             top_k = settings.AGENT_MEMORY_RECORD_TOP_K
         records: list[dict] = []
-        for f in self.completed_dir.glob("*.json"):
+        for f in self.record_dir.glob("*.json"):
             try:
                 r = json.loads(f.read_text(encoding="utf-8"))
             except json.JSONDecodeError:

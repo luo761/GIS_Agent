@@ -6,7 +6,7 @@
   const GIS = window.GIS;
   const U = GIS.util;
   const esc = U.esc;
-  const KNOWN = ["overview", "workbench", "history", "capability", "skills", "knowledge", "memory", "benchmark"];
+  const KNOWN = ["overview", "workbench", "history", "capability", "skills", "knowledge", "memory", "benchmark", "admin"];
 
   function parseHash() {
     const raw = (location.hash || "").replace(/^#\/?/, "");

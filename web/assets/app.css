@@ -855,6 +855,16 @@ input[type="range"]::-webkit-slider-thumb {
 }
 .reset-note .mono { font-size: 10px; }
 
+/* 系统管理 · 智能体记忆空间 */
+.admin-mem-card {
+  border: 1px solid var(--line); border-radius: 13px; padding: 13px 15px;
+  background: var(--panel-2);
+}
+.admin-mem-card .agent-cell { display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; flex-wrap: wrap; }
+.admin-mem-card .kv { background: var(--panel); }
+.admin-mem-card .btn:disabled { opacity: .45; }
+.admin-mem-card .grid-2 { align-items: stretch; }
+
 [hidden] { display: none !important; }
 
 /* ------------------------------------------------------------ 执行流补充 */
