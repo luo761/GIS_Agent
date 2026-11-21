@@ -74,7 +74,7 @@ capability_labels:
 # ---------------- 能力路由 ----------------
 routing:
   # 得分并列最高的判定容差：|score_a - score_b| <= tie_epsilon 视为"能力均等"
-  tie_epsilon: 0.0
+  tie_epsilon: 0.1
   # 平局随机抽取的随机种子：null 表示真随机（每次运行不同）
   random_seed: null
 
