@@ -280,6 +280,31 @@ class Handler(BaseHTTPRequestHandler):
                 result = ds.mutate_agent_memory(agent_id, scope=scope, mode=mode)
             _json_response(self, result)
             return
+        if path == "/api/admin/memory/record":
+            if payload.get("confirm") is not True:
+                _error(self, 400, "危险操作需要 confirm=true")
+                return
+            agent_id = str(payload.get("agent_id") or "").strip()
+            record_id = str(payload.get("record_id") or "").strip()
+            if not agent_id or not record_id:
+                _error(self, 400, "缺少 agent_id 或 record_id")
+                return
+            with _LOCK:
+                result = ds.delete_memory_record(agent_id, record_id)
+            _json_response(self, result)
+            return
+        if path == "/api/admin/memory/cache":
+            if payload.get("confirm") is not True:
+                _error(self, 400, "危险操作需要 confirm=true")
+                return
+            agent_id = str(payload.get("agent_id") or "").strip()
+            if not agent_id or "index" not in payload:
+                _error(self, 400, "缺少 agent_id 或 index")
+                return
+            with _LOCK:
+                result = ds.delete_memory_cache_entry(agent_id, payload.get("index"))
+            _json_response(self, result)
+            return
         if path == "/api/retrieve":
             query = str(payload.get("query") or "").strip()
             kind = str(payload.get("kind") or "skills")

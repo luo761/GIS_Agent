@@ -97,6 +97,42 @@
       "</div>";
   }
 
+  function outcomeLabel(outcome) {
+    return { success: "成功", failed: "失败", uncertain: "已确认存疑" }[outcome] || outcome || "未知";
+  }
+
+  function recordRows(agentId, item) {
+    const records = item.records || [];
+    if (!records.length) return "<div class='tiny muted' style='padding:7px 0'>暂无长期记录。</div>";
+    return records.map((record) => {
+      const rid = record.id || record._file || "";
+      return "<div class='admin-item'>" +
+        "<div class='admin-item-main'>" +
+        "<div class='admin-item-title'>" + esc(U.truncate(record.question_feat || "（无问题文本）", 150)) + "</div>" +
+        "<div class='tiny faint mono'>" + esc(rid) + " · " + esc(record.ts || record._mtime || "") +
+        " · " + esc(outcomeLabel(record.outcome)) + "</div></div>" +
+        "<button class='btn sm danger' data-del-record data-agent='" + esc(agentId) +
+        "' data-record-id='" + esc(rid) + "'>" + GIS.ui.icon("trash") + "删除</button></div>";
+    }).join("");
+  }
+
+  function cacheRows(agentId, item) {
+    const cache = item.cache || [];
+    if (!cache.length) return "<div class='tiny muted' style='padding:7px 0'>暂无短期缓存。</div>";
+    return cache.map((entry, index) => {
+      const question = entry.question || entry.step_question || "（无步骤文本）";
+      const note = entry.note || entry.lesson || "";
+      return "<div class='admin-item'>" +
+        "<span class='cache-idx'>" + (index + 1) + "</span>" +
+        "<div class='admin-item-main'>" +
+        "<div class='admin-item-title'>" + esc(U.truncate(question, 130)) + "</div>" +
+        "<div class='tiny faint mono'>[" + index + "] · " + esc(entry.ts || "") +
+        (note ? " · " + esc(note) : "") + "</div></div>" +
+        "<button class='btn sm danger' data-del-cache data-agent='" + esc(agentId) +
+        "' data-index='" + index + "'>" + GIS.ui.icon("trash") + "删除</button></div>";
+    }).join("");
+  }
+
   function memoryCard() {
     const mem = memory();
     const ids = Object.keys(mem).sort();
@@ -130,6 +166,13 @@
         "<button class='btn sm' data-mem-action data-agent='" + esc(id) + "' data-scope='cache' data-mode='clear'>清空缓存</button>" +
         "<button class='btn sm danger' data-mem-action data-agent='" + esc(id) + "' data-scope='cache' data-mode='delete'>删除缓存文件</button>" +
         "</div></div></div>" +
+
+        "<details class='admin-mem-details'>" +
+        "<summary>单条长期记录 <span class='chip mono'>" + records + " 条</span></summary>" +
+        "<div class='admin-item-list'>" + recordRows(id, item) + "</div></details>" +
+        "<details class='admin-mem-details'>" +
+        "<summary>单条短期缓存 <span class='chip mono'>" + cache + " 条</span></summary>" +
+        "<div class='admin-item-list'>" + cacheRows(id, item) + "</div></details>" +
 
         "<div class='row' style='margin-top:10px;justify-content:flex-end'>" +
         "<button class='btn sm danger' data-mem-action data-agent='" + esc(id) + "' data-scope='all' data-mode='clear'>" +
@@ -259,6 +302,50 @@
     }
   }
 
+  async function deleteRecord(btn) {
+    if (isStatic()) { GIS.toast("静态预览模式无法修改项目文件", "warn"); return; }
+    const agentId = btn.dataset.agent;
+    const recordId = btn.dataset.recordId;
+    const name = GIS.meta.agentName(agentId);
+    const ok = await GIS.confirm(
+      "删除单条长期记录",
+      "智能体 " + name + "：将永久删除记录 " + recordId + "。该操作不可撤销。",
+      "确认删除"
+    );
+    if (!ok) return;
+    btn.disabled = true;
+    try {
+      const payload = await GIS.api.deleteMemoryRecord(agentId, recordId);
+      GIS.toast("已删除记录 " + recordId + "，释放 " + bytes(payload.freed_bytes), "ok", "单条记录已删除");
+      await reloadAll();
+    } catch (err) {
+      GIS.toast(err.message || "删除失败", "err", "删除失败");
+      btn.disabled = false;
+    }
+  }
+
+  async function deleteCache(btn) {
+    if (isStatic()) { GIS.toast("静态预览模式无法修改项目文件", "warn"); return; }
+    const agentId = btn.dataset.agent;
+    const index = Number(btn.dataset.index);
+    const name = GIS.meta.agentName(agentId);
+    const ok = await GIS.confirm(
+      "删除单条短期缓存",
+      "智能体 " + name + "：将永久删除缓存条目 [" + index + "]。该操作不可撤销。",
+      "确认删除"
+    );
+    if (!ok) return;
+    btn.disabled = true;
+    try {
+      const payload = await GIS.api.deleteMemoryCache(agentId, index);
+      GIS.toast("已删除缓存条目 [" + index + "]，剩余 " + (payload.cache_total || 0) + " 条", "ok", "单条缓存已删除");
+      await reloadAll();
+    } catch (err) {
+      GIS.toast(err.message || "删除失败", "err", "删除失败");
+      btn.disabled = false;
+    }
+  }
+
   function mount() {
     const reset = document.getElementById("adminResetCap");
     if (reset) reset.addEventListener("click", () => resetCapability(reset));
@@ -277,6 +364,12 @@
 
     document.querySelectorAll("[data-mem-action]").forEach((btn) => {
       btn.addEventListener("click", () => memoryAction(btn));
+    });
+    document.querySelectorAll("[data-del-record]").forEach((btn) => {
+      btn.addEventListener("click", () => deleteRecord(btn));
+    });
+    document.querySelectorAll("[data-del-cache]").forEach((btn) => {
+      btn.addEventListener("click", () => deleteCache(btn));
     });
 
     const refresh = document.getElementById("adminRefresh");

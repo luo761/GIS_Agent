@@ -637,6 +637,61 @@ def mutate_agent_memory(agent_id: str, *, scope: str = "all", mode: str = "clear
     }
 
 
+def delete_memory_record(agent_id: str, record_id: str) -> dict[str, Any]:
+    """删除单条长期任务记录（record/<id>.json）。"""
+    rid = str(record_id or "").strip()
+    if rid.lower().endswith(".json"):
+        rid = rid[:-5]
+    if not re.fullmatch(r"[A-Za-z0-9_-]{1,80}", rid):
+        raise ValueError("记录 id 非法")
+    root = _agent_memory_root(agent_id)
+    removed_files = 0
+    freed_bytes = 0
+    for record_dir in _record_dirs(root):
+        path = record_dir / f"{rid}.json"
+        if path.exists() and path.is_file():
+            freed_bytes += _dir_size(path)
+            path.unlink()
+            removed_files += 1
+    if not removed_files:
+        raise ValueError(f"记录不存在: {rid}")
+    return {
+        "ok": True,
+        "agent_id": agent_id,
+        "record_id": rid,
+        "removed_files": removed_files,
+        "freed_bytes": freed_bytes,
+        "memory": load_memory().get(agent_id) or {},
+    }
+
+
+def delete_memory_cache_entry(agent_id: str, index: int) -> dict[str, Any]:
+    """按数组下标删除单条短期步骤缓存。"""
+    root = _agent_memory_root(agent_id)
+    cache_file = root / "cache.json"
+    if not cache_file.exists():
+        raise ValueError("缓存文件不存在")
+    cache = _read_json(cache_file, [])
+    if not isinstance(cache, list):
+        raise ValueError("缓存文件格式不正确")
+    try:
+        pos = int(index)
+    except (TypeError, ValueError) as exc:
+        raise ValueError("缓存下标必须是整数") from exc
+    if pos < 0 or pos >= len(cache):
+        raise ValueError(f"缓存下标越界: {pos}（共 {len(cache)} 条）")
+    removed = cache.pop(pos)
+    _write_json(cache_file, cache)
+    return {
+        "ok": True,
+        "agent_id": agent_id,
+        "index": pos,
+        "cache_total": len(cache),
+        "removed": removed,
+        "memory": load_memory().get(agent_id) or {},
+    }
+
+
 def admin_payload() -> dict[str, Any]:
     """系统管理页所需的真实文件状态与可编辑参数。"""
     real = real_capability()

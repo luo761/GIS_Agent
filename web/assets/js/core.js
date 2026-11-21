@@ -209,6 +209,20 @@
         timeout: 20000,
       });
     },
+    deleteMemoryRecord(agentId, recordId) {
+      return request("/api/admin/memory/record", {
+        method: "POST",
+        body: { confirm: true, agent_id: agentId, record_id: recordId },
+        timeout: 20000,
+      });
+    },
+    deleteMemoryCache(agentId, index) {
+      return request("/api/admin/memory/cache", {
+        method: "POST",
+        body: { confirm: true, agent_id: agentId, index },
+        timeout: 20000,
+      });
+    },
     reports() { return request("/api/reports"); },
     report(name) { return request("/api/reports/" + encodeURIComponent(name), { timeout: 20000 }); },
     runs() { return request("/api/runs"); },

@@ -55,7 +55,7 @@ python web\server\app.py --port 8766 --open
 | `#/capability` | 能力进化 | 时间轴回放、智能体聚焦、维度趋势、能力矩阵、同步真实快照 / 重置所有智能体 |
 | `#/skills` | 技能库 | 分组筛选、搜索、skill 详情、余弦检索演示、算子目录 |
 | `#/knowledge` | 知识库 | 表结构折叠、字段搜索、检索演示、上下文预览/复制、领域知识 |
-| `#/memory` | 记忆库 | 智能体切换、记录详情、缓存、记忆检索、共享经验池 |
+| `#/memory` | 记忆库 | 智能体切换、记录详情与单条删除、缓存步骤单条删除、记忆检索、共享经验池 |
 | `#/benchmark` | 评测报告 | 报告切换、难度/结果筛选、逐题详情、执行流回放 |
 | `#/admin` | 系统管理 | 真实能力向量重置、`tie_epsilon` 管理、智能体长期记录/短期缓存清空与删除 |
 
@@ -122,7 +122,8 @@ python web\server\app.py --port 8766 --open
 - 路由参数：修改 `config/agents_capability.yaml` 的 `routing.tie_epsilon`，写回时保留原文件注释，
   保存后服务端立即重新读取配置；
 - 记忆空间：对每个智能体的长期记录（`record/`）和短期缓存（`cache.json`）
-  分别执行「清空」（保留目录/文件容器）或「删除」（移除目录/文件本身），也可以重置该智能体全部记忆。
+  分别执行「清空」（保留目录/文件容器）或「删除」（移除目录/文件本身），也可以重置该智能体全部记忆；
+  展开「单条长期记录 / 单条短期缓存」后，还可以逐条删除指定记录或缓存步骤。
 
 **关于执行流**：真实链路需要 LLM、LangGraph、PostGIS 与外部工具集。为了让界面在任何
 机器上可交互，任务台使用 `server/demo_engine.py` 做本地模拟：
@@ -165,6 +166,8 @@ Python 环境运行），前端渲染的数据结构可保持不变。
 | POST | `/api/admin/capability/reset` | `{confirm:true}`，真实能力全部重置为 0.5 |
 | POST | `/api/admin/routing` | `{confirm:true, tie_epsilon}`，写回 `agents_capability.yaml` |
 | POST | `/api/admin/memory` | `{confirm:true, agent_id, scope:"records"\|"cache"\|"all", mode:"clear"\|"delete"}` |
+| POST | `/api/admin/memory/record` | `{confirm:true, agent_id, record_id}`，删除单条长期记录 |
+| POST | `/api/admin/memory/cache` | `{confirm:true, agent_id, index}`，删除单条短期缓存 |
 | POST | `/api/run` | `{question, truth, verdict:"auto"\|"success"\|"failure"}` |
 | GET / DELETE | `/api/runs` | 运行列表 / 清空 |
 | GET | `/api/runs/<id>` | 单次运行完整数据 |

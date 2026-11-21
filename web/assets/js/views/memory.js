@@ -91,7 +91,10 @@
     return "<div class='record-card' data-record='" + esc(record.id) + "'>" +
       "<div class='record-top'><span class='chip " + outcome + "'>" + esc(label) + "</span>" +
       "<span class='chip mono'>" + esc(record.id) + "</span>" +
-      "<span class='record-meta' style='margin-left:auto'>" + esc(record.ts || record._mtime || "") + "</span></div>" +
+      "<span class='record-meta' style='margin-left:auto'>" + esc(record.ts || record._mtime || "") + "</span>" +
+      "<button class='btn sm ghost' data-record-del data-agent='" + esc(record.agent_id || S.tab) +
+      "' data-record-id='" + esc(record.id) + "' title='删除这条长期记录'>" +
+      GIS.ui.icon("trash") + "</button></div>" +
       "<div class='record-q'>" + esc(U.truncate(record.question_feat || "", 180)) + "</div>" +
       (record.result_summary ? "<div class='tiny muted' style='overflow:hidden;text-overflow:ellipsis;white-space:nowrap'>结果：" + esc(U.truncate(record.result_summary, 140)) + "</div>" : "") +
       (record.error ? "<div class='chip err' style='white-space:normal'>教训：" + esc(U.truncate(record.error, 160)) + "</div>" : "") +
@@ -103,13 +106,14 @@
     return String(item.question || item.step_question || "").trim();
   }
 
-  function cacheGroups(cache) {
+  function cacheGroups(cache, offset) {
     const groups = [];
-    (cache || []).forEach((item) => {
+    (cache || []).forEach((item, idx) => {
       const question = cacheQuestion(item);
+      const tagged = { ...item, _index: (offset || 0) + idx };
       const last = groups[groups.length - 1];
-      if (last && last.question === question) last.items.push(item);
-      else groups.push({ question, items: [item] });
+      if (last && last.question === question) last.items.push(tagged);
+      else groups.push({ question, items: [tagged] });
     });
     return groups;
   }
@@ -143,7 +147,7 @@
     return m ? m[1] : String(ts || "");
   }
 
-  function cacheHTML(group, i) {
+  function cacheHTML(group, i, agentId) {
     const items = group.items || [];
     const planItem = items.find((it) => it.plan);
     const execItem = items.slice().reverse().find((it) =>
@@ -151,7 +155,9 @@
     const stages = items.map((it) => {
       const info = noteInfo(it);
       return "<span class='cache-stage " + info.kind + "'>" + esc(info.label) +
-        " <b>" + esc(timeOnly(it.ts)) + "</b></span>";
+        " <b>" + esc(timeOnly(it.ts)) + "</b>" +
+        "<button class='cache-del' data-cache-del data-agent='" + esc(agentId || "") +
+        "' data-index='" + Number(it._index) + "' title='删除这条缓存步骤'>×</button></span>";
     }).join("<span class='cache-arrow'>→</span>");
     const planText = planItem ? planSummary(planItem.plan) : "—";
     const nodes = planItem ? planNodeCount(planItem.plan) : null;
@@ -190,7 +196,7 @@
     const cacheAll = cacheOf(agentId);
     const recs = visibleRecords(agentId);
     const cache = visibleCache(agentId);
-    const groups = cacheGroups(cache);
+    const groups = cacheGroups(cache, Math.max(0, cacheAll.length - cache.length));
     const rMax = recordMax(agentId);
     const cMax = cacheMax(agentId);
     const q = S.search.trim().toLowerCase();
@@ -210,7 +216,7 @@
       "<div class='stack'>" +
       "<div class='card'><div class='card-head'><div><h3>短期步骤缓存</h3><p class='sub'>最近 5 条步骤级上下文，规划时注入</p></div>" +
       "<div class='right'><span class='chip mono'>" + cache.length + "</span></div></div>" +
-      (cache.length ? cache.slice(-5).reverse().map(cacheHTML).join("") : "<div class='tiny muted'>暂无缓存。</div>") + "</div>" +
+      (groups.length ? groups.slice(-5).reverse().map((group, idx) => cacheHTML(group, idx, agentId)).join("") : "<div class='tiny muted'>暂无缓存。</div>") + "</div>" +
 
       "<div class='card'><div class='card-head'><div><h3>记忆检索</h3><p class='sub'>仅检索该智能体自己的记录</p></div></div>" +
       "<div class='searchbar' style='margin-bottom:8px'>" + GIS.ui.icon("search") +
@@ -287,9 +293,61 @@
       "</div>");
   }
 
+  async function reloadMemory() {
+    await GIS.api.bootstrap(true);
+    if (window.GIS.refreshNav) window.GIS.refreshNav();
+    GIS.refreshView();
+  }
+
+  async function removeRecord(agentId, recordId) {
+    if (GIS.state.mode === "static") { GIS.toast("静态预览模式无法删除记忆", "warn"); return; }
+    const ok = await GIS.confirm(
+      "删除单条长期记录",
+      "将永久删除智能体 " + GIS.meta.agentName(agentId) + " 的记录 " + recordId + "。该操作不可撤销。",
+      "确认删除"
+    );
+    if (!ok) return;
+    try {
+      const payload = await GIS.api.deleteMemoryRecord(agentId, recordId);
+      GIS.toast("已删除记录 " + recordId + "，释放 " + (payload.freed_bytes || 0) + " B", "ok");
+      await reloadMemory();
+    } catch (err) {
+      GIS.toast(err.message || "删除失败", "err");
+    }
+  }
+
+  async function removeCache(agentId, index) {
+    if (GIS.state.mode === "static") { GIS.toast("静态预览模式无法删除记忆", "warn"); return; }
+    const ok = await GIS.confirm(
+      "删除单条短期缓存",
+      "将永久删除智能体 " + GIS.meta.agentName(agentId) + " 的缓存条目 [" + index + "]。该操作不可撤销。",
+      "确认删除"
+    );
+    if (!ok) return;
+    try {
+      const payload = await GIS.api.deleteMemoryCache(agentId, index);
+      GIS.toast("已删除缓存条目 [" + index + "]，剩余 " + (payload.cache_total || 0) + " 条", "ok");
+      await reloadMemory();
+    } catch (err) {
+      GIS.toast(err.message || "删除失败", "err");
+    }
+  }
+
   function bindBody() {
     document.querySelectorAll("[data-record]").forEach((el) => {
       el.addEventListener("click", () => openRecord(el.dataset.record, S.tab));
+    });
+    document.querySelectorAll("[data-record-del]").forEach((btn) => {
+      btn.addEventListener("click", (event) => {
+        event.stopPropagation();
+        removeRecord(btn.dataset.agent, btn.dataset.recordId);
+      });
+    });
+    document.querySelectorAll("[data-cache-del]").forEach((btn) => {
+      btn.addEventListener("click", (event) => {
+        event.stopPropagation();
+        removeCache(btn.dataset.agent, Number(btn.dataset.index));
+      });
     });
     document.querySelectorAll("[data-toggle-records]").forEach((btn) => {
       btn.addEventListener("click", () => { S.showAllRecords = !S.showAllRecords; GIS.refreshView(); });
