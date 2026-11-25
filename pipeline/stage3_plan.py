@@ -63,7 +63,7 @@ def run_subtask(state: PipelineState, sub: SubTask) -> SubTask:
     sub.plan = res.get("plan") or {"nodes": [], "edges": []}
 
     # 把本次规划上下文写入该智能体的短期缓存
-    mem.push_cache({"question": sub.question, "plan": sub.plan, "note": "planned"})
+    mem.cache_step(step_question=sub.question, note="planned", plan=sub.plan)
     return sub
 
 

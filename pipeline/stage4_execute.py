@@ -236,8 +236,8 @@ def run_subtask(state: PipelineState, sub: SubTask) -> SubTask:
             sub.trace = trace
             sub.tools_used = tools_used
             sub.status = "failed"
-            _agent_memory(sub.assigned_agent).push_cache(
-                {"question": sub.question, "outcome": "failed", "note": sub.error}
+            _agent_memory(sub.assigned_agent).cache_step(
+                step_question=sub.question, outcome="failed", note=sub.error
             )
             return sub
 
@@ -251,7 +251,7 @@ def run_subtask(state: PipelineState, sub: SubTask) -> SubTask:
             sub.status = "success"
             mem = _agent_memory(sub.assigned_agent)
             mem.record_task(sub.question, sub.plan, str(sub.result)[:200], "success")
-            mem.push_cache({"question": sub.question, "outcome": "success", "note": "executed"})
+            mem.cache_step(step_question=sub.question, outcome="success", note="executed")
             return sub
 
         messages.extend(_run_tool_calls(tool_calls, trace, tools_used, results,
@@ -262,8 +262,8 @@ def run_subtask(state: PipelineState, sub: SubTask) -> SubTask:
     sub.trace = trace
     sub.tools_used = tools_used
     sub.status = "failed"
-    _agent_memory(sub.assigned_agent).push_cache(
-        {"question": sub.question, "outcome": "failed", "note": sub.error}
+    _agent_memory(sub.assigned_agent).cache_step(
+        step_question=sub.question, outcome="failed", note=sub.error
     )
     return sub
 
