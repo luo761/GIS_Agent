@@ -1,0 +1,144 @@
+[
+  {
+    "question": "对与施工区A001相交且状态为正常或告警的燃气设备（gas_devices）逐条建立200米缓冲区，不裁剪缓冲区；复用这批缓冲结果，分别计算逐要素面积直接相加和合并去重面积（平方米），再计算合并去重面积占直接相加面积的百分比。",
+    "plan": {
+      "nodes": [
+        {
+          "id": "s1",
+          "action": "query_features",
+          "params": {
+            "table": "construction_areas",
+            "where": "code='A001'",
+            "geom_field": "geom"
+          },
+          "depends_on": []
+        },
+        {
+          "id": "s2",
+          "action": "query_features",
+          "params": {
+            "table": "gas_devices",
+            "where": "status IN ('正常','告警')",
+            "geom_field": "geom"
+          },
+          "depends_on": []
+        },
+        {
+          "id": "s3",
+          "action": "intersection_geometry",
+          "params": {
+            "target": "s2",
+            "clip": "s1",
+            "predicate": "intersects"
+          },
+          "depends_on": [
+            "s1",
+            "s2"
+          ]
+        },
+        {
+          "id": "s4",
+          "action": "buffer_features",
+          "params": {
+            "target": "s3",
+            "distance": 200,
+            "unit": "meter",
+            "merge": false
+          },
+          "depends_on": [
+            "s3"
+          ]
+        },
+        {
+          "id": "s5",
+          "action": "measure_geometry",
+          "params": {
+            "target": "s4",
+            "mode": "sum_by_feature",
+            "unit": "square_meter"
+          },
+          "depends_on": [
+            "s4"
+          ]
+        },
+        {
+          "id": "s6",
+          "action": "union_features",
+          "params": {
+            "target": "s4"
+          },
+          "depends_on": [
+            "s4"
+          ]
+        },
+        {
+          "id": "s7",
+          "action": "measure_geometry",
+          "params": {
+            "target": "s6",
+            "mode": "area",
+            "unit": "square_meter"
+          },
+          "depends_on": [
+            "s6"
+          ]
+        },
+        {
+          "id": "s8",
+          "action": "calculate_ratio",
+          "params": {
+            "numerator": "s7",
+            "denominator": "s5",
+            "as_percent": true
+          },
+          "depends_on": [
+            "s5",
+            "s7"
+          ]
+        }
+      ],
+      "edges": [
+        [
+          "s1",
+          "s3"
+        ],
+        [
+          "s2",
+          "s3"
+        ],
+        [
+          "s3",
+          "s4"
+        ],
+        [
+          "s4",
+          "s5"
+        ],
+        [
+          "s4",
+          "s6"
+        ],
+        [
+          "s6",
+          "s7"
+        ],
+        [
+          "s5",
+          "s8"
+        ],
+        [
+          "s7",
+          "s8"
+        ]
+      ]
+    },
+    "note": "planned",
+    "ts": "2026-11-15 19:11:13"
+  },
+  {
+    "question": "对与施工区A001相交且状态为正常或告警的燃气设备（gas_devices）逐条建立200米缓冲区，不裁剪缓冲区；复用这批缓冲结果，分别计算逐要素面积直接相加和合并去重面积（平方米），再计算合并去重面积占直接相加面积的百分比。",
+    "outcome": "success",
+    "note": "executed",
+    "ts": "2026-11-15 19:11:31"
+  }
+]

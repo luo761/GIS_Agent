@@ -1,0 +1,77 @@
+[
+  {
+    "question": "查询与施工区A003（含孔洞）相交（ST_Intersects，含边界接触）的全部燃气设备（gas_devices），按status分组计数，按状态名称升序输出全部分组；孔洞内设备不计入。",
+    "plan": {
+      "nodes": [
+        {
+          "id": "s1",
+          "action": "query_features",
+          "params": {
+            "layer_name": "construction_areas",
+            "filters": {
+              "code": "A003"
+            },
+            "target": "geom"
+          },
+          "depends_on": []
+        },
+        {
+          "id": "s2",
+          "action": "query_features",
+          "params": {
+            "layer_name": "gas_devices",
+            "filters": {},
+            "target": "geom"
+          },
+          "depends_on": []
+        },
+        {
+          "id": "s3",
+          "action": "spatial_filter",
+          "params": {
+            "relation": "ST_Intersects",
+            "exclude_holes": true
+          },
+          "depends_on": [
+            "s1",
+            "s2"
+          ]
+        },
+        {
+          "id": "s4",
+          "action": "summarize_features",
+          "params": {
+            "aggregate": "count",
+            "group_by": "status",
+            "sort": "group_key_asc"
+          },
+          "depends_on": [
+            "s3"
+          ]
+        }
+      ],
+      "edges": [
+        [
+          "s1",
+          "s3"
+        ],
+        [
+          "s2",
+          "s3"
+        ],
+        [
+          "s3",
+          "s4"
+        ]
+      ]
+    },
+    "note": "planned",
+    "ts": "2026-11-15 19:04:53"
+  },
+  {
+    "question": "查询与施工区A003（含孔洞）相交（ST_Intersects，含边界接触）的全部燃气设备（gas_devices），按status分组计数，按状态名称升序输出全部分组；孔洞内设备不计入。",
+    "outcome": "success",
+    "note": "executed",
+    "ts": "2026-11-15 19:05:07"
+  }
+]

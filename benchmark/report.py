@@ -92,7 +92,7 @@ def render_markdown(meta: dict, summary: dict, results: list[dict]) -> str:
     add("# dev20 基准测试报告：多智能体 GIS 任务架构")
     add("")
     add(f"- 生成时间：{meta.get('started_at', '')}")
-    add(f"- 被测系统：五阶段多智能体任务架构（能力可进化），仓库 `Test/`")
+    add(f"- 被测系统：五阶段多智能体任务架构（能力可进化），仓库 `GIS_Agent/`")
     add(f"- 模型：`{meta.get('model', '')}`")
     add(f"- 数据库：`{meta.get('database', '')}`（Docker `postgis/postgis:16-3.4-alpine`，schema `gis_lab`）")
     add(f"- 题集：`postgis_dev20_v1`，共 {summary['total']} 题（L1/L2/L3）")
@@ -224,9 +224,12 @@ def render_markdown(meta: dict, summary: dict, results: list[dict]) -> str:
 
     add("## 8. 复现方式")
     add("")
+    add("PostGIS 工具由本项目 `tools/gis_toolkit.py` 提供；dev20 题集数据通过 `BENCHMARK_DIR` 单独配置，"
+        "目录中需包含 `dev20.json` 和 `dev20_expected.json`。")
+    add("")
     add("```powershell")
     add("# 1) 启动并导入数据（见第 1 节）")
-    add("# 2) 配置 Test/.env：DATABASE_URL、LLM_MODEL、POSTGIS_TOOLKIT_ROOT")
+    add("# 2) 配置 GIS_Agent/.env：DATABASE_URL、DEEPSEEK_API_KEY、LLM_MODEL、BENCHMARK_DIR")
     add("# 3) 跑评测")
     add("python scripts/run_dev20_benchmark.py")
     add("```")

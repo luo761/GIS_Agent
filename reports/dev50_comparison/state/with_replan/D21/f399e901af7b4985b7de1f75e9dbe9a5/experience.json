@@ -1,0 +1,67 @@
+[
+  {
+    "task_signature": "gas/空间计算",
+    "question_feat": "统计 gas_devices 中 geom 严格位于 construction_areas 中 code='A002' 的面内部（ST_Within）且 status='正常' 的设备数量。",
+    "plan": {
+      "t1": {
+        "nodes": [
+          {
+            "id": "s1",
+            "action": "query_features",
+            "params": {
+              "layer_name": "construction_areas",
+              "filters": {
+                "code": "A002"
+              },
+              "target": "geom"
+            },
+            "depends_on": []
+          },
+          {
+            "id": "s2",
+            "action": "query_features",
+            "params": {
+              "layer_name": "gas_devices",
+              "filters": {
+                "status": "正常"
+              },
+              "target": "geom",
+              "relation": "ST_Within",
+              "reference_geometries": "$s1.geom"
+            },
+            "depends_on": [
+              "s1"
+            ]
+          },
+          {
+            "id": "s3",
+            "action": "summarize_features",
+            "params": {
+              "aggregate": "count",
+              "source": "$s2"
+            },
+            "depends_on": [
+              "s2"
+            ]
+          }
+        ],
+        "edges": [
+          [
+            "s1",
+            "s2"
+          ],
+          [
+            "s2",
+            "s3"
+          ]
+        ]
+      }
+    },
+    "trace": "执行轨迹：先 query_features 过滤 construction_areas 中 code='A002'，得 1 个要素；再 query_features 过滤 gas_devices 中 status='正常'，并以 construction_areas 的 A002 为目标、ST_Within 关系查询，得 2 个设备；最后 summarize_features 对结果要素集做 count 聚合，返回 groups=1。关键算子顺序：query_features（过滤目标面）→ query_features（空间关系过滤设备）→ summarize_features（计数）。结果形式：feature_count 与 groups 数值。",
+    "outcome": "success",
+    "error_lesson": "",
+    "id": "3f273e46",
+    "hits": 0,
+    "updated_at": "2026-11-15 19:04:48"
+  }
+]

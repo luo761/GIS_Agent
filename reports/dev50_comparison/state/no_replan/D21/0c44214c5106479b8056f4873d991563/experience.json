@@ -1,0 +1,82 @@
+[
+  {
+    "task_signature": "gas/空间计算",
+    "question_feat": "统计严格位于施工区 A002 内且状态为正常的燃气设备数量，边界上的设备不计入。",
+    "plan": {
+      "t1": {
+        "nodes": [
+          {
+            "id": "s1",
+            "action": "query_features",
+            "params": {
+              "layer_name": "gas_devices",
+              "filters": {
+                "status": "正常"
+              },
+              "target": null,
+              "relation": null
+            },
+            "depends_on": []
+          },
+          {
+            "id": "s2",
+            "action": "query_features",
+            "params": {
+              "layer_name": "construction_areas",
+              "filters": {
+                "code": "A002"
+              },
+              "target": null,
+              "relation": null
+            },
+            "depends_on": []
+          },
+          {
+            "id": "s3",
+            "action": "spatial_filter",
+            "params": {
+              "source": "s1",
+              "target": "s2",
+              "relation": "ST_Within"
+            },
+            "depends_on": [
+              "s1",
+              "s2"
+            ]
+          },
+          {
+            "id": "s4",
+            "action": "summarize_features",
+            "params": {
+              "source": "s3",
+              "aggregate": "count"
+            },
+            "depends_on": [
+              "s3"
+            ]
+          }
+        ],
+        "edges": [
+          [
+            "s1",
+            "s3"
+          ],
+          [
+            "s2",
+            "s3"
+          ],
+          [
+            "s3",
+            "s4"
+          ]
+        ]
+      }
+    },
+    "trace": "经验：统计施工区内正常燃气设备（边界不计）时，先分别查询正常燃气设备与施工区A002，再用ST_Within关系查询目标区内正常设备，最后对结果集执行summarize_features计数。关键调用顺序：query_features（正常设备）→ query_features（施工区）→ query_features（正常设备，target施工区，relation=ST_Within）→ summarize_features（aggregate=count）。结果形式：正常设备总数10，施工区1个，区内正常设备2个，最终计数1组。",
+    "outcome": "success",
+    "error_lesson": "",
+    "id": "5f1153ee",
+    "hits": 0,
+    "updated_at": "2026-11-15 19:04:27"
+  }
+]

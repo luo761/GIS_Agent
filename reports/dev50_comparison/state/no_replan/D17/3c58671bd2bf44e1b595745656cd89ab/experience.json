@@ -1,0 +1,212 @@
+[
+  {
+    "task_signature": "gas/空间计算",
+    "question_feat": "在gas_devices中筛选与施工区A001相交且状态为正常或告警的设备，对筛选结果缓冲300米并合并，再用施工区A001裁剪得到覆盖几何；基于该覆盖几何，分别计算其面积（平方米）以及其中gas_pipelines全部燃气管线的总长度（米），保留非空且长度大于0的接触记录。",
+    "plan": {
+      "t1": {
+        "nodes": [
+          {
+            "id": "s1",
+            "action": "query_features",
+            "params": {
+              "table": "gas_devices",
+              "filters": {
+                "status": [
+                  "正常",
+                  "告警"
+                ]
+              }
+            },
+            "depends_on": []
+          },
+          {
+            "id": "s2",
+            "action": "query_features",
+            "params": {
+              "table": "construction_areas",
+              "filters": {
+                "code": "A001"
+              }
+            },
+            "depends_on": []
+          },
+          {
+            "id": "s3",
+            "action": "spatial_filter",
+            "params": {
+              "source": "s1",
+              "target": "s2",
+              "relation": "intersects"
+            },
+            "depends_on": [
+              "s1",
+              "s2"
+            ]
+          },
+          {
+            "id": "s4",
+            "action": "buffer_features",
+            "params": {
+              "source": "s3",
+              "distance": 300,
+              "unit": "meter"
+            },
+            "depends_on": [
+              "s3"
+            ]
+          },
+          {
+            "id": "s5",
+            "action": "union_features",
+            "params": {
+              "source": "s4"
+            },
+            "depends_on": [
+              "s4"
+            ]
+          },
+          {
+            "id": "s6",
+            "action": "clip_features",
+            "params": {
+              "source": "s5",
+              "clip_layer": "s2"
+            },
+            "depends_on": [
+              "s5",
+              "s2"
+            ]
+          },
+          {
+            "id": "s7",
+            "action": "measure_features",
+            "params": {
+              "source": "s6",
+              "measure": "area",
+              "unit": "square_meter"
+            },
+            "depends_on": [
+              "s6"
+            ]
+          },
+          {
+            "id": "s8",
+            "action": "query_features",
+            "params": {
+              "table": "gas_pipelines"
+            },
+            "depends_on": []
+          },
+          {
+            "id": "s9",
+            "action": "spatial_filter",
+            "params": {
+              "source": "s8",
+              "target": "s6",
+              "relation": "intersects"
+            },
+            "depends_on": [
+              "s8",
+              "s6"
+            ]
+          },
+          {
+            "id": "s10",
+            "action": "clip_features",
+            "params": {
+              "source": "s9",
+              "clip_layer": "s6"
+            },
+            "depends_on": [
+              "s9",
+              "s6"
+            ]
+          },
+          {
+            "id": "s11",
+            "action": "measure_features",
+            "params": {
+              "source": "s10",
+              "measure": "length",
+              "unit": "meter"
+            },
+            "depends_on": [
+              "s10"
+            ]
+          },
+          {
+            "id": "s12",
+            "action": "filter_non_empty",
+            "params": {
+              "source": "s11",
+              "condition": "length > 0"
+            },
+            "depends_on": [
+              "s11"
+            ]
+          }
+        ],
+        "edges": [
+          [
+            "s1",
+            "s3"
+          ],
+          [
+            "s2",
+            "s3"
+          ],
+          [
+            "s3",
+            "s4"
+          ],
+          [
+            "s4",
+            "s5"
+          ],
+          [
+            "s5",
+            "s6"
+          ],
+          [
+            "s2",
+            "s6"
+          ],
+          [
+            "s6",
+            "s7"
+          ],
+          [
+            "s8",
+            "s9"
+          ],
+          [
+            "s6",
+            "s9"
+          ],
+          [
+            "s9",
+            "s10"
+          ],
+          [
+            "s6",
+            "s10"
+          ],
+          [
+            "s10",
+            "s11"
+          ],
+          [
+            "s11",
+            "s12"
+          ]
+        ]
+      }
+    },
+    "trace": "筛选施工区A001内状态正常/告警的燃气设备，缓冲300米合并后与A001裁剪得覆盖几何。计算覆盖面积639185.45㎡；查询与覆盖几何相交的燃气管线6条，裁剪后测长，总长4332.36米。关键调用：query_features筛选设备→buffer_features(300m)→union_features→clip_features→intersection_geometry→measure_geometry(area)→query_features管线相交→clip_features→measure_features(length)→summarize_features。",
+    "outcome": "success",
+    "error_lesson": "",
+    "id": "8a153e8c",
+    "hits": 0,
+    "updated_at": "2026-11-15 19:03:25"
+  }
+]

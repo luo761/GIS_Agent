@@ -1,0 +1,390 @@
+{
+  "id": "D23",
+  "level": "L1",
+  "question": "查询与含孔洞施工区 A003 相交的全部燃气设备，按 status 分组计数，按状态名称升序输出全部分组；孔洞内设备不计入，边界接触计入。",
+  "mode": "with_replan",
+  "status": "completed",
+  "correct": true,
+  "first_correct": true,
+  "answer": {
+    "unit": "feature",
+    "groups": [
+      {
+        "group": {
+          "status": "正常"
+        },
+        "value": 1.0,
+        "feature_count": 1.0
+      }
+    ]
+  },
+  "expected": {
+    "unit": "feature",
+    "groups": [
+      {
+        "group": {
+          "status": "正常"
+        },
+        "value": 1,
+        "feature_count": 1
+      }
+    ]
+  },
+  "diffs": [],
+  "evaluation": "success",
+  "error": "",
+  "database_changed_during_case": false,
+  "attempt_history": [
+    {
+      "attempt_index": 1,
+      "evaluation": "success",
+      "correct": true,
+      "feedback": "",
+      "tool_call_count": 5,
+      "tools": [
+        "query_features",
+        "summarize_features"
+      ],
+      "subtasks": [
+        {
+          "subtask_id": "t1",
+          "question": "查询与施工区A003（含孔洞）相交（ST_Intersects，含边界接触）的全部燃气设备（gas_devices），按status分组计数，按状态名称升序输出全部分组；孔洞内设备不计入。",
+          "required_capabilities": [
+            "spatial_compute",
+            "attribute_query",
+            "statistics"
+          ],
+          "assigned_agent": "agent_03",
+          "assigned_agent_name": "03",
+          "routing": {
+            "agent_id": "agent_03",
+            "agent_name": "03",
+            "required": [
+              "spatial_compute",
+              "attribute_query",
+              "statistics"
+            ],
+            "scores": {
+              "agent_01": 0.5,
+              "agent_02": 0.5,
+              "agent_03": 0.5,
+              "agent_04": 0.5
+            },
+            "best_score": 0.5,
+            "tied": [
+              "agent_01",
+              "agent_02",
+              "agent_03",
+              "agent_04"
+            ],
+            "random_pick": true,
+            "epsilon": 0.0,
+            "pool": [
+              "agent_01",
+              "agent_02",
+              "agent_03",
+              "agent_04"
+            ]
+          },
+          "plan": {
+            "nodes": [
+              {
+                "id": "s1",
+                "action": "query_features",
+                "params": {
+                  "layer_name": "construction_areas",
+                  "filters": {
+                    "code": "A003"
+                  },
+                  "target": "geom"
+                },
+                "depends_on": []
+              },
+              {
+                "id": "s2",
+                "action": "query_features",
+                "params": {
+                  "layer_name": "gas_devices",
+                  "filters": {},
+                  "target": "geom"
+                },
+                "depends_on": []
+              },
+              {
+                "id": "s3",
+                "action": "spatial_filter",
+                "params": {
+                  "relation": "ST_Intersects",
+                  "exclude_holes": true
+                },
+                "depends_on": [
+                  "s1",
+                  "s2"
+                ]
+              },
+              {
+                "id": "s4",
+                "action": "summarize_features",
+                "params": {
+                  "aggregate": "count",
+                  "group_by": "status",
+                  "sort": "group_key_asc"
+                },
+                "depends_on": [
+                  "s3"
+                ]
+              }
+            ],
+            "edges": [
+              [
+                "s1",
+                "s3"
+              ],
+              [
+                "s2",
+                "s3"
+              ],
+              [
+                "s3",
+                "s4"
+              ]
+            ]
+          },
+          "result": "The result is complete. Only one device (D005) intersects A003's solid part, with status \"正常\".\n\n```json\n{\n  \"unit\": \"feature\",\n  \"groups\": [\n    {\n      \"group\": {\n        \"status\": \"正常\"\n      },\n      \"value\": 1.0,\n      \"feature_count\": 1.0\n    }\n  ]\n}\n```",
+          "trace": [
+            {
+              "step": "t1",
+              "tool": "query_features",
+              "args": {
+                "layer_name": "construction_areas",
+                "filters": [
+                  {
+                    "field": "code",
+                    "operator": "eq",
+                    "value": "A003"
+                  }
+                ]
+              },
+              "ok": true,
+              "brief": {
+                "feature_count": 1
+              }
+            },
+            {
+              "step": "t2",
+              "tool": "query_features",
+              "args": {
+                "layer_name": "gas_devices"
+              },
+              "ok": true,
+              "brief": {
+                "feature_count": 12
+              }
+            },
+            {
+              "step": "t3",
+              "tool": "query_features",
+              "args": {
+                "layer_name": "gas_devices",
+                "target": {
+                  "layer_name": "construction_areas",
+                  "feature_code": "A003"
+                },
+                "relation": "ST_Intersects"
+              },
+              "ok": true,
+              "brief": {
+                "feature_count": 1
+              }
+            },
+            {
+              "step": "t4",
+              "tool": "query_features",
+              "args": {
+                "layer_name": "gas_devices",
+                "filters": [
+                  {
+                    "field": "code",
+                    "operator": "in",
+                    "value": [
+                      "D004",
+                      "D005",
+                      "D006",
+                      "D007",
+                      "D008",
+                      "D009",
+                      "D010",
+                      "D011",
+                      "D012"
+                    ]
+                  }
+                ]
+              },
+              "ok": true,
+              "brief": {
+                "feature_count": 9
+              }
+            },
+            {
+              "step": "t5",
+              "tool": "summarize_features",
+              "args": {
+                "features": {
+                  "$ref": "t3.result.feature_set"
+                },
+                "group_by": [
+                  "status"
+                ],
+                "aggregate": "count",
+                "sort": "group_asc"
+              },
+              "ok": true,
+              "brief": {
+                "groups": 1
+              }
+            }
+          ],
+          "tools_used": [
+            "query_features",
+            "summarize_features"
+          ],
+          "status": "success",
+          "outcome": "success",
+          "error": "",
+          "capability_update": {
+            "ts": "2026-11-15 19:05:07",
+            "agent_id": "agent_03",
+            "agent_name": "03",
+            "dims": [
+              "spatial_compute",
+              "attribute_query",
+              "statistics"
+            ],
+            "outcome": "success",
+            "before": {
+              "spatial_compute": 0.5,
+              "attribute_query": 0.5,
+              "statistics": 0.5
+            },
+            "after": {
+              "spatial_compute": 0.549,
+              "attribute_query": 0.549,
+              "statistics": 0.549
+            },
+            "delta": {
+              "spatial_compute": 0.049,
+              "attribute_query": 0.049,
+              "statistics": 0.049
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "attempt_count": 1,
+  "replans": 0,
+  "failed_attempts": 0,
+  "tool_call_count": 5,
+  "elapsed_s": 25.485,
+  "llm_usage": {
+    "llm_calls": 9,
+    "failed_calls": 0,
+    "input_tokens": 51607,
+    "output_tokens": 1427,
+    "total_tokens": 53034,
+    "usage_reported_calls": 9,
+    "elapsed_s": 24.301107
+  },
+  "capability_changes": [
+    {
+      "ts": "2026-11-15 19:05:07",
+      "agent_id": "agent_03",
+      "agent_name": "03",
+      "dims": [
+        "spatial_compute",
+        "attribute_query",
+        "statistics"
+      ],
+      "outcome": "success",
+      "before": {
+        "spatial_compute": 0.5,
+        "attribute_query": 0.5,
+        "statistics": 0.5
+      },
+      "after": {
+        "spatial_compute": 0.549,
+        "attribute_query": 0.549,
+        "statistics": 0.549
+      },
+      "delta": {
+        "spatial_compute": 0.049,
+        "attribute_query": 0.049,
+        "statistics": 0.049
+      },
+      "subtask_id": "t1"
+    }
+  ],
+  "final_capabilities": [
+    {
+      "agent": "agent_01",
+      "name": "01",
+      "vector": [
+        0.5,
+        0.5,
+        0.5,
+        0.5
+      ],
+      "stats": {
+        "attempts": 0,
+        "successes": 0,
+        "failures": 0
+      }
+    },
+    {
+      "agent": "agent_02",
+      "name": "02",
+      "vector": [
+        0.5,
+        0.5,
+        0.5,
+        0.5
+      ],
+      "stats": {
+        "attempts": 0,
+        "successes": 0,
+        "failures": 0
+      }
+    },
+    {
+      "agent": "agent_03",
+      "name": "03",
+      "vector": [
+        0.549,
+        0.549,
+        0.549,
+        0.5
+      ],
+      "stats": {
+        "attempts": 1,
+        "successes": 1,
+        "failures": 0
+      }
+    },
+    {
+      "agent": "agent_04",
+      "name": "04",
+      "vector": [
+        0.5,
+        0.5,
+        0.5,
+        0.5
+      ],
+      "stats": {
+        "attempts": 0,
+        "successes": 0,
+        "failures": 0
+      }
+    }
+  ],
+  "signature": "7b19aa8fc5930df9e9c54c1fabee2c44fe6fc1e928966bc9d93fb8798d43188f"
+}

@@ -1,0 +1,299 @@
+{
+  "id": "D25",
+  "level": "L1",
+  "question": "查询全部水管，按 pipe_type 分组计数，按管线类型名称升序输出全部分组，不做空间筛选。",
+  "mode": "no_replan",
+  "status": "completed",
+  "correct": true,
+  "first_correct": true,
+  "answer": {
+    "unit": "feature",
+    "groups": [
+      {
+        "group": {
+          "pipe_type": "排水"
+        },
+        "value": 4.0,
+        "feature_count": 4.0
+      },
+      {
+        "group": {
+          "pipe_type": "给水"
+        },
+        "value": 6.0,
+        "feature_count": 6.0
+      }
+    ]
+  },
+  "expected": {
+    "unit": "feature",
+    "groups": [
+      {
+        "group": {
+          "pipe_type": "排水"
+        },
+        "value": 4,
+        "feature_count": 4
+      },
+      {
+        "group": {
+          "pipe_type": "给水"
+        },
+        "value": 6,
+        "feature_count": 6
+      }
+    ]
+  },
+  "diffs": [],
+  "evaluation": "success",
+  "error": "",
+  "database_changed_during_case": false,
+  "attempt_history": [
+    {
+      "attempt_index": 1,
+      "evaluation": "success",
+      "correct": true,
+      "feedback": "",
+      "tool_call_count": 2,
+      "tools": [
+        "query_features",
+        "summarize_features"
+      ],
+      "subtasks": [
+        {
+          "subtask_id": "t1",
+          "question": "查询 water_pipelines 表中全部水管，按 pipe_type 分组计数，并按 pipe_type 名称升序输出全部分组。",
+          "required_capabilities": [
+            "attribute_query",
+            "statistics"
+          ],
+          "assigned_agent": "agent_03",
+          "assigned_agent_name": "03",
+          "routing": {
+            "agent_id": "agent_03",
+            "agent_name": "03",
+            "required": [
+              "attribute_query",
+              "statistics"
+            ],
+            "scores": {
+              "agent_01": 0.5,
+              "agent_02": 0.5,
+              "agent_03": 0.5,
+              "agent_04": 0.5
+            },
+            "best_score": 0.5,
+            "tied": [
+              "agent_01",
+              "agent_02",
+              "agent_03",
+              "agent_04"
+            ],
+            "random_pick": true,
+            "epsilon": 0.0,
+            "pool": [
+              "agent_01",
+              "agent_02",
+              "agent_03",
+              "agent_04"
+            ]
+          },
+          "plan": {
+            "nodes": [
+              {
+                "id": "s1",
+                "action": "query_features",
+                "params": {
+                  "layer_name": "water_pipelines",
+                  "filters": {}
+                },
+                "depends_on": []
+              },
+              {
+                "id": "s2",
+                "action": "summarize_features",
+                "params": {
+                  "aggregate": "count",
+                  "group_by": "pipe_type",
+                  "sort": "asc"
+                },
+                "depends_on": [
+                  "s1"
+                ]
+              }
+            ],
+            "edges": [
+              [
+                "s1",
+                "s2"
+              ]
+            ]
+          },
+          "result": "{\"unit\": \"feature\", \"groups\": [{\"group\": {\"pipe_type\": \"排水\"}, \"value\": 4.0, \"feature_count\": 4.0}, {\"group\": {\"pipe_type\": \"给水\"}, \"value\": 6.0, \"feature_count\": 6.0}]}",
+          "trace": [
+            {
+              "step": "t1",
+              "tool": "query_features",
+              "args": {
+                "layer_name": "water_pipelines"
+              },
+              "ok": true,
+              "brief": {
+                "feature_count": 10
+              }
+            },
+            {
+              "step": "t2",
+              "tool": "summarize_features",
+              "args": {
+                "features": {
+                  "$ref": "t1.result.feature_set"
+                },
+                "aggregate": "count",
+                "group_by": [
+                  "pipe_type"
+                ],
+                "sort": "group_asc"
+              },
+              "ok": true,
+              "brief": {
+                "groups": 2
+              }
+            }
+          ],
+          "tools_used": [
+            "query_features",
+            "summarize_features"
+          ],
+          "status": "success",
+          "outcome": "success",
+          "error": "",
+          "capability_update": {
+            "ts": "2026-11-15 19:05:07",
+            "agent_id": "agent_03",
+            "agent_name": "03",
+            "dims": [
+              "attribute_query",
+              "statistics"
+            ],
+            "outcome": "success",
+            "before": {
+              "attribute_query": 0.5,
+              "statistics": 0.5
+            },
+            "after": {
+              "attribute_query": 0.549,
+              "statistics": 0.549
+            },
+            "delta": {
+              "attribute_query": 0.049,
+              "statistics": 0.049
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "attempt_count": 1,
+  "replans": 0,
+  "failed_attempts": 0,
+  "tool_call_count": 2,
+  "elapsed_s": 15.235,
+  "llm_usage": {
+    "llm_calls": 7,
+    "failed_calls": 0,
+    "input_tokens": 28100,
+    "output_tokens": 591,
+    "total_tokens": 28691,
+    "usage_reported_calls": 7,
+    "elapsed_s": 14.949445
+  },
+  "capability_changes": [
+    {
+      "ts": "2026-11-15 19:05:07",
+      "agent_id": "agent_03",
+      "agent_name": "03",
+      "dims": [
+        "attribute_query",
+        "statistics"
+      ],
+      "outcome": "success",
+      "before": {
+        "attribute_query": 0.5,
+        "statistics": 0.5
+      },
+      "after": {
+        "attribute_query": 0.549,
+        "statistics": 0.549
+      },
+      "delta": {
+        "attribute_query": 0.049,
+        "statistics": 0.049
+      },
+      "subtask_id": "t1"
+    }
+  ],
+  "final_capabilities": [
+    {
+      "agent": "agent_01",
+      "name": "01",
+      "vector": [
+        0.5,
+        0.5,
+        0.5,
+        0.5
+      ],
+      "stats": {
+        "attempts": 0,
+        "successes": 0,
+        "failures": 0
+      }
+    },
+    {
+      "agent": "agent_02",
+      "name": "02",
+      "vector": [
+        0.5,
+        0.5,
+        0.5,
+        0.5
+      ],
+      "stats": {
+        "attempts": 0,
+        "successes": 0,
+        "failures": 0
+      }
+    },
+    {
+      "agent": "agent_03",
+      "name": "03",
+      "vector": [
+        0.5,
+        0.549,
+        0.549,
+        0.5
+      ],
+      "stats": {
+        "attempts": 1,
+        "successes": 1,
+        "failures": 0
+      }
+    },
+    {
+      "agent": "agent_04",
+      "name": "04",
+      "vector": [
+        0.5,
+        0.5,
+        0.5,
+        0.5
+      ],
+      "stats": {
+        "attempts": 0,
+        "successes": 0,
+        "failures": 0
+      }
+    }
+  ],
+  "signature": "7b19aa8fc5930df9e9c54c1fabee2c44fe6fc1e928966bc9d93fb8798d43188f"
+}

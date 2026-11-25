@@ -39,7 +39,10 @@ class PipelineState:
     failure_feedback: str = ""           # 报错信息（返回 LLM 总结错误经验）
     capability_changes: list[dict] = field(default_factory=list)  # 本次运行的能力进化事件
     capability_chart: str = ""           # 能力向量图路径
-    replans: int = 0                     # 已重新规划次数（阶段⑤失败后 +1）
+    replans: int = 0                     # 实际已发生的重新规划次数；初次作答不计入
+    max_replans: int | None = None       # 本次任务的重规划上限；None 使用主图默认值
+    failed_attempts: int = 0             # 判定失败的作答轮数，与实际重规划次数分别统计
+    attempt_history: list[dict] = field(default_factory=list)  # 每轮评估快照，保留跨轮计划/轨迹
     ground_truth: Any = None             # 参考答案（测试模式，用于判定成功/失败）
     answer_format: str = ""              # 最终答复的输出格式要求（基准题按题目契约生成）
 

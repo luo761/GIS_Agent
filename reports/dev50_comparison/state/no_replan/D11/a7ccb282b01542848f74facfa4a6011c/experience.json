@@ -1,0 +1,68 @@
+[
+  {
+    "task_signature": "general/空间计算",
+    "question_feat": "计算施工区表 construction_areas 中 code='A001' 与 code='A008' 两个面要素的交集面积（平方米），几何字段为 geom（EPSG:3857）。",
+    "plan": {
+      "t1": {
+        "nodes": [
+          {
+            "id": "s1",
+            "action": "query_features",
+            "params": {
+              "table": "construction_areas",
+              "filters": {
+                "code": [
+                  "A001",
+                  "A008"
+                ]
+              },
+              "geom_field": "geom"
+            },
+            "depends_on": []
+          },
+          {
+            "id": "s2",
+            "action": "intersection_geometry",
+            "params": {
+              "geometries": [
+                "$s1.geoms[0]",
+                "$s1.geoms[1]"
+              ]
+            },
+            "depends_on": [
+              "s1"
+            ]
+          },
+          {
+            "id": "s3",
+            "action": "measure_geometry",
+            "params": {
+              "geometry": "$s2.intersection_geom",
+              "measure": "area",
+              "unit": "m2"
+            },
+            "depends_on": [
+              "s2"
+            ]
+          }
+        ],
+        "edges": [
+          [
+            "s1",
+            "s2"
+          ],
+          [
+            "s2",
+            "s3"
+          ]
+        ]
+      }
+    },
+    "trace": "query_features 过滤 construction_areas 中 code in [A001,A008]，返回 feature_count=2。intersection_geometry 对两要素求交，结果 geometry_type 为 None。measure_geometry 对交集几何测面积，返回 value=140000.0 平方米。",
+    "outcome": "success",
+    "error_lesson": "",
+    "id": "81959bc9",
+    "hits": 0,
+    "updated_at": "2026-11-15 19:01:35"
+  }
+]

@@ -1,0 +1,119 @@
+[
+  {
+    "question": "查询 construction_areas 表中 code 为 A001 和 A008 的两个面要素，基于同一份查询结果，分别计算两区面积直接相加、联合覆盖去重面积和重叠面积（平方米）。",
+    "plan": {
+      "nodes": [
+        {
+          "id": "s1",
+          "action": "query_features",
+          "params": {
+            "table": "construction_areas",
+            "filters": {
+              "code": [
+                "A001",
+                "A008"
+              ]
+            },
+            "output": "features_A001_A008"
+          },
+          "depends_on": []
+        },
+        {
+          "id": "s2",
+          "action": "measure_geometry",
+          "params": {
+            "input": "features_A001_A008",
+            "mode": "per_feature_area",
+            "unit": "square_meter",
+            "output": "areas_per_feature"
+          },
+          "depends_on": [
+            "s1"
+          ]
+        },
+        {
+          "id": "s3",
+          "action": "calculate_sum",
+          "params": {
+            "input": "areas_per_feature",
+            "output": "sum_area_direct"
+          },
+          "depends_on": [
+            "s2"
+          ]
+        },
+        {
+          "id": "s4",
+          "action": "union_features",
+          "params": {
+            "input": "features_A001_A008",
+            "output": "union_geom"
+          },
+          "depends_on": [
+            "s1"
+          ]
+        },
+        {
+          "id": "s5",
+          "action": "measure_geometry",
+          "params": {
+            "input": "union_geom",
+            "mode": "area",
+            "unit": "square_meter",
+            "output": "union_area"
+          },
+          "depends_on": [
+            "s4"
+          ]
+        },
+        {
+          "id": "s6",
+          "action": "calculate_difference",
+          "params": {
+            "input_a": "sum_area_direct",
+            "input_b": "union_area",
+            "output": "overlap_area"
+          },
+          "depends_on": [
+            "s3",
+            "s5"
+          ]
+        }
+      ],
+      "edges": [
+        [
+          "s1",
+          "s2"
+        ],
+        [
+          "s2",
+          "s3"
+        ],
+        [
+          "s1",
+          "s4"
+        ],
+        [
+          "s4",
+          "s5"
+        ],
+        [
+          "s3",
+          "s6"
+        ],
+        [
+          "s5",
+          "s6"
+        ]
+      ]
+    },
+    "note": "planned",
+    "ts": "2026-11-15 19:02:39"
+  },
+  {
+    "question": "查询 construction_areas 表中 code 为 A001 和 A008 的两个面要素，基于同一份查询结果，分别计算两区面积直接相加、联合覆盖去重面积和重叠面积（平方米）。",
+    "outcome": "success",
+    "note": "executed",
+    "ts": "2026-11-15 19:02:48"
+  }
+]

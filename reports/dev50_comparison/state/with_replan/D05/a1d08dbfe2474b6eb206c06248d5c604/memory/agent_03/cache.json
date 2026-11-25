@@ -1,0 +1,89 @@
+[
+  {
+    "question": "在 gas_pipelines 表中，筛选与施工区 A001 相交（ST_Intersects，含边界）的燃气管线，将其裁剪到 A001 范围内，按 pressure_level 分组汇总裁剪后线段的长度（单位：米），结果按总长度降序、压力等级名称升序排列，输出全部分组。",
+    "plan": {
+      "nodes": [
+        {
+          "id": "s1",
+          "action": "query_features",
+          "params": {
+            "table": "gas_pipelines",
+            "spatial_filter": {
+              "relation": "ST_Intersects",
+              "geometry": "施工区A001"
+            }
+          },
+          "depends_on": []
+        },
+        {
+          "id": "s2",
+          "action": "clip_features",
+          "params": {
+            "input": "s1",
+            "clip_geometry": "施工区A001",
+            "keep_boundary": true
+          },
+          "depends_on": [
+            "s1"
+          ]
+        },
+        {
+          "id": "s3",
+          "action": "measure_features",
+          "params": {
+            "input": "s2",
+            "measure_type": "length",
+            "unit": "meter"
+          },
+          "depends_on": [
+            "s2"
+          ]
+        },
+        {
+          "id": "s4",
+          "action": "summarize_features",
+          "params": {
+            "input": "s3",
+            "aggregate": "sum",
+            "group_by": "pressure_level",
+            "sort": [
+              {
+                "field": "total_length",
+                "order": "desc"
+              },
+              {
+                "field": "pressure_level",
+                "order": "asc"
+              }
+            ]
+          },
+          "depends_on": [
+            "s3"
+          ]
+        }
+      ],
+      "edges": [
+        [
+          "s1",
+          "s2"
+        ],
+        [
+          "s2",
+          "s3"
+        ],
+        [
+          "s3",
+          "s4"
+        ]
+      ]
+    },
+    "note": "planned",
+    "ts": "2026-11-15 19:00:27"
+  },
+  {
+    "question": "在 gas_pipelines 表中，筛选与施工区 A001 相交（ST_Intersects，含边界）的燃气管线，将其裁剪到 A001 范围内，按 pressure_level 分组汇总裁剪后线段的长度（单位：米），结果按总长度降序、压力等级名称升序排列，输出全部分组。",
+    "outcome": "success",
+    "note": "executed",
+    "ts": "2026-11-15 19:00:49"
+  }
+]

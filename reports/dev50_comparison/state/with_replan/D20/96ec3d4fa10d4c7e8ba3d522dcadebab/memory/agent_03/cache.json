@@ -1,0 +1,689 @@
+[
+  {
+    "question": "取与施工区A001相交的高压燃气管线（gas_pipelines.pressure_level='高压'），裁剪到A001范围，再对裁剪结果缓冲50米并合并为同一影响范围。复用该范围：（1）统计A001内gas_devices中status为'正常'或'告警'的设备，按status升序分组计数；（2）计算A001内water_pipelines各管线受影响长度（米），按长度降序、同长按code升序，并给出总长度。边界计入，水管非空零长度接触记录保留。",
+    "plan": {
+      "nodes": [
+        {
+          "id": "s1",
+          "action": "query_features",
+          "params": {
+            "table": "gas_pipelines",
+            "filters": {
+              "pressure_level": "高压"
+            }
+          },
+          "depends_on": []
+        },
+        {
+          "id": "s2",
+          "action": "query_features",
+          "params": {
+            "table": "construction_areas",
+            "filters": {
+              "code": "A001"
+            }
+          },
+          "depends_on": []
+        },
+        {
+          "id": "s3",
+          "action": "clip_features",
+          "params": {
+            "input": "s1",
+            "clipper": "s2"
+          },
+          "depends_on": [
+            "s1",
+            "s2"
+          ]
+        },
+        {
+          "id": "s4",
+          "action": "buffer_features",
+          "params": {
+            "input": "s3",
+            "distance": 50,
+            "unit": "meter"
+          },
+          "depends_on": [
+            "s3"
+          ]
+        },
+        {
+          "id": "s5",
+          "action": "union_features",
+          "params": {
+            "input": "s4"
+          },
+          "depends_on": [
+            "s4"
+          ]
+        },
+        {
+          "id": "s6",
+          "action": "query_features",
+          "params": {
+            "table": "gas_devices",
+            "filters": {
+              "status": [
+                "正常",
+                "告警"
+              ]
+            }
+          },
+          "depends_on": []
+        },
+        {
+          "id": "s7",
+          "action": "clip_features",
+          "params": {
+            "input": "s6",
+            "clipper": "s2"
+          },
+          "depends_on": [
+            "s6",
+            "s2"
+          ]
+        },
+        {
+          "id": "s8",
+          "action": "summarize_features",
+          "params": {
+            "input": "s7",
+            "aggregate": "count",
+            "group_by": "status",
+            "sort": {
+              "by": "status",
+              "order": "asc"
+            }
+          },
+          "depends_on": [
+            "s7"
+          ]
+        },
+        {
+          "id": "s9",
+          "action": "query_features",
+          "params": {
+            "table": "water_pipelines"
+          },
+          "depends_on": []
+        },
+        {
+          "id": "s10",
+          "action": "clip_features",
+          "params": {
+            "input": "s9",
+            "clipper": "s2"
+          },
+          "depends_on": [
+            "s9",
+            "s2"
+          ]
+        },
+        {
+          "id": "s11",
+          "action": "measure_features",
+          "params": {
+            "input": "s10",
+            "measure": "length",
+            "unit": "meter"
+          },
+          "depends_on": [
+            "s10"
+          ]
+        },
+        {
+          "id": "s12",
+          "action": "summarize_features",
+          "params": {
+            "input": "s11",
+            "aggregate": "sum",
+            "group_by": "code",
+            "sort": [
+              {
+                "by": "length",
+                "order": "desc"
+              },
+              {
+                "by": "code",
+                "order": "asc"
+              }
+            ]
+          },
+          "depends_on": [
+            "s11"
+          ]
+        },
+        {
+          "id": "s13",
+          "action": "summarize_features",
+          "params": {
+            "input": "s11",
+            "aggregate": "sum",
+            "measure": "length"
+          },
+          "depends_on": [
+            "s11"
+          ]
+        }
+      ],
+      "edges": [
+        [
+          "s1",
+          "s3"
+        ],
+        [
+          "s2",
+          "s3"
+        ],
+        [
+          "s3",
+          "s4"
+        ],
+        [
+          "s4",
+          "s5"
+        ],
+        [
+          "s6",
+          "s7"
+        ],
+        [
+          "s2",
+          "s7"
+        ],
+        [
+          "s7",
+          "s8"
+        ],
+        [
+          "s9",
+          "s10"
+        ],
+        [
+          "s2",
+          "s10"
+        ],
+        [
+          "s10",
+          "s11"
+        ],
+        [
+          "s11",
+          "s12"
+        ],
+        [
+          "s11",
+          "s13"
+        ]
+      ]
+    },
+    "note": "planned",
+    "ts": "2026-11-15 19:04:04"
+  },
+  {
+    "question": "取与施工区A001相交的高压燃气管线（gas_pipelines.pressure_level='高压'），裁剪到A001范围，再对裁剪结果缓冲50米并合并为同一影响范围。复用该范围：（1）统计A001内gas_devices中status为'正常'或'告警'的设备，按status升序分组计数；（2）计算A001内water_pipelines各管线受影响长度（米），按长度降序、同长按code升序，并给出总长度。边界计入，水管非空零长度接触记录保留。",
+    "outcome": "success",
+    "note": "executed",
+    "ts": "2026-11-15 19:04:24"
+  },
+  {
+    "question": "取与施工区A001相交的高压燃气管线（gas_pipelines.pressure_level='高压'），裁剪到A001范围，再对裁剪结果缓冲50米并合并为同一影响范围。复用该范围：（1）统计A001内gas_devices中status为'正常'或'告警'的设备，按status升序分组计数；（2）计算A001内water_pipelines各管线受影响长度（米），按长度降序、同长按code升序，并给出总长度。边界计入，水管非空零长度接触记录保留。",
+    "plan": {
+      "nodes": [
+        {
+          "id": "s1",
+          "action": "query_features",
+          "params": {
+            "table": "gas_pipelines",
+            "filters": {
+              "pressure_level": "高压"
+            }
+          },
+          "depends_on": []
+        },
+        {
+          "id": "s2",
+          "action": "query_features",
+          "params": {
+            "table": "construction_areas",
+            "filters": {
+              "code": "A001"
+            }
+          },
+          "depends_on": []
+        },
+        {
+          "id": "s3",
+          "action": "clip_features",
+          "params": {
+            "input": "s1",
+            "clipper": "s2"
+          },
+          "depends_on": [
+            "s1",
+            "s2"
+          ]
+        },
+        {
+          "id": "s4",
+          "action": "buffer_features",
+          "params": {
+            "input": "s3",
+            "distance": 50,
+            "unit": "meter"
+          },
+          "depends_on": [
+            "s3"
+          ]
+        },
+        {
+          "id": "s5",
+          "action": "union_features",
+          "params": {
+            "input": "s4"
+          },
+          "depends_on": [
+            "s4"
+          ]
+        },
+        {
+          "id": "s6",
+          "action": "query_features",
+          "params": {
+            "table": "gas_devices",
+            "filters": {
+              "status": [
+                "正常",
+                "告警"
+              ]
+            }
+          },
+          "depends_on": []
+        },
+        {
+          "id": "s7",
+          "action": "clip_features",
+          "params": {
+            "input": "s6",
+            "clipper": "s2"
+          },
+          "depends_on": [
+            "s6",
+            "s2"
+          ]
+        },
+        {
+          "id": "s8",
+          "action": "summarize_features",
+          "params": {
+            "input": "s7",
+            "aggregate": "count",
+            "group_by": "status",
+            "sort": {
+              "by": "status",
+              "order": "asc"
+            }
+          },
+          "depends_on": [
+            "s7"
+          ]
+        },
+        {
+          "id": "s9",
+          "action": "query_features",
+          "params": {
+            "table": "water_pipelines"
+          },
+          "depends_on": []
+        },
+        {
+          "id": "s10",
+          "action": "clip_features",
+          "params": {
+            "input": "s9",
+            "clipper": "s2"
+          },
+          "depends_on": [
+            "s9",
+            "s2"
+          ]
+        },
+        {
+          "id": "s11",
+          "action": "measure_features",
+          "params": {
+            "input": "s10",
+            "measure": "length",
+            "unit": "meter"
+          },
+          "depends_on": [
+            "s10"
+          ]
+        },
+        {
+          "id": "s12",
+          "action": "summarize_features",
+          "params": {
+            "input": "s11",
+            "aggregate": "sum",
+            "group_by": "code",
+            "sort": [
+              {
+                "by": "length",
+                "order": "desc"
+              },
+              {
+                "by": "code",
+                "order": "asc"
+              }
+            ]
+          },
+          "depends_on": [
+            "s11"
+          ]
+        },
+        {
+          "id": "s13",
+          "action": "summarize_features",
+          "params": {
+            "input": "s11",
+            "aggregate": "sum",
+            "measure": "length"
+          },
+          "depends_on": [
+            "s11"
+          ]
+        }
+      ],
+      "edges": [
+        [
+          "s1",
+          "s3"
+        ],
+        [
+          "s2",
+          "s3"
+        ],
+        [
+          "s3",
+          "s4"
+        ],
+        [
+          "s4",
+          "s5"
+        ],
+        [
+          "s6",
+          "s7"
+        ],
+        [
+          "s2",
+          "s7"
+        ],
+        [
+          "s7",
+          "s8"
+        ],
+        [
+          "s9",
+          "s10"
+        ],
+        [
+          "s2",
+          "s10"
+        ],
+        [
+          "s10",
+          "s11"
+        ],
+        [
+          "s11",
+          "s12"
+        ],
+        [
+          "s11",
+          "s13"
+        ]
+      ]
+    },
+    "note": "planned",
+    "ts": "2026-11-15 19:04:33"
+  },
+  {
+    "question": "取与施工区A001相交的高压燃气管线（gas_pipelines.pressure_level='高压'），裁剪到A001范围，再对裁剪结果缓冲50米并合并为同一影响范围。复用该范围：（1）统计A001内gas_devices中status为'正常'或'告警'的设备，按status升序分组计数；（2）计算A001内water_pipelines各管线受影响长度（米），按长度降序、同长按code升序，并给出总长度。边界计入，水管非空零长度接触记录保留。",
+    "outcome": "success",
+    "note": "executed",
+    "ts": "2026-11-15 19:05:01"
+  },
+  {
+    "question": "取与施工区A001相交的高压燃气管线（gas_pipelines.pressure_level='高压'），裁剪到A001范围，再对裁剪结果缓冲50米并合并为同一影响范围。复用该范围：（1）统计A001内gas_devices中status为'正常'或'告警'的设备，按status升序分组计数；（2）计算A001内water_pipelines各管线受影响长度（米），按长度降序、同长按code升序，并给出总长度。边界计入，水管非空零长度接触记录保留。",
+    "plan": {
+      "nodes": [
+        {
+          "id": "s1",
+          "action": "query_features",
+          "params": {
+            "table": "gas_pipelines",
+            "filters": {
+              "pressure_level": "高压"
+            }
+          },
+          "depends_on": []
+        },
+        {
+          "id": "s2",
+          "action": "query_features",
+          "params": {
+            "table": "construction_areas",
+            "filters": {
+              "code": "A001"
+            }
+          },
+          "depends_on": []
+        },
+        {
+          "id": "s3",
+          "action": "clip_features",
+          "params": {
+            "input": "s1",
+            "clipper": "s2"
+          },
+          "depends_on": [
+            "s1",
+            "s2"
+          ]
+        },
+        {
+          "id": "s4",
+          "action": "buffer_features",
+          "params": {
+            "input": "s3",
+            "distance": 50,
+            "unit": "meter"
+          },
+          "depends_on": [
+            "s3"
+          ]
+        },
+        {
+          "id": "s5",
+          "action": "union_features",
+          "params": {
+            "input": "s4"
+          },
+          "depends_on": [
+            "s4"
+          ]
+        },
+        {
+          "id": "s6",
+          "action": "query_features",
+          "params": {
+            "table": "gas_devices",
+            "filters": {
+              "status": [
+                "正常",
+                "告警"
+              ]
+            }
+          },
+          "depends_on": []
+        },
+        {
+          "id": "s7",
+          "action": "clip_features",
+          "params": {
+            "input": "s6",
+            "clipper": "s5"
+          },
+          "depends_on": [
+            "s6",
+            "s5"
+          ]
+        },
+        {
+          "id": "s8",
+          "action": "summarize_features",
+          "params": {
+            "input": "s7",
+            "aggregate": "count",
+            "group_by": "status",
+            "sort": {
+              "by": "status",
+              "order": "asc"
+            }
+          },
+          "depends_on": [
+            "s7"
+          ]
+        },
+        {
+          "id": "s9",
+          "action": "query_features",
+          "params": {
+            "table": "water_pipelines"
+          },
+          "depends_on": []
+        },
+        {
+          "id": "s10",
+          "action": "clip_features",
+          "params": {
+            "input": "s9",
+            "clipper": "s5"
+          },
+          "depends_on": [
+            "s9",
+            "s5"
+          ]
+        },
+        {
+          "id": "s11",
+          "action": "measure_features",
+          "params": {
+            "input": "s10",
+            "measure": "length",
+            "unit": "meter"
+          },
+          "depends_on": [
+            "s10"
+          ]
+        },
+        {
+          "id": "s12",
+          "action": "summarize_features",
+          "params": {
+            "input": "s11",
+            "aggregate": "sum",
+            "group_by": "code",
+            "sort": [
+              {
+                "by": "length",
+                "order": "desc"
+              },
+              {
+                "by": "code",
+                "order": "asc"
+              }
+            ]
+          },
+          "depends_on": [
+            "s11"
+          ]
+        },
+        {
+          "id": "s13",
+          "action": "summarize_features",
+          "params": {
+            "input": "s11",
+            "aggregate": "sum",
+            "measure": "length"
+          },
+          "depends_on": [
+            "s11"
+          ]
+        }
+      ],
+      "edges": [
+        [
+          "s1",
+          "s3"
+        ],
+        [
+          "s2",
+          "s3"
+        ],
+        [
+          "s3",
+          "s4"
+        ],
+        [
+          "s4",
+          "s5"
+        ],
+        [
+          "s6",
+          "s7"
+        ],
+        [
+          "s5",
+          "s7"
+        ],
+        [
+          "s7",
+          "s8"
+        ],
+        [
+          "s9",
+          "s10"
+        ],
+        [
+          "s5",
+          "s10"
+        ],
+        [
+          "s10",
+          "s11"
+        ],
+        [
+          "s11",
+          "s12"
+        ],
+        [
+          "s11",
+          "s13"
+        ]
+      ]
+    },
+    "note": "planned",
+    "ts": "2026-11-15 19:05:12"
+  },
+  {
+    "question": "取与施工区A001相交的高压燃气管线（gas_pipelines.pressure_level='高压'），裁剪到A001范围，再对裁剪结果缓冲50米并合并为同一影响范围。复用该范围：（1）统计A001内gas_devices中status为'正常'或'告警'的设备，按status升序分组计数；（2）计算A001内water_pipelines各管线受影响长度（米），按长度降序、同长按code升序，并给出总长度。边界计入，水管非空零长度接触记录保留。",
+    "outcome": "success",
+    "note": "executed",
+    "ts": "2026-11-15 19:05:34"
+  }
+]

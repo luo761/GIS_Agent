@@ -1,0 +1,188 @@
+[
+  {
+    "question": "合并施工区 construction_areas 中 code 为 A001 与 A002 的面要素，对与联合范围相交且 status='正常' 的 gas_devices 点要素按源主键去重后，分别建立 200 米缓冲区，合并缓冲重叠，再裁剪到施工区联合范围。返回源设备数量、覆盖面积（平方米）及其占施工区联合去重面积的百分比；区域公共边界设备仅计一次。",
+    "plan": {
+      "nodes": [
+        {
+          "id": "s1",
+          "action": "query_features",
+          "params": {
+            "table": "construction_areas",
+            "where": "code IN ('A001', 'A002')"
+          },
+          "depends_on": []
+        },
+        {
+          "id": "s2",
+          "action": "union_features",
+          "params": {
+            "source": "s1"
+          },
+          "depends_on": [
+            "s1"
+          ]
+        },
+        {
+          "id": "s3",
+          "action": "query_features",
+          "params": {
+            "table": "gas_devices",
+            "where": "status = '正常'",
+            "target": "s2",
+            "relation": "ST_Intersects"
+          },
+          "depends_on": [
+            "s2"
+          ]
+        },
+        {
+          "id": "s4",
+          "action": "deduplicate_features",
+          "params": {
+            "source": "s3",
+            "key": "id"
+          },
+          "depends_on": [
+            "s3"
+          ]
+        },
+        {
+          "id": "s5",
+          "action": "buffer_features",
+          "params": {
+            "source": "s4",
+            "distance": 200,
+            "unit": "meter"
+          },
+          "depends_on": [
+            "s4"
+          ]
+        },
+        {
+          "id": "s6",
+          "action": "union_features",
+          "params": {
+            "source": "s5"
+          },
+          "depends_on": [
+            "s5"
+          ]
+        },
+        {
+          "id": "s7",
+          "action": "clip_features",
+          "params": {
+            "source": "s6",
+            "clip_geometry": "s2"
+          },
+          "depends_on": [
+            "s6",
+            "s2"
+          ]
+        },
+        {
+          "id": "s8",
+          "action": "measure_geometry",
+          "params": {
+            "source": "s7",
+            "measure": "area"
+          },
+          "depends_on": [
+            "s7"
+          ]
+        },
+        {
+          "id": "s9",
+          "action": "measure_geometry",
+          "params": {
+            "source": "s2",
+            "measure": "area"
+          },
+          "depends_on": [
+            "s2"
+          ]
+        },
+        {
+          "id": "s10",
+          "action": "count_features",
+          "params": {
+            "source": "s4"
+          },
+          "depends_on": [
+            "s4"
+          ]
+        },
+        {
+          "id": "s11",
+          "action": "calculate_ratio",
+          "params": {
+            "numerator": "s8",
+            "denominator": "s9"
+          },
+          "depends_on": [
+            "s8",
+            "s9"
+          ]
+        }
+      ],
+      "edges": [
+        [
+          "s1",
+          "s2"
+        ],
+        [
+          "s2",
+          "s3"
+        ],
+        [
+          "s3",
+          "s4"
+        ],
+        [
+          "s4",
+          "s5"
+        ],
+        [
+          "s5",
+          "s6"
+        ],
+        [
+          "s6",
+          "s7"
+        ],
+        [
+          "s2",
+          "s7"
+        ],
+        [
+          "s7",
+          "s8"
+        ],
+        [
+          "s2",
+          "s9"
+        ],
+        [
+          "s4",
+          "s10"
+        ],
+        [
+          "s8",
+          "s11"
+        ],
+        [
+          "s9",
+          "s11"
+        ]
+      ]
+    },
+    "note": "planned",
+    "ts": "2026-11-15 19:12:20"
+  },
+  {
+    "question": "合并施工区 construction_areas 中 code 为 A001 与 A002 的面要素，对与联合范围相交且 status='正常' 的 gas_devices 点要素按源主键去重后，分别建立 200 米缓冲区，合并缓冲重叠，再裁剪到施工区联合范围。返回源设备数量、覆盖面积（平方米）及其占施工区联合去重面积的百分比；区域公共边界设备仅计一次。",
+    "outcome": "success",
+    "note": "executed",
+    "ts": "2026-11-15 19:12:44"
+  }
+]

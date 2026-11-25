@@ -1,0 +1,47 @@
+[
+  {
+    "task_signature": "general/空间计算",
+    "question_feat": "计算施工区表 construction_areas 中 code='A001' 与 code='A002' 两个面要素的交集几何，若交集为线（仅共边）则返回其长度（米），若交集为面则返回其面积（平方米），单位基于 EPSG:3857。",
+    "plan": {
+      "t1": {
+        "nodes": [
+          {
+            "id": "s1",
+            "action": "intersection_geometry",
+            "params": {
+              "table": "construction_areas",
+              "code1": "A001",
+              "code2": "A002",
+              "srid": 3857
+            },
+            "depends_on": []
+          },
+          {
+            "id": "s2",
+            "action": "measure_geometry",
+            "params": {
+              "geometry": "{{s1.result}}",
+              "srid": 3857,
+              "unit": "auto"
+            },
+            "depends_on": [
+              "s1"
+            ]
+          }
+        ],
+        "edges": [
+          [
+            "s1",
+            "s2"
+          ]
+        ]
+      }
+    },
+    "trace": "经验：对construction_areas表code='A001'与'A002'做交集，先调intersection_geometry（target_srid=3857）得geometry_type为None；再调measure_geometry对t1.result.geometry测length，返回value=1000.0米。",
+    "outcome": "success",
+    "error_lesson": "",
+    "id": "1e184ff3",
+    "hits": 0,
+    "updated_at": "2026-11-15 19:01:13"
+  }
+]

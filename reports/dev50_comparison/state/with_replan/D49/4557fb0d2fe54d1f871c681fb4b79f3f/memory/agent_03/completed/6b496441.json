@@ -1,0 +1,127 @@
+{
+  "id": "6b496441",
+  "agent_id": "agent_03",
+  "question_feat": "在 gas_pipelines 表中，筛选与面要素 A001 相交（ST_Intersects）的燃气管线，将其裁剪到 A001 范围内，逐条计算裁剪后管线长度（米），保留非空零长度接触记录；汇总全部管线长度总和、其中 pressure_level='高压' 的管线长度总和，并计算高压长度占全部长度的百分比。",
+  "plan": {
+    "nodes": [
+      {
+        "id": "s1",
+        "action": "query_features",
+        "params": {
+          "table": "gas_pipelines",
+          "filters": {
+            "geom": "ST_Intersects(geom, (SELECT geom FROM construction_areas WHERE code='A001'))"
+          }
+        },
+        "depends_on": []
+      },
+      {
+        "id": "s2",
+        "action": "clip_features",
+        "params": {
+          "input": "s1",
+          "clip_geom": "(SELECT geom FROM construction_areas WHERE code='A001')"
+        },
+        "depends_on": [
+          "s1"
+        ]
+      },
+      {
+        "id": "s3",
+        "action": "measure_features",
+        "params": {
+          "input": "s2",
+          "measure": "length",
+          "unit": "meter"
+        },
+        "depends_on": [
+          "s2"
+        ]
+      },
+      {
+        "id": "s4",
+        "action": "filter_features",
+        "params": {
+          "input": "s3",
+          "condition": "length > 0"
+        },
+        "depends_on": [
+          "s3"
+        ]
+      },
+      {
+        "id": "s5",
+        "action": "summarize_features",
+        "params": {
+          "input": "s4",
+          "aggregate": "sum",
+          "field": "length"
+        },
+        "depends_on": [
+          "s4"
+        ]
+      },
+      {
+        "id": "s6",
+        "action": "summarize_features",
+        "params": {
+          "input": "s4",
+          "aggregate": "sum",
+          "field": "length",
+          "group_by": "pressure_level",
+          "filter": "pressure_level='高压'"
+        },
+        "depends_on": [
+          "s4"
+        ]
+      },
+      {
+        "id": "s7",
+        "action": "calculate_ratio",
+        "params": {
+          "numerator": "s6",
+          "denominator": "s5",
+          "output": "high_pressure_percentage"
+        },
+        "depends_on": [
+          "s5",
+          "s6"
+        ]
+      }
+    ],
+    "edges": [
+      [
+        "s1",
+        "s2"
+      ],
+      [
+        "s2",
+        "s3"
+      ],
+      [
+        "s3",
+        "s4"
+      ],
+      [
+        "s4",
+        "s5"
+      ],
+      [
+        "s4",
+        "s6"
+      ],
+      [
+        "s5",
+        "s7"
+      ],
+      [
+        "s6",
+        "s7"
+      ]
+    ]
+  },
+  "result_summary": "{\"unit\": \"meter\", \"total_length\": 5814.213562373096, \"high_pressure_length\": 2414.213562373095, \"high_pressure_percent\": {\"unit\": \"percent\", \"value\": 41.52261585292928, \"numerator\": 2414.213562373095,",
+  "outcome": "success",
+  "error": "",
+  "ts": "2026-11-15 19:11:26"
+}

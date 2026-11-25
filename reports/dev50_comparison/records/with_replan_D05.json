@@ -1,0 +1,415 @@
+{
+  "id": "D05",
+  "level": "L2",
+  "question": "将所有与 A001 相交的燃气管线裁剪到 A001，按 pressure_level 汇总区内长度（米），按总长度降序、同长按压力名称升序，输出全部分组。边界上的线段计入。",
+  "mode": "with_replan",
+  "status": "completed",
+  "correct": true,
+  "first_correct": true,
+  "answer": {
+    "unit": "meter",
+    "groups": [
+      {
+        "group": {
+          "pressure_level": "高压"
+        },
+        "value": 2414.213562373095,
+        "feature_count": 2
+      },
+      {
+        "group": {
+          "pressure_level": "中压"
+        },
+        "value": 2400.0,
+        "feature_count": 3
+      },
+      {
+        "group": {
+          "pressure_level": "低压"
+        },
+        "value": 1000.0,
+        "feature_count": 1
+      }
+    ]
+  },
+  "expected": {
+    "unit": "meter",
+    "groups": [
+      {
+        "group": {
+          "pressure_level": "高压"
+        },
+        "value": 2414.213562373095,
+        "feature_count": 2
+      },
+      {
+        "group": {
+          "pressure_level": "中压"
+        },
+        "value": 2400,
+        "feature_count": 3
+      },
+      {
+        "group": {
+          "pressure_level": "低压"
+        },
+        "value": 1000,
+        "feature_count": 1
+      }
+    ]
+  },
+  "diffs": [],
+  "evaluation": "success",
+  "error": "",
+  "database_changed_during_case": false,
+  "attempt_history": [
+    {
+      "attempt_index": 1,
+      "evaluation": "success",
+      "correct": true,
+      "feedback": "",
+      "tool_call_count": 4,
+      "tools": [
+        "query_features",
+        "clip_features",
+        "measure_features",
+        "summarize_features"
+      ],
+      "subtasks": [
+        {
+          "subtask_id": "t1",
+          "question": "在 gas_pipelines 表中，筛选与施工区 A001 相交（ST_Intersects，含边界）的燃气管线，将其裁剪到 A001 范围内，按 pressure_level 分组汇总裁剪后线段的长度（单位：米），结果按总长度降序、压力等级名称升序排列，输出全部分组。",
+          "required_capabilities": [
+            "spatial_compute",
+            "attribute_query",
+            "statistics"
+          ],
+          "assigned_agent": "agent_03",
+          "assigned_agent_name": "03",
+          "routing": {
+            "agent_id": "agent_03",
+            "agent_name": "03",
+            "required": [
+              "spatial_compute",
+              "attribute_query",
+              "statistics"
+            ],
+            "scores": {
+              "agent_01": 0.5,
+              "agent_02": 0.5,
+              "agent_03": 0.5,
+              "agent_04": 0.5
+            },
+            "best_score": 0.5,
+            "tied": [
+              "agent_01",
+              "agent_02",
+              "agent_03",
+              "agent_04"
+            ],
+            "random_pick": true,
+            "epsilon": 0.0,
+            "pool": [
+              "agent_01",
+              "agent_02",
+              "agent_03",
+              "agent_04"
+            ]
+          },
+          "plan": {
+            "nodes": [
+              {
+                "id": "s1",
+                "action": "query_features",
+                "params": {
+                  "table": "gas_pipelines",
+                  "spatial_filter": {
+                    "relation": "ST_Intersects",
+                    "geometry": "施工区A001"
+                  }
+                },
+                "depends_on": []
+              },
+              {
+                "id": "s2",
+                "action": "clip_features",
+                "params": {
+                  "input": "s1",
+                  "clip_geometry": "施工区A001",
+                  "keep_boundary": true
+                },
+                "depends_on": [
+                  "s1"
+                ]
+              },
+              {
+                "id": "s3",
+                "action": "measure_features",
+                "params": {
+                  "input": "s2",
+                  "measure_type": "length",
+                  "unit": "meter"
+                },
+                "depends_on": [
+                  "s2"
+                ]
+              },
+              {
+                "id": "s4",
+                "action": "summarize_features",
+                "params": {
+                  "input": "s3",
+                  "aggregate": "sum",
+                  "group_by": "pressure_level",
+                  "sort": [
+                    {
+                      "field": "total_length",
+                      "order": "desc"
+                    },
+                    {
+                      "field": "pressure_level",
+                      "order": "asc"
+                    }
+                  ]
+                },
+                "depends_on": [
+                  "s3"
+                ]
+              }
+            ],
+            "edges": [
+              [
+                "s1",
+                "s2"
+              ],
+              [
+                "s2",
+                "s3"
+              ],
+              [
+                "s3",
+                "s4"
+              ]
+            ]
+          },
+          "result": "汇总结果已按总长度降序排列（高压 > 中压 > 低压），压力等级名称也符合升序要求。\n\n```json\n{\n  \"unit\": \"meter\",\n  \"groups\": [\n    {\n      \"group\": {\"pressure_level\": \"高压\"},\n      \"value\": 2414.213562373095,\n      \"feature_count\": 2\n    },\n    {\n      \"group\": {\"pressure_level\": \"中压\"},\n      \"value\": 2400.0,\n      \"feature_count\": 3\n    },\n    {\n      \"group\": {\"pressure_level\": \"低压\"},\n      \"value\": 1000.0,\n      \"feature_count\": 1\n    }\n  ]\n}\n```",
+          "trace": [
+            {
+              "step": "t1",
+              "tool": "query_features",
+              "args": {
+                "layer_name": "gas_pipelines",
+                "target": {
+                  "layer_name": "construction_areas",
+                  "feature_code": "A001"
+                },
+                "relation": "ST_Intersects"
+              },
+              "ok": true,
+              "brief": {
+                "feature_count": 6
+              }
+            },
+            {
+              "step": "t2",
+              "tool": "clip_features",
+              "args": {
+                "features": {
+                  "$ref": "t1.result.feature_set"
+                },
+                "clip_target": {
+                  "layer_name": "construction_areas",
+                  "feature_code": "A001"
+                }
+              },
+              "ok": true,
+              "brief": {
+                "feature_count": 6
+              }
+            },
+            {
+              "step": "t3",
+              "tool": "measure_features",
+              "args": {
+                "features": {
+                  "$ref": "t2.result.feature_set"
+                },
+                "measure": "length"
+              },
+              "ok": true,
+              "brief": {
+                "feature_count": 6,
+                "summary": {
+                  "value": 5814.213562373096,
+                  "unit": "meter",
+                  "measure": "length",
+                  "measure_srid": 3857,
+                  "feature_count": 6
+                }
+              }
+            },
+            {
+              "step": "t4",
+              "tool": "summarize_features",
+              "args": {
+                "features": {
+                  "$ref": "t3.result.feature_set"
+                },
+                "group_by": [
+                  "pressure_level"
+                ],
+                "aggregate": "sum",
+                "sort": "value_desc"
+              },
+              "ok": true,
+              "brief": {
+                "groups": 3
+              }
+            }
+          ],
+          "tools_used": [
+            "query_features",
+            "clip_features",
+            "measure_features",
+            "summarize_features"
+          ],
+          "status": "success",
+          "outcome": "success",
+          "error": "",
+          "capability_update": {
+            "ts": "2026-11-15 19:00:49",
+            "agent_id": "agent_03",
+            "agent_name": "03",
+            "dims": [
+              "spatial_compute",
+              "attribute_query",
+              "statistics"
+            ],
+            "outcome": "success",
+            "before": {
+              "spatial_compute": 0.5,
+              "attribute_query": 0.5,
+              "statistics": 0.5
+            },
+            "after": {
+              "spatial_compute": 0.549,
+              "attribute_query": 0.549,
+              "statistics": 0.549
+            },
+            "delta": {
+              "spatial_compute": 0.049,
+              "attribute_query": 0.049,
+              "statistics": 0.049
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "attempt_count": 1,
+  "replans": 0,
+  "failed_attempts": 0,
+  "tool_call_count": 4,
+  "elapsed_s": 38.86,
+  "llm_usage": {
+    "llm_calls": 9,
+    "failed_calls": 0,
+    "input_tokens": 50651,
+    "output_tokens": 1260,
+    "total_tokens": 51911,
+    "usage_reported_calls": 9,
+    "elapsed_s": 37.968384
+  },
+  "capability_changes": [
+    {
+      "ts": "2026-11-15 19:00:49",
+      "agent_id": "agent_03",
+      "agent_name": "03",
+      "dims": [
+        "spatial_compute",
+        "attribute_query",
+        "statistics"
+      ],
+      "outcome": "success",
+      "before": {
+        "spatial_compute": 0.5,
+        "attribute_query": 0.5,
+        "statistics": 0.5
+      },
+      "after": {
+        "spatial_compute": 0.549,
+        "attribute_query": 0.549,
+        "statistics": 0.549
+      },
+      "delta": {
+        "spatial_compute": 0.049,
+        "attribute_query": 0.049,
+        "statistics": 0.049
+      },
+      "subtask_id": "t1"
+    }
+  ],
+  "final_capabilities": [
+    {
+      "agent": "agent_01",
+      "name": "01",
+      "vector": [
+        0.5,
+        0.5,
+        0.5,
+        0.5
+      ],
+      "stats": {
+        "attempts": 0,
+        "successes": 0,
+        "failures": 0
+      }
+    },
+    {
+      "agent": "agent_02",
+      "name": "02",
+      "vector": [
+        0.5,
+        0.5,
+        0.5,
+        0.5
+      ],
+      "stats": {
+        "attempts": 0,
+        "successes": 0,
+        "failures": 0
+      }
+    },
+    {
+      "agent": "agent_03",
+      "name": "03",
+      "vector": [
+        0.549,
+        0.549,
+        0.549,
+        0.5
+      ],
+      "stats": {
+        "attempts": 1,
+        "successes": 1,
+        "failures": 0
+      }
+    },
+    {
+      "agent": "agent_04",
+      "name": "04",
+      "vector": [
+        0.5,
+        0.5,
+        0.5,
+        0.5
+      ],
+      "stats": {
+        "attempts": 0,
+        "successes": 0,
+        "failures": 0
+      }
+    }
+  ],
+  "signature": "7b19aa8fc5930df9e9c54c1fabee2c44fe6fc1e928966bc9d93fb8798d43188f"
+}

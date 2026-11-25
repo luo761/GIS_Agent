@@ -1,0 +1,35 @@
+{
+  "status": "ready",
+  "case_count": 50,
+  "expected_ready": 50,
+  "pending_case_ids": [],
+  "database": {
+    "schema": "gis_lab",
+    "postgis_version": "POSTGIS=\"3.6.2 3.6.2\" [EXTENSION] PGSQL=\"180\" GEOS=\"3.14.1dev-CAPI-1.20.4\" PROJ=\"8.2.1 NETWORK_ENABLED=OFF URL_ENDPOINT=https://cdn.proj.org USER_WRITABLE_DIRECTORY=C:\\Windows\\ServiceProfiles\\NetworkService\\AppData\\Local/proj DATABASE_PATH=D:\\Program Files\\PostgreSQL\\18\\share\\contrib\\postgis-3.6\\proj\\proj.db\" (compiled against PROJ 8.2.1) GDAL=\"GDAL 3.9.2, released 2024/08/13\" LIBXML=\"2.12.5\" LIBJSON=\"0.12\" LIBPROTOBUF=\"1.2.1\" WAGYU=\"0.5.0 (Internal)\" TOPOLOGY RASTER",
+    "tables": {
+      "construction_areas": {
+        "row_count": 10,
+        "checksum": "786cfa75a68d1ec3bb9c36937916c85d"
+      },
+      "demo_roads": {
+        "row_count": 3,
+        "checksum": "7471a506290c280f510b8069fa2d6102"
+      },
+      "gas_devices": {
+        "row_count": 12,
+        "checksum": "73b0ba94e8a939dd34ff31bd465f9ed3"
+      },
+      "gas_pipelines": {
+        "row_count": 12,
+        "checksum": "022bbfbe6bc4cf71ea6938279e0fbc81"
+      },
+      "water_pipelines": {
+        "row_count": 10,
+        "checksum": "54f56154003951c53178fa72c0589f05"
+      }
+    },
+    "fingerprint": "b9297a5590f1e4d8958b30d61ad2c224174aafbaaced2b42267f18d152249402"
+  },
+  "blockers": [],
+  "checked_at": "2026-11-15 18:59:08"
+}

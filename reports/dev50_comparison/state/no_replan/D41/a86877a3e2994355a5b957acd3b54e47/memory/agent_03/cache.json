@@ -1,0 +1,222 @@
+[
+  {
+    "question": "在 gas_devices 表中筛选与施工区 A001 相交且 status='正常' 的燃气设备，分别建立 100 米和 300 米缓冲区；对每个半径的缓冲区进行合并去重后裁剪到 A001，分别计算覆盖面积（平方米），边界设备计入。",
+    "plan": {
+      "nodes": [
+        {
+          "id": "s1",
+          "action": "query_features",
+          "params": {
+            "table": "gas_devices",
+            "filters": {
+              "status": "正常"
+            }
+          },
+          "depends_on": []
+        },
+        {
+          "id": "s2",
+          "action": "query_features",
+          "params": {
+            "table": "construction_areas",
+            "filters": {
+              "code": "A001"
+            }
+          },
+          "depends_on": []
+        },
+        {
+          "id": "s3",
+          "action": "spatial_filter",
+          "params": {
+            "source": "s1",
+            "target": "s2",
+            "relation": "intersects"
+          },
+          "depends_on": [
+            "s1",
+            "s2"
+          ]
+        },
+        {
+          "id": "s4",
+          "action": "buffer_features",
+          "params": {
+            "source": "s3",
+            "distance": 100,
+            "unit": "meter"
+          },
+          "depends_on": [
+            "s3"
+          ]
+        },
+        {
+          "id": "s5",
+          "action": "buffer_features",
+          "params": {
+            "source": "s3",
+            "distance": 300,
+            "unit": "meter"
+          },
+          "depends_on": [
+            "s3"
+          ]
+        },
+        {
+          "id": "s6",
+          "action": "union_features",
+          "params": {
+            "source": "s4"
+          },
+          "depends_on": [
+            "s4"
+          ]
+        },
+        {
+          "id": "s7",
+          "action": "union_features",
+          "params": {
+            "source": "s5"
+          },
+          "depends_on": [
+            "s5"
+          ]
+        },
+        {
+          "id": "s8",
+          "action": "clip_features",
+          "params": {
+            "source": "s6",
+            "clip_layer": "s2"
+          },
+          "depends_on": [
+            "s6",
+            "s2"
+          ]
+        },
+        {
+          "id": "s9",
+          "action": "clip_features",
+          "params": {
+            "source": "s7",
+            "clip_layer": "s2"
+          },
+          "depends_on": [
+            "s7",
+            "s2"
+          ]
+        },
+        {
+          "id": "s10",
+          "action": "measure_features",
+          "params": {
+            "source": "s8",
+            "measure": "area",
+            "unit": "square_meter"
+          },
+          "depends_on": [
+            "s8"
+          ]
+        },
+        {
+          "id": "s11",
+          "action": "measure_features",
+          "params": {
+            "source": "s9",
+            "measure": "area",
+            "unit": "square_meter"
+          },
+          "depends_on": [
+            "s9"
+          ]
+        },
+        {
+          "id": "s12",
+          "action": "summarize_features",
+          "params": {
+            "source": [
+              "s10",
+              "s11"
+            ],
+            "group_by": [
+              "buffer_radius"
+            ],
+            "metrics": [
+              "area"
+            ]
+          },
+          "depends_on": [
+            "s10",
+            "s11"
+          ]
+        }
+      ],
+      "edges": [
+        [
+          "s1",
+          "s3"
+        ],
+        [
+          "s2",
+          "s3"
+        ],
+        [
+          "s3",
+          "s4"
+        ],
+        [
+          "s3",
+          "s5"
+        ],
+        [
+          "s4",
+          "s6"
+        ],
+        [
+          "s5",
+          "s7"
+        ],
+        [
+          "s6",
+          "s8"
+        ],
+        [
+          "s2",
+          "s8"
+        ],
+        [
+          "s7",
+          "s9"
+        ],
+        [
+          "s2",
+          "s9"
+        ],
+        [
+          "s8",
+          "s10"
+        ],
+        [
+          "s9",
+          "s11"
+        ],
+        [
+          "s10",
+          "s12"
+        ],
+        [
+          "s11",
+          "s12"
+        ]
+      ]
+    },
+    "note": "planned",
+    "ts": "2026-11-15 19:08:04"
+  },
+  {
+    "question": "在 gas_devices 表中筛选与施工区 A001 相交且 status='正常' 的燃气设备，分别建立 100 米和 300 米缓冲区；对每个半径的缓冲区进行合并去重后裁剪到 A001，分别计算覆盖面积（平方米），边界设备计入。",
+    "outcome": "success",
+    "note": "executed",
+    "ts": "2026-11-15 19:08:23"
+  }
+]

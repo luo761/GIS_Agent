@@ -1,0 +1,175 @@
+[
+  {
+    "question": "分别统计与施工区A001、A003相交（含边界）且状态为正常或告警的燃气设备数，再合并A001与A003后统计该状态条件下的联合去重设备数。",
+    "plan": {
+      "nodes": [
+        {
+          "id": "s1",
+          "action": "query_features",
+          "params": {
+            "layer_name": "construction_areas",
+            "filters": {
+              "code": "A001"
+            },
+            "target": null,
+            "relation": null
+          },
+          "depends_on": []
+        },
+        {
+          "id": "s2",
+          "action": "query_features",
+          "params": {
+            "layer_name": "construction_areas",
+            "filters": {
+              "code": "A003"
+            },
+            "target": null,
+            "relation": null
+          },
+          "depends_on": []
+        },
+        {
+          "id": "s3",
+          "action": "query_features",
+          "params": {
+            "layer_name": "gas_devices",
+            "filters": {
+              "status": [
+                "正常",
+                "告警"
+              ]
+            },
+            "target": "s1.geom",
+            "relation": "ST_Intersects"
+          },
+          "depends_on": [
+            "s1"
+          ]
+        },
+        {
+          "id": "s4",
+          "action": "query_features",
+          "params": {
+            "layer_name": "gas_devices",
+            "filters": {
+              "status": [
+                "正常",
+                "告警"
+              ]
+            },
+            "target": "s2.geom",
+            "relation": "ST_Intersects"
+          },
+          "depends_on": [
+            "s2"
+          ]
+        },
+        {
+          "id": "s5",
+          "action": "union_features",
+          "params": {
+            "features": [
+              "s1",
+              "s2"
+            ]
+          },
+          "depends_on": [
+            "s1",
+            "s2"
+          ]
+        },
+        {
+          "id": "s6",
+          "action": "query_features",
+          "params": {
+            "layer_name": "gas_devices",
+            "filters": {
+              "status": [
+                "正常",
+                "告警"
+              ]
+            },
+            "target": "s5.geom",
+            "relation": "ST_Intersects"
+          },
+          "depends_on": [
+            "s5"
+          ]
+        },
+        {
+          "id": "s7",
+          "action": "count_features",
+          "params": {
+            "features": "s3"
+          },
+          "depends_on": [
+            "s3"
+          ]
+        },
+        {
+          "id": "s8",
+          "action": "count_features",
+          "params": {
+            "features": "s4"
+          },
+          "depends_on": [
+            "s4"
+          ]
+        },
+        {
+          "id": "s9",
+          "action": "count_features",
+          "params": {
+            "features": "s6"
+          },
+          "depends_on": [
+            "s6"
+          ]
+        }
+      ],
+      "edges": [
+        [
+          "s1",
+          "s3"
+        ],
+        [
+          "s2",
+          "s4"
+        ],
+        [
+          "s1",
+          "s5"
+        ],
+        [
+          "s2",
+          "s5"
+        ],
+        [
+          "s5",
+          "s6"
+        ],
+        [
+          "s3",
+          "s7"
+        ],
+        [
+          "s4",
+          "s8"
+        ],
+        [
+          "s6",
+          "s9"
+        ]
+      ]
+    },
+    "note": "planned",
+    "ts": "2026-11-15 19:09:34"
+  },
+  {
+    "question": "分别统计与施工区A001、A003相交（含边界）且状态为正常或告警的燃气设备数，再合并A001与A003后统计该状态条件下的联合去重设备数。",
+    "outcome": "success",
+    "note": "executed",
+    "ts": "2026-11-15 19:10:23"
+  }
+]

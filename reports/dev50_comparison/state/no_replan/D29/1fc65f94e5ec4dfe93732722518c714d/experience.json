@@ -1,0 +1,45 @@
+[
+  {
+    "task_signature": "gas/属性查询",
+    "question_feat": "在 gas_devices 表中，查询 status 字段值严格等于字符串“__不存在的状态__”的要素，并返回匹配设备数量；若无匹配则返回 0。",
+    "plan": {
+      "t1": {
+        "nodes": [
+          {
+            "id": "s1",
+            "action": "query_features",
+            "params": {
+              "layer_name": "gas_devices",
+              "filters": {
+                "status": "__不存在的状态__"
+              }
+            },
+            "depends_on": []
+          },
+          {
+            "id": "s2",
+            "action": "summarize_features",
+            "params": {
+              "aggregate": "count"
+            },
+            "depends_on": [
+              "s1"
+            ]
+          }
+        ],
+        "edges": [
+          [
+            "s1",
+            "s2"
+          ]
+        ]
+      }
+    },
+    "trace": "在 gas_devices 表中查询 status 严格等于“__不存在的状态__”的设备数量。调用 query_features，参数为 layer_name='gas_devices'，filters=[{'field':'status','operator':'eq','value':'__不存在的状态__'}]，返回 {'feature_count': 0}，表示无匹配设备。",
+    "outcome": "success",
+    "error_lesson": "",
+    "id": "cd3b1448",
+    "hits": 0,
+    "updated_at": "2026-11-15 19:06:03"
+  }
+]

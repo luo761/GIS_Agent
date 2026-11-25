@@ -1,0 +1,120 @@
+[
+  {
+    "task_signature": "gas/空间计算",
+    "question_feat": "统计与施工区 A003 相交（含边界接触）且状态为正常的燃气设备数量，排除位于 A003 孔洞内的设备。",
+    "plan": {
+      "t1": {
+        "nodes": [
+          {
+            "id": "s1",
+            "action": "query_features",
+            "params": {
+              "layer_name": "construction_areas",
+              "filters": {
+                "code": "A003"
+              },
+              "target": "geom"
+            },
+            "depends_on": []
+          },
+          {
+            "id": "s2",
+            "action": "query_features",
+            "params": {
+              "layer_name": "gas_devices",
+              "filters": {
+                "status": "正常"
+              },
+              "target": "geom"
+            },
+            "depends_on": []
+          },
+          {
+            "id": "s3",
+            "action": "spatial_intersects",
+            "params": {
+              "source": "s2",
+              "target": "s1",
+              "relation": "ST_Intersects"
+            },
+            "depends_on": [
+              "s1",
+              "s2"
+            ]
+          },
+          {
+            "id": "s4",
+            "action": "spatial_within",
+            "params": {
+              "source": "s3",
+              "target": "s1",
+              "relation": "ST_Within"
+            },
+            "depends_on": [
+              "s3",
+              "s1"
+            ]
+          },
+          {
+            "id": "s5",
+            "action": "difference",
+            "params": {
+              "source": "s3",
+              "exclude": "s4"
+            },
+            "depends_on": [
+              "s3",
+              "s4"
+            ]
+          },
+          {
+            "id": "s6",
+            "action": "count_features",
+            "params": {
+              "source": "s5"
+            },
+            "depends_on": [
+              "s5"
+            ]
+          }
+        ],
+        "edges": [
+          [
+            "s1",
+            "s3"
+          ],
+          [
+            "s2",
+            "s3"
+          ],
+          [
+            "s3",
+            "s4"
+          ],
+          [
+            "s1",
+            "s4"
+          ],
+          [
+            "s3",
+            "s5"
+          ],
+          [
+            "s4",
+            "s5"
+          ],
+          [
+            "s5",
+            "s6"
+          ]
+        ]
+      }
+    },
+    "trace": "执行轨迹摘要：先查施工区A003存在（1条），再查状态正常燃气设备共10条；用ST_Intersects关联A003与正常燃气设备，得相交含边界设备1条；复检正常设备仍10条；另查“孔洞内设备”得1条。最终结果形式为各步骤返回feature_count计数，关键算子顺序：query_features（过滤A003）→ query_features（过滤正常）→ query_features（ST_Intersects关联）→ 复核正常数→ 查孔洞设备。",
+    "outcome": "success",
+    "error_lesson": "",
+    "id": "34f03eb5",
+    "hits": 0,
+    "updated_at": "2026-11-15 19:00:08"
+  }
+]

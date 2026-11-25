@@ -1,0 +1,110 @@
+[
+  {
+    "question": "计算燃气管线 G006 在施工区 A003 实体部分内的长度（米）及其完整长度（米），并计算区内长度占完整长度的百分比；孔洞部分排除，边界接触计入。",
+    "plan": {
+      "nodes": [
+        {
+          "id": "s1",
+          "action": "query_features",
+          "params": {
+            "table": "gas_pipelines",
+            "where": "code = 'G006'"
+          },
+          "depends_on": []
+        },
+        {
+          "id": "s2",
+          "action": "query_features",
+          "params": {
+            "table": "construction_areas",
+            "where": "code = 'A003'"
+          },
+          "depends_on": []
+        },
+        {
+          "id": "s3",
+          "action": "clip_features",
+          "params": {
+            "input": "s1",
+            "clipper": "s2",
+            "exclude_holes": true,
+            "keep_boundary": true
+          },
+          "depends_on": [
+            "s1",
+            "s2"
+          ]
+        },
+        {
+          "id": "s4",
+          "action": "measure_features",
+          "params": {
+            "input": "s3",
+            "unit": "meter"
+          },
+          "depends_on": [
+            "s3"
+          ]
+        },
+        {
+          "id": "s5",
+          "action": "measure_features",
+          "params": {
+            "input": "s1",
+            "unit": "meter"
+          },
+          "depends_on": [
+            "s1"
+          ]
+        },
+        {
+          "id": "s6",
+          "action": "calculate_ratio",
+          "params": {
+            "numerator": "s4",
+            "denominator": "s5",
+            "as_percentage": true
+          },
+          "depends_on": [
+            "s4",
+            "s5"
+          ]
+        }
+      ],
+      "edges": [
+        [
+          "s1",
+          "s3"
+        ],
+        [
+          "s2",
+          "s3"
+        ],
+        [
+          "s3",
+          "s4"
+        ],
+        [
+          "s1",
+          "s5"
+        ],
+        [
+          "s4",
+          "s6"
+        ],
+        [
+          "s5",
+          "s6"
+        ]
+      ]
+    },
+    "note": "planned",
+    "ts": "2026-11-15 19:07:02"
+  },
+  {
+    "question": "计算燃气管线 G006 在施工区 A003 实体部分内的长度（米）及其完整长度（米），并计算区内长度占完整长度的百分比；孔洞部分排除，边界接触计入。",
+    "outcome": "success",
+    "note": "executed",
+    "ts": "2026-11-15 19:07:16"
+  }
+]

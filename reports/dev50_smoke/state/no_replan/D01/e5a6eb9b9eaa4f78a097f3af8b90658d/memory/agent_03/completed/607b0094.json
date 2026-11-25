@@ -1,0 +1,43 @@
+{
+  "id": "607b0094",
+  "agent_id": "agent_03",
+  "question_feat": "统计施工区 A001 内（严格内部，不含边界）状态为正常的燃气设备数量。",
+  "plan": {
+    "nodes": [
+      {
+        "id": "s1",
+        "action": "query_features",
+        "params": {
+          "layer_name": "gas_devices",
+          "filters": {
+            "status": "正常"
+          },
+          "target": "construction_areas",
+          "target_code": "A001",
+          "relation": "ST_Within"
+        },
+        "depends_on": []
+      },
+      {
+        "id": "s2",
+        "action": "summarize_features",
+        "params": {
+          "aggregate": "count"
+        },
+        "depends_on": [
+          "s1"
+        ]
+      }
+    ],
+    "edges": [
+      [
+        "s1",
+        "s2"
+      ]
+    ]
+  },
+  "result_summary": "{\"count\": 2.0}",
+  "outcome": "success",
+  "error": "",
+  "ts": "2026-11-15 18:55:26"
+}

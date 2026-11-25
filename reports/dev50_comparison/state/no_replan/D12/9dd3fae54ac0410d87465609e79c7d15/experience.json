@@ -1,0 +1,92 @@
+[
+  {
+    "task_signature": "water/空间计算",
+    "question_feat": "计算所有位于施工区 A009 内的水管总长度（米），并返回非空裁剪结果的源水管数量。若没有匹配水管，长度和数量都返回 0。",
+    "plan": {
+      "t1": {
+        "nodes": [
+          {
+            "id": "s1",
+            "action": "query_features",
+            "params": {
+              "table": "construction_areas",
+              "where": "code = 'A009'"
+            },
+            "depends_on": []
+          },
+          {
+            "id": "s2",
+            "action": "query_features",
+            "params": {
+              "table": "water_pipelines",
+              "where": "1=1"
+            },
+            "depends_on": []
+          },
+          {
+            "id": "s3",
+            "action": "clip_features",
+            "params": {
+              "input": "s2",
+              "clipper": "s1",
+              "method": "ST_Intersects"
+            },
+            "depends_on": [
+              "s1",
+              "s2"
+            ]
+          },
+          {
+            "id": "s4",
+            "action": "measure_features",
+            "params": {
+              "input": "s3",
+              "unit": "meter"
+            },
+            "depends_on": [
+              "s3"
+            ]
+          },
+          {
+            "id": "s5",
+            "action": "summarize_features",
+            "params": {
+              "input": "s4",
+              "metrics": [
+                "total_length",
+                "count_non_empty"
+              ]
+            },
+            "depends_on": [
+              "s4"
+            ]
+          }
+        ],
+        "edges": [
+          [
+            "s1",
+            "s3"
+          ],
+          [
+            "s2",
+            "s3"
+          ],
+          [
+            "s3",
+            "s4"
+          ],
+          [
+            "s4",
+            "s5"
+          ]
+        ]
+      }
+    },
+    "trace": "经验：先查施工区A009得1要素，再查全部水管得10要素。裁剪时若直接引用查询结果对象会因多余字段触发ValidationError，应改用clip_target指定图层名与feature_code。正确调用后裁剪结果feature_count为0，随后measure_features按length测量，返回summary中value=0.0、unit=meter、feature_count=0。关键算子顺序：query_features→query_features→clip_features→measure_features。",
+    "outcome": "success",
+    "error_lesson": "",
+    "id": "5225888e",
+    "hits": 0,
+    "updated_at": "2026-11-15 19:02:06"
+  }
+]

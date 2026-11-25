@@ -1,0 +1,87 @@
+{
+  "id": "25662944",
+  "agent_id": "agent_03",
+  "question_feat": "在 gas_pipelines 表中，筛选出与施工区 A002 相交（ST_Intersects）的燃气管线，将其裁剪到 A002 范围内，计算裁剪后非空结果的区内总长度（米），并统计非空裁剪结果的源管线数量，保留边界接触产生的零长度记录。",
+  "plan": {
+    "nodes": [
+      {
+        "id": "s1",
+        "action": "query_features",
+        "params": {
+          "layer_name": "gas_pipelines",
+          "filters": {
+            "pipe_type": "燃气管线"
+          },
+          "target": "A002",
+          "relation": "ST_Intersects"
+        },
+        "depends_on": []
+      },
+      {
+        "id": "s2",
+        "action": "clip_features",
+        "params": {
+          "source": "s1",
+          "clip_region": "A002",
+          "keep_boundary_touch": true
+        },
+        "depends_on": [
+          "s1"
+        ]
+      },
+      {
+        "id": "s3",
+        "action": "measure_features",
+        "params": {
+          "source": "s2",
+          "measure_type": "length",
+          "unit": "meter",
+          "srid": 3857
+        },
+        "depends_on": [
+          "s2"
+        ]
+      },
+      {
+        "id": "s4",
+        "action": "summarize_features",
+        "params": {
+          "source": "s2",
+          "statistics": [
+            {
+              "type": "count",
+              "field": "source_pipeline_id",
+              "alias": "non_empty_source_pipeline_count"
+            },
+            {
+              "type": "sum",
+              "field": "length",
+              "alias": "total_length_m"
+            }
+          ]
+        },
+        "depends_on": [
+          "s3"
+        ]
+      }
+    ],
+    "edges": [
+      [
+        "s1",
+        "s2"
+      ],
+      [
+        "s2",
+        "s3"
+      ],
+      [
+        "s3",
+        "s4"
+      ]
+    ]
+  },
+  "result_summary": "量测完成。汇总结果：总长度 1400 米，4 条非空裁剪结果（含 1 条零长度边界接触记录）。\n\n```json\n{\n  \"length\": {\n    \"unit\": \"meter\",\n    \"value\": 1400.0,\n    \"measure\": \"length\",\n    \"measure_srid\": 3857,\n    \"feature_count\": 4\n  }\n}\n```",
+  "outcome": "success",
+  "error": "",
+  "ts": "2026-11-15 19:06:37"
+}

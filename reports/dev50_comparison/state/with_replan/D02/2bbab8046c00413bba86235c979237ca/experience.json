@@ -1,0 +1,71 @@
+[
+  {
+    "task_signature": "gas/空间计算",
+    "question_feat": "统计与施工区A001相交（含边界）且状态为正常或告警的燃气设备数量，同一设备只计一次。",
+    "plan": {
+      "t1": {
+        "nodes": [
+          {
+            "id": "s1",
+            "action": "query_features",
+            "params": {
+              "layer_name": "construction_areas",
+              "filters": {
+                "code": "A001"
+              },
+              "target": null,
+              "relation": null
+            },
+            "depends_on": []
+          },
+          {
+            "id": "s2",
+            "action": "query_features",
+            "params": {
+              "layer_name": "gas_devices",
+              "filters": {
+                "status": [
+                  "正常",
+                  "告警"
+                ]
+              },
+              "target": "s1.geom",
+              "relation": "ST_Intersects"
+            },
+            "depends_on": [
+              "s1"
+            ]
+          },
+          {
+            "id": "s3",
+            "action": "summarize_features",
+            "params": {
+              "aggregate": "count",
+              "group_by": null,
+              "sort": null
+            },
+            "depends_on": [
+              "s2"
+            ]
+          }
+        ],
+        "edges": [
+          [
+            "s1",
+            "s2"
+          ],
+          [
+            "s2",
+            "s3"
+          ]
+        ]
+      }
+    },
+    "trace": "执行轨迹：先 query_features 查施工区 A001 得 1 个要素；再 query_features 查燃气设备，过滤 status in [正常,告警]，target 为施工区 A001，relation=ST_Intersects，返回 4 个设备；最后 summarize_features 对 t2 结果集按 count 聚合，得 groups=1。关键顺序：查施工区→空间相交查设备→计数聚合。",
+    "outcome": "success",
+    "error_lesson": "",
+    "id": "c4e75b55",
+    "hits": 0,
+    "updated_at": "2026-11-15 18:59:31"
+  }
+]

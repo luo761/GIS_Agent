@@ -1,0 +1,91 @@
+[
+  {
+    "task_signature": "gas/空间计算",
+    "question_feat": "以燃气设备表 gas_devices 中 code='D011' 的设备几何为中心，建立 300 米缓冲区，计算该缓冲区与施工区表 construction_areas 中 code='A001' 的几何相交部分的面积（平方米，EPSG:3857）。",
+    "plan": {
+      "t1": {
+        "nodes": [
+          {
+            "id": "s1",
+            "action": "query_feature",
+            "params": {
+              "table": "gas_devices",
+              "code": "D011",
+              "geom_field": "geom"
+            },
+            "depends_on": []
+          },
+          {
+            "id": "s2",
+            "action": "query_feature",
+            "params": {
+              "table": "construction_areas",
+              "code": "A001",
+              "geom_field": "geom"
+            },
+            "depends_on": []
+          },
+          {
+            "id": "s3",
+            "action": "buffer_geometry",
+            "params": {
+              "distance": 300,
+              "unit": "meter",
+              "srid": 3857
+            },
+            "depends_on": [
+              "s1"
+            ]
+          },
+          {
+            "id": "s4",
+            "action": "intersection_geometry",
+            "params": {
+              "srid": 3857
+            },
+            "depends_on": [
+              "s3",
+              "s2"
+            ]
+          },
+          {
+            "id": "s5",
+            "action": "measure_geometry",
+            "params": {
+              "measure_type": "area",
+              "unit": "square_meter",
+              "srid": 3857
+            },
+            "depends_on": [
+              "s4"
+            ]
+          }
+        ],
+        "edges": [
+          [
+            "s1",
+            "s3"
+          ],
+          [
+            "s3",
+            "s4"
+          ],
+          [
+            "s2",
+            "s4"
+          ],
+          [
+            "s4",
+            "s5"
+          ]
+        ]
+      }
+    },
+    "trace": "查询燃气设备D011与施工区A001，先各自query_features确认存在（均返回1条）。对D011做300米buffer_geometry，结果geometry_type为None。将缓冲区与A001做intersection_geometry（EPSG:3857），结果geometry_type为None。最后measure_geometry计算相交面积，返回value=280930.06370322476平方米。",
+    "outcome": "success",
+    "error_lesson": "",
+    "id": "2d543086",
+    "hits": 0,
+    "updated_at": "2026-11-15 19:00:51"
+  }
+]

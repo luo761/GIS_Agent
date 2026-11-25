@@ -1,0 +1,90 @@
+[
+  {
+    "task_signature": "gas/空间计算",
+    "question_feat": "以燃气设备表 gas_devices 中 code='D011' 的设备几何为中心，建立100米缓冲区，统计与该缓冲区相交（ST_Intersects，含边界）的全部燃气设备（gas_devices），按 status 字段分组计数，按状态名称升序输出全部分组。",
+    "plan": {
+      "t1": {
+        "nodes": [
+          {
+            "id": "s1",
+            "action": "query_features",
+            "params": {
+              "table": "gas_devices",
+              "filters": {
+                "code": "D011"
+              }
+            },
+            "depends_on": []
+          },
+          {
+            "id": "s2",
+            "action": "buffer_geometry",
+            "params": {
+              "distance": 100,
+              "unit": "meter"
+            },
+            "depends_on": [
+              "s1"
+            ]
+          },
+          {
+            "id": "s3",
+            "action": "query_features",
+            "params": {
+              "table": "gas_devices"
+            },
+            "depends_on": []
+          },
+          {
+            "id": "s4",
+            "action": "intersection_geometry",
+            "params": {
+              "method": "ST_Intersects",
+              "include_boundary": true
+            },
+            "depends_on": [
+              "s2",
+              "s3"
+            ]
+          },
+          {
+            "id": "s5",
+            "action": "summarize_features",
+            "params": {
+              "aggregate": "count",
+              "group_by": "status",
+              "sort": "asc"
+            },
+            "depends_on": [
+              "s4"
+            ]
+          }
+        ],
+        "edges": [
+          [
+            "s1",
+            "s2"
+          ],
+          [
+            "s2",
+            "s4"
+          ],
+          [
+            "s3",
+            "s4"
+          ],
+          [
+            "s4",
+            "s5"
+          ]
+        ]
+      }
+    },
+    "trace": "[经验摘要] 以gas_devices中code='D011'设备为中心建100米缓冲区，统计与缓冲区ST_Intersects相交的燃气设备，按status分组计数并升序输出。调用顺序：query_features过滤D011→query_features全量→buffer_geometry(100m)→query_features用ST_Intersects空间过滤→summarize_features按status分组计数、升序。结果形式：feature_count=1、12、1，最终groups=1。",
+    "outcome": "success",
+    "error_lesson": "",
+    "id": "aee612f6",
+    "hits": 0,
+    "updated_at": "2026-11-15 19:07:51"
+  }
+]

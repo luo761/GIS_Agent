@@ -1,0 +1,66 @@
+[
+  {
+    "question": "计算施工区表 construction_areas 中 code 为 A001 与 code 为 A008 的两个面要素的重叠面积（平方米），空间参考为 EPSG:3857。",
+    "plan": {
+      "nodes": [
+        {
+          "id": "s1",
+          "action": "query_features",
+          "params": {
+            "table": "construction_areas",
+            "filters": {
+              "code": [
+                "A001",
+                "A008"
+              ]
+            }
+          },
+          "depends_on": []
+        },
+        {
+          "id": "s2",
+          "action": "intersection_geometry",
+          "params": {
+            "input": [
+              "s1"
+            ]
+          },
+          "depends_on": [
+            "s1"
+          ]
+        },
+        {
+          "id": "s3",
+          "action": "measure_geometry",
+          "params": {
+            "input": "s2",
+            "measure": "area",
+            "unit": "m2",
+            "srid": 3857
+          },
+          "depends_on": [
+            "s2"
+          ]
+        }
+      ],
+      "edges": [
+        [
+          "s1",
+          "s2"
+        ],
+        [
+          "s2",
+          "s3"
+        ]
+      ]
+    },
+    "note": "planned",
+    "ts": "2026-11-15 19:01:45"
+  },
+  {
+    "question": "计算施工区表 construction_areas 中 code 为 A001 与 code 为 A008 的两个面要素的重叠面积（平方米），空间参考为 EPSG:3857。",
+    "outcome": "success",
+    "note": "executed",
+    "ts": "2026-11-15 19:01:53"
+  }
+]

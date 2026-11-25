@@ -1,0 +1,229 @@
+[
+  {
+    "question": "先求 gas_pipelines 中 code='A001' 与 code='A008' 的几何交集范围，再分别计算该交集范围内全部燃气管线（gas_pipelines）和全部水管（water_pipelines）的裁剪后总长度（米）与非空源要素数量；边界接触计入，保留非空零长度记录。",
+    "plan": {
+      "nodes": [
+        {
+          "id": "s1",
+          "action": "query_features",
+          "params": {
+            "layer": "gas_pipelines",
+            "filters": {
+              "code": "A001"
+            }
+          },
+          "depends_on": []
+        },
+        {
+          "id": "s2",
+          "action": "query_features",
+          "params": {
+            "layer": "gas_pipelines",
+            "filters": {
+              "code": "A008"
+            }
+          },
+          "depends_on": []
+        },
+        {
+          "id": "s3",
+          "action": "intersection_geometry",
+          "params": {
+            "geometries": [
+              "s1.geom",
+              "s2.geom"
+            ]
+          },
+          "depends_on": [
+            "s1",
+            "s2"
+          ]
+        },
+        {
+          "id": "s4",
+          "action": "query_features",
+          "params": {
+            "layer": "gas_pipelines",
+            "filters": {},
+            "target": "s3.geom",
+            "relation": "ST_Intersects"
+          },
+          "depends_on": [
+            "s3"
+          ]
+        },
+        {
+          "id": "s5",
+          "action": "clip_features",
+          "params": {
+            "layer": "gas_pipelines",
+            "features": "s4.features",
+            "clip_geometry": "s3.geom"
+          },
+          "depends_on": [
+            "s4"
+          ]
+        },
+        {
+          "id": "s6",
+          "action": "measure_features",
+          "params": {
+            "features": "s5.clipped_features",
+            "measure": "length",
+            "unit": "meter"
+          },
+          "depends_on": [
+            "s5"
+          ]
+        },
+        {
+          "id": "s7",
+          "action": "summarize_features",
+          "params": {
+            "features": "s5.clipped_features",
+            "metrics": [
+              "total_length",
+              "non_empty_count"
+            ]
+          },
+          "depends_on": [
+            "s5",
+            "s6"
+          ]
+        },
+        {
+          "id": "s8",
+          "action": "query_features",
+          "params": {
+            "layer": "water_pipelines",
+            "filters": {},
+            "target": "s3.geom",
+            "relation": "ST_Intersects"
+          },
+          "depends_on": [
+            "s3"
+          ]
+        },
+        {
+          "id": "s9",
+          "action": "clip_features",
+          "params": {
+            "layer": "water_pipelines",
+            "features": "s8.features",
+            "clip_geometry": "s3.geom"
+          },
+          "depends_on": [
+            "s8"
+          ]
+        },
+        {
+          "id": "s10",
+          "action": "measure_features",
+          "params": {
+            "features": "s9.clipped_features",
+            "measure": "length",
+            "unit": "meter"
+          },
+          "depends_on": [
+            "s9"
+          ]
+        },
+        {
+          "id": "s11",
+          "action": "summarize_features",
+          "params": {
+            "features": "s9.clipped_features",
+            "metrics": [
+              "total_length",
+              "non_empty_count"
+            ]
+          },
+          "depends_on": [
+            "s9",
+            "s10"
+          ]
+        },
+        {
+          "id": "s12",
+          "action": "merge_results",
+          "params": {
+            "results": [
+              "s7.summary",
+              "s11.summary"
+            ]
+          },
+          "depends_on": [
+            "s7",
+            "s11"
+          ]
+        }
+      ],
+      "edges": [
+        [
+          "s1",
+          "s3"
+        ],
+        [
+          "s2",
+          "s3"
+        ],
+        [
+          "s3",
+          "s4"
+        ],
+        [
+          "s4",
+          "s5"
+        ],
+        [
+          "s5",
+          "s6"
+        ],
+        [
+          "s5",
+          "s7"
+        ],
+        [
+          "s6",
+          "s7"
+        ],
+        [
+          "s3",
+          "s8"
+        ],
+        [
+          "s8",
+          "s9"
+        ],
+        [
+          "s9",
+          "s10"
+        ],
+        [
+          "s9",
+          "s11"
+        ],
+        [
+          "s10",
+          "s11"
+        ],
+        [
+          "s7",
+          "s12"
+        ],
+        [
+          "s11",
+          "s12"
+        ]
+      ]
+    },
+    "note": "planned",
+    "ts": "2026-11-15 19:09:11"
+  },
+  {
+    "question": "先求 gas_pipelines 中 code='A001' 与 code='A008' 的几何交集范围，再分别计算该交集范围内全部燃气管线（gas_pipelines）和全部水管（water_pipelines）的裁剪后总长度（米）与非空源要素数量；边界接触计入，保留非空零长度记录。",
+    "outcome": "success",
+    "note": "executed",
+    "ts": "2026-11-15 19:09:30"
+  }
+]

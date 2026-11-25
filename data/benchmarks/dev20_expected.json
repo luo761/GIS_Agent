@@ -1,0 +1,323 @@
+{
+  "suite": "postgis_dev20_v1",
+  "cases": {
+    "D01": {
+      "count": 2
+    },
+    "D02": {
+      "count": 4
+    },
+    "D03": {
+      "count": 1
+    },
+    "D04": {
+      "unit": "feature",
+      "groups": [
+        {
+          "group": {
+            "device_type": "监测点"
+          },
+          "value": 1,
+          "feature_count": 1
+        },
+        {
+          "group": {
+            "device_type": "调压站"
+          },
+          "value": 2,
+          "feature_count": 2
+        },
+        {
+          "group": {
+            "device_type": "阀门"
+          },
+          "value": 7,
+          "feature_count": 7
+        }
+      ]
+    },
+    "D05": {
+      "unit": "meter",
+      "groups": [
+        {
+          "group": {
+            "pressure_level": "高压"
+          },
+          "value": 2414.213562373095,
+          "feature_count": 2
+        },
+        {
+          "group": {
+            "pressure_level": "中压"
+          },
+          "value": 2400,
+          "feature_count": 3
+        },
+        {
+          "group": {
+            "pressure_level": "低压"
+          },
+          "value": 1000,
+          "feature_count": 1
+        }
+      ]
+    },
+    "D06": {
+      "length": {
+        "unit": "meter",
+        "value": 600,
+        "measure": "length",
+        "measure_srid": 3857,
+        "feature_count": 1
+      }
+    },
+    "D07": {
+      "length": {
+        "unit": "meter",
+        "value": 700,
+        "measure": "length",
+        "measure_srid": 3857,
+        "feature_count": 3
+      }
+    },
+    "D08": {
+      "area": {
+        "unit": "square_meter",
+        "value": 280930.06370322476,
+        "measure": "area",
+        "is_empty": false,
+        "measure_srid": 3857
+      }
+    },
+    "D09": {
+      "area": {
+        "unit": "square_meter",
+        "value": 998412.9907871715,
+        "measure": "area",
+        "is_empty": false,
+        "measure_srid": 3857
+      }
+    },
+    "D10": {
+      "length": {
+        "unit": "meter",
+        "value": 1000,
+        "measure": "length",
+        "is_empty": false,
+        "measure_srid": 3857
+      }
+    },
+    "D11": {
+      "area": {
+        "unit": "square_meter",
+        "value": 140000,
+        "measure": "area",
+        "is_empty": false,
+        "measure_srid": 3857
+      }
+    },
+    "D12": {
+      "length": {
+        "unit": "meter",
+        "value": 0,
+        "measure": "length",
+        "measure_srid": 3857,
+        "feature_count": 0
+      }
+    },
+    "D13": {
+      "area": {
+        "unit": "square_meter",
+        "value": 639185.4490710819,
+        "measure": "area",
+        "is_empty": false,
+        "measure_srid": 3857
+      },
+      "coverage_percent": {
+        "unit": "percent",
+        "value": 63.9185449071082,
+        "numerator": 639185.4490710819,
+        "denominator": 1000000
+      }
+    },
+    "D14": {
+      "unit": "meter",
+      "groups": [
+        {
+          "group": {
+            "source_code": "W001"
+          },
+          "value": 1000,
+          "feature_count": 1
+        },
+        {
+          "group": {
+            "source_code": "W008"
+          },
+          "value": 220.71067811865476,
+          "feature_count": 1
+        },
+        {
+          "group": {
+            "source_code": "W009"
+          },
+          "value": 0,
+          "feature_count": 1
+        }
+      ],
+      "total_length": {
+        "unit": "meter",
+        "value": 1220.7106781186549,
+        "measure": "length",
+        "measure_srid": 3857,
+        "feature_count": 3
+      }
+    },
+    "D15": {
+      "union_area": {
+        "unit": "square_meter",
+        "value": 370190.3751365281,
+        "measure": "area",
+        "is_empty": false,
+        "measure_srid": 3857
+      },
+      "summed_area": {
+        "unit": "square_meter",
+        "value": 374573.4182709662,
+        "measure": "area",
+        "measure_srid": 3857,
+        "feature_count": 3
+      }
+    },
+    "D16": {
+      "union_area": {
+        "unit": "square_meter",
+        "value": 1100000,
+        "measure": "area",
+        "is_empty": false,
+        "measure_srid": 3857
+      },
+      "summed_area": {
+        "unit": "square_meter",
+        "value": 1240000,
+        "measure": "area",
+        "measure_srid": 3857,
+        "feature_count": 2
+      },
+      "overlap_area": {
+        "unit": "square_meter",
+        "value": 140000,
+        "measure": "area",
+        "is_empty": false,
+        "measure_srid": 3857
+      }
+    },
+    "D17": {
+      "area": {
+        "unit": "square_meter",
+        "value": 639185.4490710819,
+        "measure": "area",
+        "is_empty": false,
+        "measure_srid": 3857
+      },
+      "gas_length": {
+        "unit": "meter",
+        "value": 4332.362443880318,
+        "measure": "length",
+        "measure_srid": 3857,
+        "feature_count": 6
+      }
+    },
+    "D18": {
+      "unit": "meter",
+      "gas_groups": [
+        {
+          "group": {
+            "pressure_level": "高压"
+          },
+          "value": 2414.213562373095,
+          "feature_count": 2
+        },
+        {
+          "group": {
+            "pressure_level": "中压"
+          },
+          "value": 2400,
+          "feature_count": 3
+        },
+        {
+          "group": {
+            "pressure_level": "低压"
+          },
+          "value": 1000,
+          "feature_count": 1
+        }
+      ],
+      "water_groups": [
+        {
+          "group": {
+            "pipe_type": "给水"
+          },
+          "value": 1700,
+          "feature_count": 3
+        }
+      ]
+    },
+    "D19": {
+      "a001_count": 3,
+      "a002_count": 3,
+      "unique_count": 5
+    },
+    "D20": {
+      "water_unit": "meter",
+      "device_unit": "feature",
+      "total_length": {
+        "unit": "meter",
+        "value": 1220.7106781186549,
+        "measure": "length",
+        "measure_srid": 3857,
+        "feature_count": 3
+      },
+      "water_groups": [
+        {
+          "group": {
+            "source_code": "W001"
+          },
+          "value": 1000,
+          "feature_count": 1
+        },
+        {
+          "group": {
+            "source_code": "W008"
+          },
+          "value": 220.71067811865476,
+          "feature_count": 1
+        },
+        {
+          "group": {
+            "source_code": "W009"
+          },
+          "value": 0,
+          "feature_count": 1
+        }
+      ],
+      "device_groups": [
+        {
+          "group": {
+            "status": "告警"
+          },
+          "value": 1,
+          "feature_count": 1
+        },
+        {
+          "group": {
+            "status": "正常"
+          },
+          "value": 2,
+          "feature_count": 2
+        }
+      ]
+    }
+  },
+  "provenance": "Recovered results.expected from dev20_latest.json"
+}

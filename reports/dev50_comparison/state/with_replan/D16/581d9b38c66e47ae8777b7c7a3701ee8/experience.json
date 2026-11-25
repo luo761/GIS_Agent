@@ -1,0 +1,101 @@
+[
+  {
+    "task_signature": "general/空间计算",
+    "question_feat": "基于 construction_areas 表，对 code 为 A001 和 A008 的两个面要素，计算：1) 两区面积直接相加（平方米）；2) 两区联合覆盖去重面积（平方米）；3) 两区重叠面积（平方米）。联合覆盖与直接相加需复用同一份区域查询结果。",
+    "plan": {
+      "t1": {
+        "nodes": [
+          {
+            "id": "s1",
+            "action": "query_features",
+            "params": {
+              "table": "construction_areas",
+              "filters": {
+                "code": [
+                  "A001",
+                  "A008"
+                ]
+              },
+              "columns": [
+                "code",
+                "geom"
+              ]
+            },
+            "depends_on": []
+          },
+          {
+            "id": "s2",
+            "action": "measure_geometry",
+            "params": {
+              "source": "s1",
+              "mode": "area",
+              "unit": "square_meter"
+            },
+            "depends_on": [
+              "s1"
+            ]
+          },
+          {
+            "id": "s3",
+            "action": "union_features",
+            "params": {
+              "source": "s1",
+              "geometry_column": "geom"
+            },
+            "depends_on": [
+              "s1"
+            ]
+          },
+          {
+            "id": "s4",
+            "action": "measure_geometry",
+            "params": {
+              "source": "s3",
+              "mode": "area",
+              "unit": "square_meter"
+            },
+            "depends_on": [
+              "s3"
+            ]
+          },
+          {
+            "id": "s5",
+            "action": "calculate_overlap_area",
+            "params": {
+              "source": "s1",
+              "geometry_column": "geom",
+              "unit": "square_meter"
+            },
+            "depends_on": [
+              "s1"
+            ]
+          }
+        ],
+        "edges": [
+          [
+            "s1",
+            "s2"
+          ],
+          [
+            "s1",
+            "s3"
+          ],
+          [
+            "s3",
+            "s4"
+          ],
+          [
+            "s1",
+            "s5"
+          ]
+        ]
+      }
+    },
+    "trace": "query_features(code in [A001,A008])→2要素；measure_features(area)→1240000㎡；union_features→合并几何；measure_geometry(area)→1100000㎡；重叠面积=直接相加-联合覆盖=140000㎡。",
+    "outcome": "success",
+    "error_lesson": "",
+    "id": "d293351a",
+    "hits": 0,
+    "updated_at": "2026-11-15 19:02:28"
+  }
+]

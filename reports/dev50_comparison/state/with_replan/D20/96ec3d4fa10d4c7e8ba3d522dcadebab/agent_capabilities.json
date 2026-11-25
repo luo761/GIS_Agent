@@ -1,0 +1,201 @@
+{
+  "schema_version": 1,
+  "initial_capability": 0.5,
+  "dimensions": [
+    "spatial_compute",
+    "attribute_query",
+    "statistics",
+    "mapping"
+  ],
+  "agents": {
+    "agent_01": {
+      "name": "01",
+      "capabilities": {
+        "spatial_compute": 0.5,
+        "attribute_query": 0.5,
+        "statistics": 0.5,
+        "mapping": 0.5
+      },
+      "preferred_tools": [],
+      "stats": {
+        "attempts": 0,
+        "successes": 0,
+        "failures": 0
+      }
+    },
+    "agent_02": {
+      "name": "02",
+      "capabilities": {
+        "spatial_compute": 0.5,
+        "attribute_query": 0.5,
+        "statistics": 0.5,
+        "mapping": 0.5
+      },
+      "preferred_tools": [],
+      "stats": {
+        "attempts": 0,
+        "successes": 0,
+        "failures": 0
+      }
+    },
+    "agent_03": {
+      "name": "03",
+      "capabilities": {
+        "spatial_compute": 0.4004,
+        "attribute_query": 0.4004,
+        "statistics": 0.4004,
+        "mapping": 0.5
+      },
+      "preferred_tools": [],
+      "stats": {
+        "attempts": 3,
+        "successes": 0,
+        "failures": 3
+      }
+    },
+    "agent_04": {
+      "name": "04",
+      "capabilities": {
+        "spatial_compute": 0.5,
+        "attribute_query": 0.5,
+        "statistics": 0.5,
+        "mapping": 0.5
+      },
+      "preferred_tools": [],
+      "stats": {
+        "attempts": 0,
+        "successes": 0,
+        "failures": 0
+      }
+    }
+  },
+  "history": [
+    {
+      "ts": "2026-11-15 19:04:24",
+      "agent_id": "agent_03",
+      "agent_name": "03",
+      "dims": [
+        "spatial_compute",
+        "attribute_query",
+        "statistics"
+      ],
+      "outcome": "failure",
+      "question": "取与施工区A001相交的高压燃气管线（gas_pipelines.pressure_level='高压'），裁剪到A001范围，再对裁剪结果缓冲50米并合并为同一影响范围。复用该范围：（1）统计A001内gas_devices中status为'正常'或'告警'的设备，按status升序分组计数；（2）计算A001内water_pipelines各管线受影响长度（米），按长度降序、同长按code升序，并给出总长度。边界计入，水管非空零长度接触记录保留。",
+      "task_signature": "gas/综合",
+      "before": {
+        "spatial_compute": 0.5,
+        "attribute_query": 0.5,
+        "statistics": 0.5
+      },
+      "after": {
+        "spatial_compute": 0.464,
+        "attribute_query": 0.464,
+        "statistics": 0.464
+      },
+      "delta": {
+        "spatial_compute": -0.036,
+        "attribute_query": -0.036,
+        "statistics": -0.036
+      },
+      "vector_before": {
+        "spatial_compute": 0.5,
+        "attribute_query": 0.5,
+        "statistics": 0.5,
+        "mapping": 0.5
+      },
+      "vector_after": {
+        "spatial_compute": 0.464,
+        "attribute_query": 0.464,
+        "statistics": 0.464,
+        "mapping": 0.5
+      },
+      "note": "结果校验未通过；以下字段存在类型、数量或取值问题，请重新计算：$.water_unit、$.device_unit、$.total_length、$.water_groups、$.device_groups",
+      "index": 0
+    },
+    {
+      "ts": "2026-11-15 19:05:01",
+      "agent_id": "agent_03",
+      "agent_name": "03",
+      "dims": [
+        "spatial_compute",
+        "attribute_query",
+        "statistics"
+      ],
+      "outcome": "failure",
+      "question": "取与施工区A001相交的高压燃气管线（gas_pipelines.pressure_level='高压'），裁剪到A001范围，再对裁剪结果缓冲50米并合并为同一影响范围。复用该范围：（1）统计A001内gas_devices中status为'正常'或'告警'的设备，按status升序分组计数；（2）计算A001内water_pipelines各管线受影响长度（米），按长度降序、同长按code升序，并给出总长度。边界计入，水管非空零长度接触记录保留。",
+      "task_signature": "gas/综合",
+      "before": {
+        "spatial_compute": 0.464,
+        "attribute_query": 0.464,
+        "statistics": 0.464
+      },
+      "after": {
+        "spatial_compute": 0.4309,
+        "attribute_query": 0.4309,
+        "statistics": 0.4309
+      },
+      "delta": {
+        "spatial_compute": -0.0331,
+        "attribute_query": -0.0331,
+        "statistics": -0.0331
+      },
+      "vector_before": {
+        "spatial_compute": 0.464,
+        "attribute_query": 0.464,
+        "statistics": 0.464,
+        "mapping": 0.5
+      },
+      "vector_after": {
+        "spatial_compute": 0.4309,
+        "attribute_query": 0.4309,
+        "statistics": 0.4309,
+        "mapping": 0.5
+      },
+      "note": "结果校验未通过；以下字段存在类型、数量或取值问题，请重新计算：$.water_unit、$.device_unit、$.total_length、$.water_groups、$.device_groups",
+      "index": 1
+    },
+    {
+      "ts": "2026-11-15 19:05:34",
+      "agent_id": "agent_03",
+      "agent_name": "03",
+      "dims": [
+        "spatial_compute",
+        "attribute_query",
+        "statistics"
+      ],
+      "outcome": "failure",
+      "question": "取与施工区A001相交的高压燃气管线（gas_pipelines.pressure_level='高压'），裁剪到A001范围，再对裁剪结果缓冲50米并合并为同一影响范围。复用该范围：（1）统计A001内gas_devices中status为'正常'或'告警'的设备，按status升序分组计数；（2）计算A001内water_pipelines各管线受影响长度（米），按长度降序、同长按code升序，并给出总长度。边界计入，水管非空零长度接触记录保留。",
+      "task_signature": "gas/综合",
+      "before": {
+        "spatial_compute": 0.4309,
+        "attribute_query": 0.4309,
+        "statistics": 0.4309
+      },
+      "after": {
+        "spatial_compute": 0.4004,
+        "attribute_query": 0.4004,
+        "statistics": 0.4004
+      },
+      "delta": {
+        "spatial_compute": -0.0305,
+        "attribute_query": -0.0305,
+        "statistics": -0.0305
+      },
+      "vector_before": {
+        "spatial_compute": 0.4309,
+        "attribute_query": 0.4309,
+        "statistics": 0.4309,
+        "mapping": 0.5
+      },
+      "vector_after": {
+        "spatial_compute": 0.4004,
+        "attribute_query": 0.4004,
+        "statistics": 0.4004,
+        "mapping": 0.5
+      },
+      "note": "结果校验未通过；以下字段存在类型、数量或取值问题，请重新计算：$.total_length.value、$.water_groups[0].group.source_code、$.water_groups[0].value、$.water_",
+      "index": 2
+    }
+  ],
+  "updated_at": "2026-11-15 19:05:34"
+}

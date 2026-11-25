@@ -1,0 +1,115 @@
+{
+  "id": "f4ed496c",
+  "agent_id": "agent_03",
+  "question_feat": "在 gas_devices 表中，筛选与 A002 相交且 status='正常' 的燃气设备，对每个设备建立 150 米缓冲区，合并重叠后裁剪到 A002，计算覆盖面积（平方米）及其占 A002 实体面积的百分比，边界设备计入。",
+  "plan": {
+    "nodes": [
+      {
+        "id": "s1",
+        "action": "query_features",
+        "params": {
+          "table": "gas_devices",
+          "filters": {
+            "status": "正常",
+            "spatial_relation": "ST_Intersects",
+            "reference_geom": "A002"
+          }
+        },
+        "depends_on": []
+      },
+      {
+        "id": "s2",
+        "action": "buffer_features",
+        "params": {
+          "distance": 150,
+          "unit": "meter"
+        },
+        "depends_on": [
+          "s1"
+        ]
+      },
+      {
+        "id": "s3",
+        "action": "union_features",
+        "params": {},
+        "depends_on": [
+          "s2"
+        ]
+      },
+      {
+        "id": "s4",
+        "action": "clip_features",
+        "params": {
+          "clip_geom": "A002"
+        },
+        "depends_on": [
+          "s3"
+        ]
+      },
+      {
+        "id": "s5",
+        "action": "measure_geometry",
+        "params": {
+          "measure": "area",
+          "unit": "square_meter"
+        },
+        "depends_on": [
+          "s4"
+        ]
+      },
+      {
+        "id": "s6",
+        "action": "measure_geometry",
+        "params": {
+          "target": "A002",
+          "measure": "area",
+          "unit": "square_meter"
+        },
+        "depends_on": []
+      },
+      {
+        "id": "s7",
+        "action": "calculate_ratio",
+        "params": {
+          "numerator": "s5",
+          "denominator": "s6",
+          "output": "percentage"
+        },
+        "depends_on": [
+          "s5",
+          "s6"
+        ]
+      }
+    ],
+    "edges": [
+      [
+        "s1",
+        "s2"
+      ],
+      [
+        "s2",
+        "s3"
+      ],
+      [
+        "s3",
+        "s4"
+      ],
+      [
+        "s4",
+        "s5"
+      ],
+      [
+        "s5",
+        "s7"
+      ],
+      [
+        "s6",
+        "s7"
+      ]
+    ]
+  },
+  "result_summary": "```json\n{\n  \"area\": {\n    \"unit\": \"square_meter\",\n    \"value\": 160331.0424028425,\n    \"measure\": \"area\",\n    \"is_empty\": false,\n    \"measure_srid\": 3857\n  },\n  \"coverage_percent\": {\n    \"unit\": \"perce",
+  "outcome": "success",
+  "error": "",
+  "ts": "2026-11-15 19:10:28"
+}

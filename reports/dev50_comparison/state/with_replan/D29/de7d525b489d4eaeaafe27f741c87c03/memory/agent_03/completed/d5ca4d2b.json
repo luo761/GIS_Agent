@@ -1,0 +1,40 @@
+{
+  "id": "d5ca4d2b",
+  "agent_id": "agent_03",
+  "question_feat": "在 gas_devices 表中，查询 status 字段值严格等于字符串“__不存在的状态__”的要素，并返回匹配设备数量；若无匹配则返回 0。",
+  "plan": {
+    "nodes": [
+      {
+        "id": "s1",
+        "action": "query_features",
+        "params": {
+          "layer_name": "gas_devices",
+          "filters": {
+            "status": "__不存在的状态__"
+          }
+        },
+        "depends_on": []
+      },
+      {
+        "id": "s2",
+        "action": "summarize_features",
+        "params": {
+          "aggregate": "count"
+        },
+        "depends_on": [
+          "s1"
+        ]
+      }
+    ],
+    "edges": [
+      [
+        "s1",
+        "s2"
+      ]
+    ]
+  },
+  "result_summary": "{\"count\": 0}",
+  "outcome": "success",
+  "error": "",
+  "ts": "2026-11-15 19:06:17"
+}

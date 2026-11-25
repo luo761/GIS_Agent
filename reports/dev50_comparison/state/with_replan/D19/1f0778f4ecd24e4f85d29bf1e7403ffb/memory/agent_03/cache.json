@@ -1,0 +1,149 @@
+[
+  {
+    "question": "分别统计与施工区A001、A002相交且状态为'正常'的燃气设备数，再将A001与A002合并后统计与合并范围相交且状态为'正常'的燃气设备联合去重数量（边界设备计入各区，联合统计中同一设备只计一次）。",
+    "plan": {
+      "nodes": [
+        {
+          "id": "s1",
+          "action": "query_features",
+          "params": {
+            "layer_name": "construction_areas",
+            "filters": {
+              "code": "A001"
+            }
+          },
+          "depends_on": []
+        },
+        {
+          "id": "s2",
+          "action": "query_features",
+          "params": {
+            "layer_name": "construction_areas",
+            "filters": {
+              "code": "A002"
+            }
+          },
+          "depends_on": []
+        },
+        {
+          "id": "s3",
+          "action": "query_features",
+          "params": {
+            "layer_name": "gas_devices",
+            "filters": {
+              "status": "正常"
+            },
+            "target": "s1_geom",
+            "relation": "ST_Intersects"
+          },
+          "depends_on": [
+            "s1"
+          ]
+        },
+        {
+          "id": "s4",
+          "action": "query_features",
+          "params": {
+            "layer_name": "gas_devices",
+            "filters": {
+              "status": "正常"
+            },
+            "target": "s2_geom",
+            "relation": "ST_Intersects"
+          },
+          "depends_on": [
+            "s2"
+          ]
+        },
+        {
+          "id": "s5",
+          "action": "union_features",
+          "params": {
+            "inputs": [
+              "s1_geom",
+              "s2_geom"
+            ]
+          },
+          "depends_on": [
+            "s1",
+            "s2"
+          ]
+        },
+        {
+          "id": "s6",
+          "action": "query_features",
+          "params": {
+            "layer_name": "gas_devices",
+            "filters": {
+              "status": "正常"
+            },
+            "target": "s5_geom",
+            "relation": "ST_Intersects"
+          },
+          "depends_on": [
+            "s5"
+          ]
+        },
+        {
+          "id": "s7",
+          "action": "summarize_features",
+          "params": {
+            "inputs": [
+              "s3",
+              "s4",
+              "s6"
+            ],
+            "aggregate": "count"
+          },
+          "depends_on": [
+            "s3",
+            "s4",
+            "s6"
+          ]
+        }
+      ],
+      "edges": [
+        [
+          "s1",
+          "s3"
+        ],
+        [
+          "s2",
+          "s4"
+        ],
+        [
+          "s1",
+          "s5"
+        ],
+        [
+          "s2",
+          "s5"
+        ],
+        [
+          "s5",
+          "s6"
+        ],
+        [
+          "s3",
+          "s7"
+        ],
+        [
+          "s4",
+          "s7"
+        ],
+        [
+          "s6",
+          "s7"
+        ]
+      ]
+    },
+    "note": "planned",
+    "ts": "2026-11-15 19:03:36"
+  },
+  {
+    "question": "分别统计与施工区A001、A002相交且状态为'正常'的燃气设备数，再将A001与A002合并后统计与合并范围相交且状态为'正常'的燃气设备联合去重数量（边界设备计入各区，联合统计中同一设备只计一次）。",
+    "outcome": "success",
+    "note": "executed",
+    "ts": "2026-11-15 19:04:15"
+  }
+]

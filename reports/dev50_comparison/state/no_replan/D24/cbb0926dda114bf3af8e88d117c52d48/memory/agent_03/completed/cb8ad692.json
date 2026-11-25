@@ -1,0 +1,40 @@
+{
+  "id": "cb8ad692",
+  "agent_id": "agent_03",
+  "question_feat": "查询 gas_pipelines 表中全部燃气管线，按 pressure_level 字段分组统计各压力等级的管线数量，并按压力等级名称升序输出所有分组。",
+  "plan": {
+    "nodes": [
+      {
+        "id": "s1",
+        "action": "query_features",
+        "params": {
+          "layer": "gas_pipelines",
+          "filters": {}
+        },
+        "depends_on": []
+      },
+      {
+        "id": "s2",
+        "action": "summarize_features",
+        "params": {
+          "aggregate": "count",
+          "group_by": "pressure_level",
+          "sort": "asc"
+        },
+        "depends_on": [
+          "s1"
+        ]
+      }
+    ],
+    "edges": [
+      [
+        "s1",
+        "s2"
+      ]
+    ]
+  },
+  "result_summary": "The sort was by group_asc but the result shows 中压, 低压, 高压 which is not ascending. Let me check — actually the sort parameter \"group_asc\" should sort ascending. But the result order is 中压, 低压, 高压. This",
+  "outcome": "success",
+  "error": "",
+  "ts": "2026-11-15 19:05:46"
+}

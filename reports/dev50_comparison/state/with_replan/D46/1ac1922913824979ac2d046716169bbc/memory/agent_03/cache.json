@@ -1,0 +1,161 @@
+[
+  {
+    "question": "对 gas_devices 表中与 A002 相交且 status='正常' 的设备，分别建立 150 米缓冲区，合并重叠后裁剪到 A002，计算覆盖面积（平方米）及其占 A002 实体面积的百分比，边界设备计入。",
+    "plan": {
+      "nodes": [
+        {
+          "id": "s1",
+          "action": "query_features",
+          "params": {
+            "table": "gas_devices",
+            "filters": {
+              "status": "正常"
+            }
+          },
+          "depends_on": []
+        },
+        {
+          "id": "s2",
+          "action": "query_features",
+          "params": {
+            "table": "A002",
+            "filters": {}
+          },
+          "depends_on": []
+        },
+        {
+          "id": "s3",
+          "action": "spatial_filter",
+          "params": {
+            "source": "s1",
+            "target": "s2",
+            "relation": "ST_Intersects"
+          },
+          "depends_on": [
+            "s1",
+            "s2"
+          ]
+        },
+        {
+          "id": "s4",
+          "action": "buffer_features",
+          "params": {
+            "source": "s3",
+            "distance": 150,
+            "unit": "meter"
+          },
+          "depends_on": [
+            "s3"
+          ]
+        },
+        {
+          "id": "s5",
+          "action": "union_features",
+          "params": {
+            "source": "s4"
+          },
+          "depends_on": [
+            "s4"
+          ]
+        },
+        {
+          "id": "s6",
+          "action": "clip_features",
+          "params": {
+            "source": "s5",
+            "clip_layer": "s2"
+          },
+          "depends_on": [
+            "s5",
+            "s2"
+          ]
+        },
+        {
+          "id": "s7",
+          "action": "measure_geometry",
+          "params": {
+            "source": "s6",
+            "measure": "area"
+          },
+          "depends_on": [
+            "s6"
+          ]
+        },
+        {
+          "id": "s8",
+          "action": "measure_geometry",
+          "params": {
+            "source": "s2",
+            "measure": "area"
+          },
+          "depends_on": [
+            "s2"
+          ]
+        },
+        {
+          "id": "s9",
+          "action": "calculate_ratio",
+          "params": {
+            "numerator": "s7",
+            "denominator": "s8",
+            "output": "percentage"
+          },
+          "depends_on": [
+            "s7",
+            "s8"
+          ]
+        }
+      ],
+      "edges": [
+        [
+          "s1",
+          "s3"
+        ],
+        [
+          "s2",
+          "s3"
+        ],
+        [
+          "s3",
+          "s4"
+        ],
+        [
+          "s4",
+          "s5"
+        ],
+        [
+          "s5",
+          "s6"
+        ],
+        [
+          "s2",
+          "s6"
+        ],
+        [
+          "s6",
+          "s7"
+        ],
+        [
+          "s2",
+          "s8"
+        ],
+        [
+          "s7",
+          "s9"
+        ],
+        [
+          "s8",
+          "s9"
+        ]
+      ]
+    },
+    "note": "planned",
+    "ts": "2026-11-15 19:09:37"
+  },
+  {
+    "question": "对 gas_devices 表中与 A002 相交且 status='正常' 的设备，分别建立 150 米缓冲区，合并重叠后裁剪到 A002，计算覆盖面积（平方米）及其占 A002 实体面积的百分比，边界设备计入。",
+    "outcome": "success",
+    "note": "executed",
+    "ts": "2026-11-15 19:09:57"
+  }
+]

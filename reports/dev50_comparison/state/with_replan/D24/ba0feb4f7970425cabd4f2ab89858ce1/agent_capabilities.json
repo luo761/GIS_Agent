@@ -1,0 +1,189 @@
+{
+  "schema_version": 1,
+  "initial_capability": 0.5,
+  "dimensions": [
+    "spatial_compute",
+    "attribute_query",
+    "statistics",
+    "mapping"
+  ],
+  "agents": {
+    "agent_01": {
+      "name": "01",
+      "capabilities": {
+        "spatial_compute": 0.5,
+        "attribute_query": 0.5,
+        "statistics": 0.5,
+        "mapping": 0.5
+      },
+      "preferred_tools": [],
+      "stats": {
+        "attempts": 0,
+        "successes": 0,
+        "failures": 0
+      }
+    },
+    "agent_02": {
+      "name": "02",
+      "capabilities": {
+        "spatial_compute": 0.5,
+        "attribute_query": 0.5,
+        "statistics": 0.5,
+        "mapping": 0.5
+      },
+      "preferred_tools": [],
+      "stats": {
+        "attempts": 0,
+        "successes": 0,
+        "failures": 0
+      }
+    },
+    "agent_03": {
+      "name": "03",
+      "capabilities": {
+        "spatial_compute": 0.5,
+        "attribute_query": 0.4004,
+        "statistics": 0.4004,
+        "mapping": 0.5
+      },
+      "preferred_tools": [],
+      "stats": {
+        "attempts": 3,
+        "successes": 0,
+        "failures": 3
+      }
+    },
+    "agent_04": {
+      "name": "04",
+      "capabilities": {
+        "spatial_compute": 0.5,
+        "attribute_query": 0.5,
+        "statistics": 0.5,
+        "mapping": 0.5
+      },
+      "preferred_tools": [],
+      "stats": {
+        "attempts": 0,
+        "successes": 0,
+        "failures": 0
+      }
+    }
+  },
+  "history": [
+    {
+      "ts": "2026-11-15 19:05:05",
+      "agent_id": "agent_03",
+      "agent_name": "03",
+      "dims": [
+        "attribute_query",
+        "statistics"
+      ],
+      "outcome": "failure",
+      "question": "查询 gas_pipelines 表中全部燃气管线，按 pressure_level 字段分组统计各压力等级的管线数量，并按压力等级名称升序输出所有分组。",
+      "task_signature": "gas/统计分析",
+      "before": {
+        "attribute_query": 0.5,
+        "statistics": 0.5
+      },
+      "after": {
+        "attribute_query": 0.464,
+        "statistics": 0.464
+      },
+      "delta": {
+        "attribute_query": -0.036,
+        "statistics": -0.036
+      },
+      "vector_before": {
+        "spatial_compute": 0.5,
+        "attribute_query": 0.5,
+        "statistics": 0.5,
+        "mapping": 0.5
+      },
+      "vector_after": {
+        "spatial_compute": 0.5,
+        "attribute_query": 0.464,
+        "statistics": 0.464,
+        "mapping": 0.5
+      },
+      "note": "结果校验未通过；以下字段存在类型、数量或取值问题，请重新计算：$.groups[0].group.pressure_level、$.groups[1].group.pressure_level",
+      "index": 0
+    },
+    {
+      "ts": "2026-11-15 19:05:16",
+      "agent_id": "agent_03",
+      "agent_name": "03",
+      "dims": [
+        "attribute_query",
+        "statistics"
+      ],
+      "outcome": "failure",
+      "question": "查询 gas_pipelines 表中全部燃气管线，按 pressure_level 字段分组统计各压力等级的管线数量，并按压力等级名称升序输出所有分组。",
+      "task_signature": "gas/统计分析",
+      "before": {
+        "attribute_query": 0.464,
+        "statistics": 0.464
+      },
+      "after": {
+        "attribute_query": 0.4309,
+        "statistics": 0.4309
+      },
+      "delta": {
+        "attribute_query": -0.0331,
+        "statistics": -0.0331
+      },
+      "vector_before": {
+        "spatial_compute": 0.5,
+        "attribute_query": 0.464,
+        "statistics": 0.464,
+        "mapping": 0.5
+      },
+      "vector_after": {
+        "spatial_compute": 0.5,
+        "attribute_query": 0.4309,
+        "statistics": 0.4309,
+        "mapping": 0.5
+      },
+      "note": "结果校验未通过；以下字段存在类型、数量或取值问题，请重新计算：$.groups[0].group.pressure_level、$.groups[1].group.pressure_level",
+      "index": 1
+    },
+    {
+      "ts": "2026-11-15 19:05:26",
+      "agent_id": "agent_03",
+      "agent_name": "03",
+      "dims": [
+        "attribute_query",
+        "statistics"
+      ],
+      "outcome": "failure",
+      "question": "查询 gas_pipelines 表中全部燃气管线，按 pressure_level 字段分组统计各压力等级的管线数量，并按压力等级名称升序输出所有分组。",
+      "task_signature": "gas/统计分析",
+      "before": {
+        "attribute_query": 0.4309,
+        "statistics": 0.4309
+      },
+      "after": {
+        "attribute_query": 0.4004,
+        "statistics": 0.4004
+      },
+      "delta": {
+        "attribute_query": -0.0305,
+        "statistics": -0.0305
+      },
+      "vector_before": {
+        "spatial_compute": 0.5,
+        "attribute_query": 0.4309,
+        "statistics": 0.4309,
+        "mapping": 0.5
+      },
+      "vector_after": {
+        "spatial_compute": 0.5,
+        "attribute_query": 0.4004,
+        "statistics": 0.4004,
+        "mapping": 0.5
+      },
+      "note": "结果校验未通过；以下字段存在类型、数量或取值问题，请重新计算：$.groups[0].group.pressure_level、$.groups[1].group.pressure_level",
+      "index": 2
+    }
+  ],
+  "updated_at": "2026-11-15 19:05:26"
+}

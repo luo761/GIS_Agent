@@ -1,0 +1,36 @@
+{
+  "no_replan": {
+    "median_elapsed_s": 23.086,
+    "p95_elapsed_s": 44.452,
+    "failed_ids": [
+      "D20",
+      "D42"
+    ],
+    "actual_replans": 0,
+    "completed_attempts": 50,
+    "failed_llm_invocations": 0,
+    "original20_correct": 19,
+    "new30_correct": 29,
+    "without_D24_correct": 47,
+    "without_D24_total": 49
+  },
+  "with_replan": {
+    "median_elapsed_s": 23.703,
+    "p95_elapsed_s": 81.834,
+    "failed_ids": [
+      "D14",
+      "D20",
+      "D24",
+      "D42"
+    ],
+    "actual_replans": 8,
+    "completed_attempts": 58,
+    "failed_llm_invocations": 0,
+    "original20_correct": 18,
+    "new30_correct": 28,
+    "without_D24_correct": 46,
+    "without_D24_total": 49
+  },
+  "tool_calls_delta_percent": 24.56,
+  "tokens_delta_percent": 20.5
+}

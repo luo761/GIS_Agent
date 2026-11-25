@@ -1,0 +1,424 @@
+{
+  "id": "D40",
+  "level": "L2",
+  "question": "先将所有与 A003 相交的水管裁剪到 A003 实体部分，排除孔洞，仅保留非空裁剪结果；再对各条裁剪结果建立25米缓冲区并合并去重，计算最终面积（平方米）。建立缓冲之后不再按 A003 裁剪。",
+  "mode": "with_replan",
+  "status": "completed",
+  "correct": true,
+  "first_correct": true,
+  "answer": {
+    "area": {
+      "unit": "square_meter",
+      "value": 40852.709660483844,
+      "measure": "area",
+      "is_empty": false,
+      "measure_srid": 3857
+    }
+  },
+  "expected": {
+    "area": {
+      "unit": "square_meter",
+      "value": 40852.709660483844,
+      "measure": "area",
+      "is_empty": false,
+      "measure_srid": 3857
+    }
+  },
+  "diffs": [],
+  "evaluation": "success",
+  "error": "",
+  "database_changed_during_case": false,
+  "attempt_history": [
+    {
+      "attempt_index": 1,
+      "evaluation": "success",
+      "correct": true,
+      "feedback": "",
+      "tool_call_count": 6,
+      "tools": [
+        "query_features",
+        "clip_features",
+        "buffer_features",
+        "union_features",
+        "measure_geometry"
+      ],
+      "subtasks": [
+        {
+          "subtask_id": "t1",
+          "question": "在EPSG:3857坐标系下，从water_pipelines表中筛选与construction_areas中code='A003'的geom相交的管线，裁剪至A003实体区域（排除孔洞），保留非空裁剪结果；对每条裁剪结果建立25米缓冲区，合并去重后计算最终覆盖面积（平方米）。",
+          "required_capabilities": [
+            "spatial_compute",
+            "attribute_query"
+          ],
+          "assigned_agent": "agent_03",
+          "assigned_agent_name": "03",
+          "routing": {
+            "agent_id": "agent_03",
+            "agent_name": "03",
+            "required": [
+              "spatial_compute",
+              "attribute_query"
+            ],
+            "scores": {
+              "agent_01": 0.5,
+              "agent_02": 0.5,
+              "agent_03": 0.5,
+              "agent_04": 0.5
+            },
+            "best_score": 0.5,
+            "tied": [
+              "agent_01",
+              "agent_02",
+              "agent_03",
+              "agent_04"
+            ],
+            "random_pick": true,
+            "epsilon": 0.0,
+            "pool": [
+              "agent_01",
+              "agent_02",
+              "agent_03",
+              "agent_04"
+            ]
+          },
+          "plan": {
+            "nodes": [
+              {
+                "id": "s1",
+                "action": "query_features",
+                "params": {
+                  "table": "construction_areas",
+                  "condition": "code = 'A003'",
+                  "geom_field": "geom"
+                },
+                "depends_on": []
+              },
+              {
+                "id": "s2",
+                "action": "query_features",
+                "params": {
+                  "table": "water_pipelines",
+                  "condition": "ST_Intersects(geom, (SELECT geom FROM construction_areas WHERE code = 'A003'))",
+                  "geom_field": "geom"
+                },
+                "depends_on": []
+              },
+              {
+                "id": "s3",
+                "action": "clip_features",
+                "params": {
+                  "input": "s2",
+                  "clipper": "s1",
+                  "exclude_holes": true
+                },
+                "depends_on": [
+                  "s1",
+                  "s2"
+                ]
+              },
+              {
+                "id": "s4",
+                "action": "filter_non_empty",
+                "params": {
+                  "input": "s3"
+                },
+                "depends_on": [
+                  "s3"
+                ]
+              },
+              {
+                "id": "s5",
+                "action": "buffer_features",
+                "params": {
+                  "input": "s4",
+                  "distance": 25,
+                  "unit": "meter"
+                },
+                "depends_on": [
+                  "s4"
+                ]
+              },
+              {
+                "id": "s6",
+                "action": "union_features",
+                "params": {
+                  "input": "s5"
+                },
+                "depends_on": [
+                  "s5"
+                ]
+              },
+              {
+                "id": "s7",
+                "action": "measure_geometry",
+                "params": {
+                  "input": "s6",
+                  "measure": "area",
+                  "unit": "square_meter"
+                },
+                "depends_on": [
+                  "s6"
+                ]
+              }
+            ],
+            "edges": [
+              [
+                "s1",
+                "s3"
+              ],
+              [
+                "s2",
+                "s3"
+              ],
+              [
+                "s3",
+                "s4"
+              ],
+              [
+                "s4",
+                "s5"
+              ],
+              [
+                "s5",
+                "s6"
+              ],
+              [
+                "s6",
+                "s7"
+              ]
+            ]
+          },
+          "result": "{\"area\": {\"unit\": \"square_meter\", \"value\": 40852.709660483844, \"measure\": \"area\", \"is_empty\": false, \"measure_srid\": 3857}}",
+          "trace": [
+            {
+              "step": "t1",
+              "tool": "query_features",
+              "args": {
+                "layer_name": "construction_areas",
+                "filters": [
+                  {
+                    "field": "code",
+                    "operator": "eq",
+                    "value": "A003"
+                  }
+                ]
+              },
+              "ok": true,
+              "brief": {
+                "feature_count": 1
+              }
+            },
+            {
+              "step": "t2",
+              "tool": "query_features",
+              "args": {
+                "layer_name": "water_pipelines",
+                "target": {
+                  "layer_name": "construction_areas",
+                  "feature_code": "A003"
+                },
+                "relation": "ST_Intersects"
+              },
+              "ok": true,
+              "brief": {
+                "feature_count": 3
+              }
+            },
+            {
+              "step": "t3",
+              "tool": "clip_features",
+              "args": {
+                "features": {
+                  "$ref": "t2.result.feature_set"
+                },
+                "clip_target": {
+                  "layer_name": "construction_areas",
+                  "feature_code": "A003"
+                }
+              },
+              "ok": true,
+              "brief": {
+                "feature_count": 3
+              }
+            },
+            {
+              "step": "t4",
+              "tool": "buffer_features",
+              "args": {
+                "features": {
+                  "$ref": "t3.result.feature_set"
+                },
+                "distance_m": 25
+              },
+              "ok": true,
+              "brief": {
+                "feature_count": 3
+              }
+            },
+            {
+              "step": "t5",
+              "tool": "union_features",
+              "args": {
+                "features": {
+                  "$ref": "t4.result.feature_set"
+                }
+              },
+              "ok": true,
+              "brief": {
+                "geometry_type": null
+              }
+            },
+            {
+              "step": "t6",
+              "tool": "measure_geometry",
+              "args": {
+                "target": {
+                  "$ref": "t5.result.geometry"
+                },
+                "measure": "area"
+              },
+              "ok": true,
+              "brief": {
+                "value": 40852.709660483844
+              }
+            }
+          ],
+          "tools_used": [
+            "query_features",
+            "clip_features",
+            "buffer_features",
+            "union_features",
+            "measure_geometry"
+          ],
+          "status": "success",
+          "outcome": "success",
+          "error": "",
+          "capability_update": {
+            "ts": "2026-11-15 19:08:13",
+            "agent_id": "agent_03",
+            "agent_name": "03",
+            "dims": [
+              "spatial_compute",
+              "attribute_query"
+            ],
+            "outcome": "success",
+            "before": {
+              "spatial_compute": 0.5,
+              "attribute_query": 0.5
+            },
+            "after": {
+              "spatial_compute": 0.549,
+              "attribute_query": 0.549
+            },
+            "delta": {
+              "spatial_compute": 0.049,
+              "attribute_query": 0.049
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "attempt_count": 1,
+  "replans": 0,
+  "failed_attempts": 0,
+  "tool_call_count": 6,
+  "elapsed_s": 24.375,
+  "llm_usage": {
+    "llm_calls": 10,
+    "failed_calls": 0,
+    "input_tokens": 62724,
+    "output_tokens": 1342,
+    "total_tokens": 64066,
+    "usage_reported_calls": 10,
+    "elapsed_s": 22.67478
+  },
+  "capability_changes": [
+    {
+      "ts": "2026-11-15 19:08:13",
+      "agent_id": "agent_03",
+      "agent_name": "03",
+      "dims": [
+        "spatial_compute",
+        "attribute_query"
+      ],
+      "outcome": "success",
+      "before": {
+        "spatial_compute": 0.5,
+        "attribute_query": 0.5
+      },
+      "after": {
+        "spatial_compute": 0.549,
+        "attribute_query": 0.549
+      },
+      "delta": {
+        "spatial_compute": 0.049,
+        "attribute_query": 0.049
+      },
+      "subtask_id": "t1"
+    }
+  ],
+  "final_capabilities": [
+    {
+      "agent": "agent_01",
+      "name": "01",
+      "vector": [
+        0.5,
+        0.5,
+        0.5,
+        0.5
+      ],
+      "stats": {
+        "attempts": 0,
+        "successes": 0,
+        "failures": 0
+      }
+    },
+    {
+      "agent": "agent_02",
+      "name": "02",
+      "vector": [
+        0.5,
+        0.5,
+        0.5,
+        0.5
+      ],
+      "stats": {
+        "attempts": 0,
+        "successes": 0,
+        "failures": 0
+      }
+    },
+    {
+      "agent": "agent_03",
+      "name": "03",
+      "vector": [
+        0.549,
+        0.549,
+        0.5,
+        0.5
+      ],
+      "stats": {
+        "attempts": 1,
+        "successes": 1,
+        "failures": 0
+      }
+    },
+    {
+      "agent": "agent_04",
+      "name": "04",
+      "vector": [
+        0.5,
+        0.5,
+        0.5,
+        0.5
+      ],
+      "stats": {
+        "attempts": 0,
+        "successes": 0,
+        "failures": 0
+      }
+    }
+  ],
+  "signature": "7b19aa8fc5930df9e9c54c1fabee2c44fe6fc1e928966bc9d93fb8798d43188f"
+}

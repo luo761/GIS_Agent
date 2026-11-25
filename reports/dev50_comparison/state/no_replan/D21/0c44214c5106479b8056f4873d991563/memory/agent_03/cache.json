@@ -1,0 +1,81 @@
+[
+  {
+    "question": "统计严格位于施工区 A002 内且状态为正常的燃气设备数量，边界上的设备不计入。",
+    "plan": {
+      "nodes": [
+        {
+          "id": "s1",
+          "action": "query_features",
+          "params": {
+            "layer_name": "gas_devices",
+            "filters": {
+              "status": "正常"
+            },
+            "target": null,
+            "relation": null
+          },
+          "depends_on": []
+        },
+        {
+          "id": "s2",
+          "action": "query_features",
+          "params": {
+            "layer_name": "construction_areas",
+            "filters": {
+              "code": "A002"
+            },
+            "target": null,
+            "relation": null
+          },
+          "depends_on": []
+        },
+        {
+          "id": "s3",
+          "action": "spatial_filter",
+          "params": {
+            "source": "s1",
+            "target": "s2",
+            "relation": "ST_Within"
+          },
+          "depends_on": [
+            "s1",
+            "s2"
+          ]
+        },
+        {
+          "id": "s4",
+          "action": "summarize_features",
+          "params": {
+            "source": "s3",
+            "aggregate": "count"
+          },
+          "depends_on": [
+            "s3"
+          ]
+        }
+      ],
+      "edges": [
+        [
+          "s1",
+          "s3"
+        ],
+        [
+          "s2",
+          "s3"
+        ],
+        [
+          "s3",
+          "s4"
+        ]
+      ]
+    },
+    "note": "planned",
+    "ts": "2026-11-15 19:04:16"
+  },
+  {
+    "question": "统计严格位于施工区 A002 内且状态为正常的燃气设备数量，边界上的设备不计入。",
+    "outcome": "success",
+    "note": "executed",
+    "ts": "2026-11-15 19:04:24"
+  }
+]

@@ -1,0 +1,575 @@
+{
+  "id": "D18",
+  "level": "L3",
+  "question": "在 A001 内分别统计两类数据：燃气管线按 pressure_level 分组汇总裁剪后长度，水管按 pipe_type 分组汇总裁剪后长度，单位均为米。每类按总长度降序、同长按分组名称升序，输出全部分组，保留零长度非空接触记录。",
+  "mode": "with_replan",
+  "status": "completed",
+  "correct": true,
+  "first_correct": true,
+  "answer": {
+    "unit": "meter",
+    "gas_groups": [
+      {
+        "group": {
+          "pressure_level": "高压"
+        },
+        "value": 2414.213562373095,
+        "feature_count": 2
+      },
+      {
+        "group": {
+          "pressure_level": "中压"
+        },
+        "value": 2400.0,
+        "feature_count": 3
+      },
+      {
+        "group": {
+          "pressure_level": "低压"
+        },
+        "value": 1000.0,
+        "feature_count": 1
+      }
+    ],
+    "water_groups": [
+      {
+        "group": {
+          "pipe_type": "给水"
+        },
+        "value": 1700.0,
+        "feature_count": 3
+      }
+    ]
+  },
+  "expected": {
+    "unit": "meter",
+    "gas_groups": [
+      {
+        "group": {
+          "pressure_level": "高压"
+        },
+        "value": 2414.213562373095,
+        "feature_count": 2
+      },
+      {
+        "group": {
+          "pressure_level": "中压"
+        },
+        "value": 2400,
+        "feature_count": 3
+      },
+      {
+        "group": {
+          "pressure_level": "低压"
+        },
+        "value": 1000,
+        "feature_count": 1
+      }
+    ],
+    "water_groups": [
+      {
+        "group": {
+          "pipe_type": "给水"
+        },
+        "value": 1700,
+        "feature_count": 3
+      }
+    ]
+  },
+  "diffs": [],
+  "evaluation": "success",
+  "error": "",
+  "database_changed_during_case": false,
+  "attempt_history": [
+    {
+      "attempt_index": 1,
+      "evaluation": "success",
+      "correct": true,
+      "feedback": "",
+      "tool_call_count": 8,
+      "tools": [
+        "query_features",
+        "clip_features",
+        "measure_features",
+        "summarize_features"
+      ],
+      "subtasks": [
+        {
+          "subtask_id": "t1",
+          "question": "在施工区A001内，分别对gas_pipelines按pressure_level分组汇总裁剪后长度（米），对water_pipelines按pipe_type分组汇总裁剪后长度（米），每类按总长度降序、同长按分组名称升序，输出全部分组，保留零长度非空接触记录。",
+          "required_capabilities": [
+            "spatial_compute",
+            "attribute_query",
+            "statistics"
+          ],
+          "assigned_agent": "agent_03",
+          "assigned_agent_name": "03",
+          "routing": {
+            "agent_id": "agent_03",
+            "agent_name": "03",
+            "required": [
+              "spatial_compute",
+              "attribute_query",
+              "statistics"
+            ],
+            "scores": {
+              "agent_01": 0.5,
+              "agent_02": 0.5,
+              "agent_03": 0.5,
+              "agent_04": 0.5
+            },
+            "best_score": 0.5,
+            "tied": [
+              "agent_01",
+              "agent_02",
+              "agent_03",
+              "agent_04"
+            ],
+            "random_pick": true,
+            "epsilon": 0.0,
+            "pool": [
+              "agent_01",
+              "agent_02",
+              "agent_03",
+              "agent_04"
+            ]
+          },
+          "plan": {
+            "nodes": [
+              {
+                "id": "s1",
+                "action": "query_features",
+                "params": {
+                  "table": "gas_pipelines",
+                  "geom": "geom",
+                  "filter": "ST_Intersects(geom, (SELECT geom FROM construction_areas WHERE code='A001'))"
+                },
+                "depends_on": []
+              },
+              {
+                "id": "s2",
+                "action": "clip_features",
+                "params": {
+                  "source": "s1",
+                  "clip_geom": "(SELECT geom FROM construction_areas WHERE code='A001')",
+                  "keep_boundary": true
+                },
+                "depends_on": [
+                  "s1"
+                ]
+              },
+              {
+                "id": "s3",
+                "action": "measure_features",
+                "params": {
+                  "source": "s2",
+                  "unit": "meter",
+                  "length_field": "clipped_length"
+                },
+                "depends_on": [
+                  "s2"
+                ]
+              },
+              {
+                "id": "s4",
+                "action": "summarize_features",
+                "params": {
+                  "source": "s3",
+                  "aggregate": "sum",
+                  "value_field": "clipped_length",
+                  "group_by": "pressure_level",
+                  "sort": [
+                    {
+                      "field": "sum",
+                      "order": "desc"
+                    },
+                    {
+                      "field": "pressure_level",
+                      "order": "asc"
+                    }
+                  ],
+                  "include_zero": true
+                },
+                "depends_on": [
+                  "s3"
+                ]
+              },
+              {
+                "id": "s5",
+                "action": "query_features",
+                "params": {
+                  "table": "water_pipelines",
+                  "geom": "geom",
+                  "filter": "ST_Intersects(geom, (SELECT geom FROM construction_areas WHERE code='A001'))"
+                },
+                "depends_on": []
+              },
+              {
+                "id": "s6",
+                "action": "clip_features",
+                "params": {
+                  "source": "s5",
+                  "clip_geom": "(SELECT geom FROM construction_areas WHERE code='A001')",
+                  "keep_boundary": true
+                },
+                "depends_on": [
+                  "s5"
+                ]
+              },
+              {
+                "id": "s7",
+                "action": "measure_features",
+                "params": {
+                  "source": "s6",
+                  "unit": "meter",
+                  "length_field": "clipped_length"
+                },
+                "depends_on": [
+                  "s6"
+                ]
+              },
+              {
+                "id": "s8",
+                "action": "summarize_features",
+                "params": {
+                  "source": "s7",
+                  "aggregate": "sum",
+                  "value_field": "clipped_length",
+                  "group_by": "pipe_type",
+                  "sort": [
+                    {
+                      "field": "sum",
+                      "order": "desc"
+                    },
+                    {
+                      "field": "pipe_type",
+                      "order": "asc"
+                    }
+                  ],
+                  "include_zero": true
+                },
+                "depends_on": [
+                  "s7"
+                ]
+              }
+            ],
+            "edges": [
+              [
+                "s1",
+                "s2"
+              ],
+              [
+                "s2",
+                "s3"
+              ],
+              [
+                "s3",
+                "s4"
+              ],
+              [
+                "s5",
+                "s6"
+              ],
+              [
+                "s6",
+                "s7"
+              ],
+              [
+                "s7",
+                "s8"
+              ]
+            ]
+          },
+          "result": "The gas groups need to be sorted by value desc, then group name asc. Current order: 高压(2414.21), 中压(2400.0), 低压(1000.0) — already correct. Water has only one group (给水).\n\nThe gas summary shows 高压 with 2 features, 中压 with 3, 低压 with 1. Let me verify the full gas feature set to ensure correct grouping. The summary already provides the correct grouped results.\n\nFinal result:\n\n```json\n{\n  \"unit\": \"meter\",\n  \"gas_groups\": [\n    {\"group\": {\"pressure_level\": \"高压\"}, \"value\": 2414.213562373095, \"feature_count\": 2},\n    {\"group\": {\"pressure_level\": \"中压\"}, \"value\": 2400.0, \"feature_count\": 3},\n    {\"group\": {\"pressure_level\": \"低压\"}, \"value\": 1000.0, \"feature_count\": 1}\n  ],\n  \"water_groups\": [\n    {\"group\": {\"pipe_type\": \"给水\"}, \"value\": 1700.0, \"feature_count\": 3}\n  ]\n}\n```",
+          "trace": [
+            {
+              "step": "t1",
+              "tool": "query_features",
+              "args": {
+                "layer_name": "gas_pipelines",
+                "target": {
+                  "layer_name": "construction_areas",
+                  "feature_code": "A001"
+                },
+                "relation": "ST_Intersects"
+              },
+              "ok": true,
+              "brief": {
+                "feature_count": 6
+              }
+            },
+            {
+              "step": "t2",
+              "tool": "query_features",
+              "args": {
+                "layer_name": "water_pipelines",
+                "target": {
+                  "layer_name": "construction_areas",
+                  "feature_code": "A001"
+                },
+                "relation": "ST_Intersects"
+              },
+              "ok": true,
+              "brief": {
+                "feature_count": 3
+              }
+            },
+            {
+              "step": "t3",
+              "tool": "clip_features",
+              "args": {
+                "features": {
+                  "$ref": "t1.result.feature_set"
+                },
+                "clip_target": {
+                  "layer_name": "construction_areas",
+                  "feature_code": "A001"
+                }
+              },
+              "ok": true,
+              "brief": {
+                "feature_count": 6
+              }
+            },
+            {
+              "step": "t4",
+              "tool": "clip_features",
+              "args": {
+                "features": {
+                  "$ref": "t2.result.feature_set"
+                },
+                "clip_target": {
+                  "layer_name": "construction_areas",
+                  "feature_code": "A001"
+                }
+              },
+              "ok": true,
+              "brief": {
+                "feature_count": 3
+              }
+            },
+            {
+              "step": "t5",
+              "tool": "measure_features",
+              "args": {
+                "features": {
+                  "$ref": "t3.result.feature_set"
+                },
+                "measure": "length"
+              },
+              "ok": true,
+              "brief": {
+                "feature_count": 6,
+                "summary": {
+                  "value": 5814.213562373096,
+                  "unit": "meter",
+                  "measure": "length",
+                  "measure_srid": 3857,
+                  "feature_count": 6
+                }
+              }
+            },
+            {
+              "step": "t6",
+              "tool": "measure_features",
+              "args": {
+                "features": {
+                  "$ref": "t4.result.feature_set"
+                },
+                "measure": "length"
+              },
+              "ok": true,
+              "brief": {
+                "feature_count": 3,
+                "summary": {
+                  "value": 1700.0,
+                  "unit": "meter",
+                  "measure": "length",
+                  "measure_srid": 3857,
+                  "feature_count": 3
+                }
+              }
+            },
+            {
+              "step": "t7",
+              "tool": "summarize_features",
+              "args": {
+                "features": {
+                  "$ref": "t5.result.feature_set"
+                },
+                "group_by": [
+                  "pressure_level"
+                ],
+                "aggregate": "sum",
+                "sort": "value_desc"
+              },
+              "ok": true,
+              "brief": {
+                "groups": 3
+              }
+            },
+            {
+              "step": "t8",
+              "tool": "summarize_features",
+              "args": {
+                "features": {
+                  "$ref": "t6.result.feature_set"
+                },
+                "group_by": [
+                  "pipe_type"
+                ],
+                "aggregate": "sum",
+                "sort": "value_desc"
+              },
+              "ok": true,
+              "brief": {
+                "groups": 1
+              }
+            }
+          ],
+          "tools_used": [
+            "query_features",
+            "clip_features",
+            "measure_features",
+            "summarize_features"
+          ],
+          "status": "success",
+          "outcome": "success",
+          "error": "",
+          "capability_update": {
+            "ts": "2026-11-15 19:03:17",
+            "agent_id": "agent_03",
+            "agent_name": "03",
+            "dims": [
+              "spatial_compute",
+              "attribute_query",
+              "statistics"
+            ],
+            "outcome": "success",
+            "before": {
+              "spatial_compute": 0.5,
+              "attribute_query": 0.5,
+              "statistics": 0.5
+            },
+            "after": {
+              "spatial_compute": 0.549,
+              "attribute_query": 0.549,
+              "statistics": 0.549
+            },
+            "delta": {
+              "spatial_compute": 0.049,
+              "attribute_query": 0.049,
+              "statistics": 0.049
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "attempt_count": 1,
+  "replans": 0,
+  "failed_attempts": 0,
+  "tool_call_count": 8,
+  "elapsed_s": 28.343,
+  "llm_usage": {
+    "llm_calls": 9,
+    "failed_calls": 0,
+    "input_tokens": 58473,
+    "output_tokens": 2093,
+    "total_tokens": 60566,
+    "usage_reported_calls": 9,
+    "elapsed_s": 26.287269
+  },
+  "capability_changes": [
+    {
+      "ts": "2026-11-15 19:03:17",
+      "agent_id": "agent_03",
+      "agent_name": "03",
+      "dims": [
+        "spatial_compute",
+        "attribute_query",
+        "statistics"
+      ],
+      "outcome": "success",
+      "before": {
+        "spatial_compute": 0.5,
+        "attribute_query": 0.5,
+        "statistics": 0.5
+      },
+      "after": {
+        "spatial_compute": 0.549,
+        "attribute_query": 0.549,
+        "statistics": 0.549
+      },
+      "delta": {
+        "spatial_compute": 0.049,
+        "attribute_query": 0.049,
+        "statistics": 0.049
+      },
+      "subtask_id": "t1"
+    }
+  ],
+  "final_capabilities": [
+    {
+      "agent": "agent_01",
+      "name": "01",
+      "vector": [
+        0.5,
+        0.5,
+        0.5,
+        0.5
+      ],
+      "stats": {
+        "attempts": 0,
+        "successes": 0,
+        "failures": 0
+      }
+    },
+    {
+      "agent": "agent_02",
+      "name": "02",
+      "vector": [
+        0.5,
+        0.5,
+        0.5,
+        0.5
+      ],
+      "stats": {
+        "attempts": 0,
+        "successes": 0,
+        "failures": 0
+      }
+    },
+    {
+      "agent": "agent_03",
+      "name": "03",
+      "vector": [
+        0.549,
+        0.549,
+        0.549,
+        0.5
+      ],
+      "stats": {
+        "attempts": 1,
+        "successes": 1,
+        "failures": 0
+      }
+    },
+    {
+      "agent": "agent_04",
+      "name": "04",
+      "vector": [
+        0.5,
+        0.5,
+        0.5,
+        0.5
+      ],
+      "stats": {
+        "attempts": 0,
+        "successes": 0,
+        "failures": 0
+      }
+    }
+  ],
+  "signature": "7b19aa8fc5930df9e9c54c1fabee2c44fe6fc1e928966bc9d93fb8798d43188f"
+}

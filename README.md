@@ -15,7 +15,7 @@
 | 检索 | `retrieval/` | `cosine_similarity.py` | 全项目统一的 TF-IDF + 余弦检索 |
 | 知识 | `knowledge/` | `db_schema_retriever.py`、`task_skill_library.py` | PostGIS 表结构检索、任务级 skill 库 |
 | 智能体 | `agents/` | `agent_registry.py`、`capability_store.py`、`capability_router.py` | 编号定义、能力进化、平局随机路由 |
-| 工具 | `tools/` | `tool_registry.py`、`postgis_tools.py` | 工具注册与 schema 绑定、PostGIS 工具适配 |
+| 工具 | `tools/` | `tool_registry.py`、`postgis_tools.py`、`gis_toolkit.py`、`db.py` | 工具注册与 schema 绑定、PostGIS 算子与数据库连接 |
 | 记忆 | `memory/` | `agent_memory.py` | 智能体专属记忆（长期记录 + 短期缓存） |
 | 经验 | `experience/` | `experience_pool.py`、`experience_retriever.py` | 共享经验池、经验检索 |
 | 流水线 | `pipeline/` | `pipeline_state.py`、`llm_client.py`、`pipeline_graph.py`、`stage1_understand.py` … `stage5_evaluate.py` | 五阶段实现与 LangGraph 主图 |
@@ -94,16 +94,19 @@
 skill 描述"这类问题通常怎么做、按什么顺序做"，规划阶段据此组织 DAG。
 `knowledge/task_skill_library.py` 里有 12 个这样的 skill，每次只检索最相关的 top-k 个（默认 4 个）。
 
-## 工具：PostGIS 算子，启动即绑定
+## 工具：PostGIS 算子注册与模型绑定
 
-`tools/postgis_tools.py` 把 dev20 项目的 PostGIS 工具集（`app_development/tool.py`，只读调用）
-接入本项目的注册表，共 10 个工具：
+PostGIS 实现位于 `tools/gis_toolkit.py`，由 `tools/postgis_tools.py`
+接入本项目的注册表。默认 `POSTGIS_TOOLSET=advanced`，共 10 个工具：
 
 | 单几何工具 | 要素集工具 |
 | --- | --- |
 | `buffer_geometry`、`intersection_geometry`、`measure_geometry` | `query_features`、`buffer_features`、`union_features`、`clip_features`、`measure_features`、`summarize_features`、`calculate_ratio` |
 
-- 参数模型（Pydantic）与 JSON Schema 由外部工具集提供，本项目内联 `$ref` 后交给模型；
+- 参数模型（Pydantic）与 JSON Schema 由本地 `tools/gis_toolkit.py` 提供，内联 `$ref` 后交给模型；
+- `tools/db.py` 统一读取 `config/settings.py` 的数据库配置；
+- 导入工具模块时完成注册，执行器首次调用工具模型时执行 `bind_tools`；
+- `POSTGIS_TOOLSET=composable` 可切换为表中 3 个单几何工具；
 - 模型直接发起 `tool_calls`，执行器把结果保存进结果仓库，只回填压缩视图；
 - 下游参数写 `{"$ref": "t1.result.feature_set"}`，执行器在调用前解析；
 - 工具报错会回填给模型，由模型调整参数重试。
@@ -111,6 +114,8 @@ skill 描述"这类问题通常怎么做、按什么顺序做"，规划阶段据
 ## 数据源与基准评测
 
 数据通过 Docker 本地 PostGIS 加载（dev20 题集）：
+
+题集与 SQL 种子数据需另行准备。以下命令中的 `sql/` 指 dev20 数据包中的 SQL 目录。
 
 ```powershell
 docker run -d --name gis-postgis -p 5433:5432 `
@@ -123,6 +128,10 @@ docker exec -e PGPASSWORD=123456 gis-postgis psql -U gis_user -d gis_agent -f /t
 
 > 注意：Debian 版 `postgis/postgis:16-3.4` 镜像带的是 GEOS 3.9.0，存在
 > "线完全落在面内时 `ST_Intersection` 返回空"的问题；请使用 **alpine** 版（GEOS 3.12+）。
+
+`BENCHMARK_DIR` 配置基准数据目录，默认使用本项目 `data/benchmarks`，也可在 `.env` 中覆盖。
+原 20 题使用 `dev20.json` / `dev20_expected.json`；50 题实验使用 `dev50.json` / `dev50_expected.json`。
+普通工具调用只需数据库；基准评测同时需要题集与完整的标准答案。
 
 评测入口：
 
@@ -167,7 +176,7 @@ Word 版报告为 `reports/dev20/dev20_test_report.docx`。
 ## 目录结构
 
 ```
-Test/
+GIS_Agent/
 ├── main.py                              # 端到端入口（打印路由、进化与能力表）
 ├── config/
 │   ├── settings.py                      # 路径、数据库、容量、检索参数
@@ -184,7 +193,9 @@ Test/
 │   └── capability_router.py             # 能力打分路由 + 平局随机
 ├── tools/
 │   ├── tool_registry.py                 # 工具注册 + function-calling schema
-│   └── postgis_tools.py                 # dev20 PostGIS 工具集适配（10 个工具）
+│   ├── postgis_tools.py                 # 本地 PostGIS 工具集适配（10 个工具）
+│   ├── gis_toolkit.py                   # 图层白名单、参数模型、空间 SQL 与 ToolSpec
+│   └── db.py                            # 数据库配置、连接与标识符引用
 ├── memory/
 │   └── agent_memory.py                  # 智能体专属记忆
 ├── experience/
@@ -210,7 +221,8 @@ Test/
 │   ├── demo_capability_evolution.py     # 离线演示（不调 LLM）
 │   └── reset_agent_state.py             # 复位为初始均衡状态
 ├── tests/
-│   └── test_capability_evolution.py     # 34 项测试
+│   ├── test_capability_evolution.py     # 能力进化、路由与流水线测试
+│   └── test_postgis_toolkit.py          # 本地工具迁移、注册、绑定与结果引用测试
 ├── data/                                # agent_capabilities.json、capability_vector_chart.*
 ├── docs/                                # 演示图表
 └── reports/dev20/                       # 评测报告与原始结果
@@ -220,7 +232,8 @@ Test/
 
 ```bash
 pip install -r requirements.txt
-cp .env.example .env   # 或按需填写 DATABASE_URL / LLM_MODEL / POSTGIS_TOOLKIT_ROOT
+# 在项目根目录创建或编辑 .env，填写 DATABASE_URL、DEEPSEEK_API_KEY、LLM_MODEL
+# 使用其他题集目录时，可通过 BENCHMARK_DIR 覆盖默认的 data/benchmarks
 
 # 普通模式
 python main.py "统计与施工区 A001 相交的燃气设备数量"
@@ -244,11 +257,44 @@ python scripts/reset_agent_state.py --yes
 python -m pytest tests -q
 ```
 
+## 50 题重规划对比实验
+
+`data/benchmarks/dev50.json` 保留原 D01–D20，并扩展 D21–D50。新增题目的标准答案由独立的 PostGIS SQL 计算；
+缺失数据库或标准答案时，实验显示 `blocked`，不把未运行题目记为答错。
+
+```powershell
+# 检查题集与答案完整性，不访问模型或数据库
+python scripts/run_dev50_comparison.py --validate-only
+
+# 用已导入的基准数据计算新增题目的标准答案
+python scripts/build_dev50_suite.py --compute-expected
+
+# 检查答案、PostGIS 图层及模型服务，并重新用独立 SQL 核对答案与当前数据一致
+python scripts/run_dev50_comparison.py --preflight-only
+
+# 同一50题，分别关闭重规划（0次）和开启重规划（最多额外2次）
+python scripts/run_dev50_comparison.py --max-replans 2 --workers 4
+
+# 服务中断后，按相同配置续跑；或先用 --limit 2 进行小批验证
+python scripts/run_dev50_comparison.py --max-replans 2 --workers 4 --resume
+```
+
+每道题、每种模式使用新的进程和空的能力/经验/记忆目录，保持相同模型参数、题集、数据和路由种子；
+题目之间不共享学习状态，题内重规划保留反馈与经验。原项目 `data/` 下的运行状态不被清空。
+评估反馈只暴露出错字段路径，不向重规划提供标准答案值。重规划只重跑阶段③–⑤，工具执行器内部的报错调整在两组中保持一致。
+
+结果写入 `reports/dev50_comparison/`：`records/` 保存每题每模式的全部评估轮次、工具调用、耗时及 LLM token 统计；
+`comparison_report.md` / `comparison.json` 比较整体及分难度正确率、首轮正确率、题内挽回、配对增益/退化、总工具调用和耗时。
+服务未返回 token 用量时标记为未报告。断点签名包含模型/参数、代码、题集/答案与数据库指纹；配置变化需使用新输出目录。
+一次配对实验只作描述性比较，固定路由种子不保证模型输出完全确定。
+`--workers` 默认 1，可同时处理多个题目，每题的两种模式仍顺序执行；服务异常时停止分发新题，保留已完成结果并等待在途题目结束。
+
 ## 说明
 
 - 五阶段状态统一放在 `PipelineState`；节点返回字段更新字典；
 - 正确答案通过 `PipelineState.ground_truth` 传入；基准评测用确定性判分器
   （`stage5.set_verifier`）替代 LLM 判卷，保证分数可复现；
 - 经验值只存于 `data/agent_capabilities.json`，删掉即可回到全 0.5；
-- 外部 PostGIS 工具集只读调用，路径由 `POSTGIS_TOOLKIT_ROOT` 配置；
+- PostGIS 工具实现位于本项目 `tools/gis_toolkit.py`，数据库连接由 `DATABASE_URL` 配置；
+- dev20 题集数据独立配置于 `BENCHMARK_DIR`；
 - 运行环境：Python 3.11+、psycopg、langgraph、langchain-deepseek；数据库需 PostGIS。

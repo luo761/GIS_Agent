@@ -1,0 +1,119 @@
+[
+  {
+    "task_signature": "general/空间计算",
+    "question_feat": "在 gas_devices 表中筛选与 construction_areas 表中 code='A001' 的几何相交且 status='正常' 的设备，对每个设备几何做 200 米缓冲区，不裁剪缓冲区。分别计算：1）所有缓冲区面积直接相加的总面积（平方米）；2）将所有缓冲区合并去重后的面积（平方米）。复用同一批缓冲结果。",
+    "plan": {
+      "t1": {
+        "nodes": [
+          {
+            "id": "s1",
+            "action": "query_features",
+            "params": {
+              "table": "construction_areas",
+              "where": "code='A001'"
+            },
+            "depends_on": []
+          },
+          {
+            "id": "s2",
+            "action": "query_features",
+            "params": {
+              "table": "gas_devices",
+              "where": "status='正常'"
+            },
+            "depends_on": []
+          },
+          {
+            "id": "s3",
+            "action": "spatial_filter",
+            "params": {
+              "source": "s2",
+              "filter": "s1",
+              "predicate": "ST_Intersects"
+            },
+            "depends_on": [
+              "s1",
+              "s2"
+            ]
+          },
+          {
+            "id": "s4",
+            "action": "buffer_features",
+            "params": {
+              "source": "s3",
+              "distance": 200,
+              "unit": "meter"
+            },
+            "depends_on": [
+              "s3"
+            ]
+          },
+          {
+            "id": "s5",
+            "action": "measure_geometry",
+            "params": {
+              "source": "s4",
+              "mode": "sum_area"
+            },
+            "depends_on": [
+              "s4"
+            ]
+          },
+          {
+            "id": "s6",
+            "action": "union_features",
+            "params": {
+              "source": "s4"
+            },
+            "depends_on": [
+              "s4"
+            ]
+          },
+          {
+            "id": "s7",
+            "action": "measure_geometry",
+            "params": {
+              "source": "s6",
+              "mode": "area"
+            },
+            "depends_on": [
+              "s6"
+            ]
+          }
+        ],
+        "edges": [
+          [
+            "s1",
+            "s3"
+          ],
+          [
+            "s2",
+            "s3"
+          ],
+          [
+            "s3",
+            "s4"
+          ],
+          [
+            "s4",
+            "s5"
+          ],
+          [
+            "s4",
+            "s6"
+          ],
+          [
+            "s6",
+            "s7"
+          ]
+        ]
+      }
+    },
+    "trace": "经验：筛选construction_areas中code='A001'（1个），gas_devices中status='正常'（10个），再按ST_Intersects关联得3个设备。对3个设备几何做200米缓冲区（不裁剪），复用该批缓冲结果。分别计算：1）measure_features对3个缓冲区直接求面积，汇总总面积为374573.42平方米；2）union_features合并3个缓冲区去重，再measure_geometry求合并后面积，得370190.38平方米。关键算子顺序：query_features→buffer_features→measure_features/union_features→measure_geometry。",
+    "outcome": "success",
+    "error_lesson": "",
+    "id": "9c08bfb3",
+    "hits": 0,
+    "updated_at": "2026-11-15 19:02:50"
+  }
+]

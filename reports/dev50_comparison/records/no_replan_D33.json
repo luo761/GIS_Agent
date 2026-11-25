@@ -1,0 +1,305 @@
+{
+  "id": "D33",
+  "level": "L2",
+  "question": "对燃气管线 G001 的完整几何建立20米缓冲区，计算缓冲面积（平方米）；不按施工区裁剪，缓冲采用 quad_segs=8。",
+  "mode": "no_replan",
+  "status": "completed",
+  "correct": true,
+  "first_correct": true,
+  "answer": {
+    "area": {
+      "unit": "square_meter",
+      "value": 33248.57806090322,
+      "measure": "area",
+      "is_empty": false,
+      "measure_srid": 3857
+    }
+  },
+  "expected": {
+    "area": {
+      "unit": "square_meter",
+      "value": 33248.57806090322,
+      "measure": "area",
+      "is_empty": false,
+      "measure_srid": 3857
+    }
+  },
+  "diffs": [],
+  "evaluation": "success",
+  "error": "",
+  "database_changed_during_case": false,
+  "attempt_history": [
+    {
+      "attempt_index": 1,
+      "evaluation": "success",
+      "correct": true,
+      "feedback": "",
+      "tool_call_count": 3,
+      "tools": [
+        "query_features",
+        "buffer_geometry",
+        "measure_geometry"
+      ],
+      "subtasks": [
+        {
+          "subtask_id": "t1",
+          "question": "对 gas_pipelines 表中 code='G001' 的燃气管线 geom 建立 20 米缓冲区（quad_segs=8），计算该缓冲区面积（平方米），不按 construction_areas 裁剪。",
+          "required_capabilities": [
+            "spatial_compute"
+          ],
+          "assigned_agent": "agent_03",
+          "assigned_agent_name": "03",
+          "routing": {
+            "agent_id": "agent_03",
+            "agent_name": "03",
+            "required": [
+              "spatial_compute"
+            ],
+            "scores": {
+              "agent_01": 0.5,
+              "agent_02": 0.5,
+              "agent_03": 0.5,
+              "agent_04": 0.5
+            },
+            "best_score": 0.5,
+            "tied": [
+              "agent_01",
+              "agent_02",
+              "agent_03",
+              "agent_04"
+            ],
+            "random_pick": true,
+            "epsilon": 0.0,
+            "pool": [
+              "agent_01",
+              "agent_02",
+              "agent_03",
+              "agent_04"
+            ]
+          },
+          "plan": {
+            "nodes": [
+              {
+                "id": "s1",
+                "action": "query_features",
+                "params": {
+                  "table": "gas_pipelines",
+                  "where": "code='G001'",
+                  "geom_field": "geom"
+                },
+                "depends_on": []
+              },
+              {
+                "id": "s2",
+                "action": "buffer_geometry",
+                "params": {
+                  "distance": 20,
+                  "quad_segs": 8,
+                  "input_geom": "$s1.geom"
+                },
+                "depends_on": [
+                  "s1"
+                ]
+              },
+              {
+                "id": "s3",
+                "action": "measure_geometry",
+                "params": {
+                  "input_geom": "$s2.buffer_geom",
+                  "unit": "square_meters"
+                },
+                "depends_on": [
+                  "s2"
+                ]
+              }
+            ],
+            "edges": [
+              [
+                "s1",
+                "s2"
+              ],
+              [
+                "s2",
+                "s3"
+              ]
+            ]
+          },
+          "result": "{\"area\": {\"unit\": \"square_meter\", \"value\": 33248.57806090322, \"measure\": \"area\", \"is_empty\": false, \"measure_srid\": 3857}}",
+          "trace": [
+            {
+              "step": "t1",
+              "tool": "query_features",
+              "args": {
+                "layer_name": "gas_pipelines",
+                "filters": [
+                  {
+                    "field": "code",
+                    "operator": "eq",
+                    "value": "G001"
+                  }
+                ]
+              },
+              "ok": true,
+              "brief": {
+                "feature_count": 1
+              }
+            },
+            {
+              "step": "t2",
+              "tool": "buffer_geometry",
+              "args": {
+                "target": {
+                  "layer_name": "gas_pipelines",
+                  "feature_code": "G001"
+                },
+                "distance_m": 20
+              },
+              "ok": true,
+              "brief": {
+                "geometry_type": null
+              }
+            },
+            {
+              "step": "t3",
+              "tool": "measure_geometry",
+              "args": {
+                "target": {
+                  "$ref": "t2.result.geometry"
+                },
+                "measure": "area"
+              },
+              "ok": true,
+              "brief": {
+                "value": 33248.57806090322
+              }
+            }
+          ],
+          "tools_used": [
+            "query_features",
+            "buffer_geometry",
+            "measure_geometry"
+          ],
+          "status": "success",
+          "outcome": "success",
+          "error": "",
+          "capability_update": {
+            "ts": "2026-11-15 19:06:36",
+            "agent_id": "agent_03",
+            "agent_name": "03",
+            "dims": [
+              "spatial_compute"
+            ],
+            "outcome": "success",
+            "before": {
+              "spatial_compute": 0.5
+            },
+            "after": {
+              "spatial_compute": 0.549
+            },
+            "delta": {
+              "spatial_compute": 0.049
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "attempt_count": 1,
+  "replans": 0,
+  "failed_attempts": 0,
+  "tool_call_count": 3,
+  "elapsed_s": 17.782,
+  "llm_usage": {
+    "llm_calls": 8,
+    "failed_calls": 0,
+    "input_tokens": 36955,
+    "output_tokens": 780,
+    "total_tokens": 37735,
+    "usage_reported_calls": 8,
+    "elapsed_s": 17.061472
+  },
+  "capability_changes": [
+    {
+      "ts": "2026-11-15 19:06:36",
+      "agent_id": "agent_03",
+      "agent_name": "03",
+      "dims": [
+        "spatial_compute"
+      ],
+      "outcome": "success",
+      "before": {
+        "spatial_compute": 0.5
+      },
+      "after": {
+        "spatial_compute": 0.549
+      },
+      "delta": {
+        "spatial_compute": 0.049
+      },
+      "subtask_id": "t1"
+    }
+  ],
+  "final_capabilities": [
+    {
+      "agent": "agent_01",
+      "name": "01",
+      "vector": [
+        0.5,
+        0.5,
+        0.5,
+        0.5
+      ],
+      "stats": {
+        "attempts": 0,
+        "successes": 0,
+        "failures": 0
+      }
+    },
+    {
+      "agent": "agent_02",
+      "name": "02",
+      "vector": [
+        0.5,
+        0.5,
+        0.5,
+        0.5
+      ],
+      "stats": {
+        "attempts": 0,
+        "successes": 0,
+        "failures": 0
+      }
+    },
+    {
+      "agent": "agent_03",
+      "name": "03",
+      "vector": [
+        0.549,
+        0.5,
+        0.5,
+        0.5
+      ],
+      "stats": {
+        "attempts": 1,
+        "successes": 1,
+        "failures": 0
+      }
+    },
+    {
+      "agent": "agent_04",
+      "name": "04",
+      "vector": [
+        0.5,
+        0.5,
+        0.5,
+        0.5
+      ],
+      "stats": {
+        "attempts": 0,
+        "successes": 0,
+        "failures": 0
+      }
+    }
+  ],
+  "signature": "7b19aa8fc5930df9e9c54c1fabee2c44fe6fc1e928966bc9d93fb8798d43188f"
+}

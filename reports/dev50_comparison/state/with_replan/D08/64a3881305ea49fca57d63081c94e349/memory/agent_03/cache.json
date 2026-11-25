@@ -1,0 +1,90 @@
+[
+  {
+    "question": "以燃气设备表 gas_devices 中 code='D011' 的设备几何为中心，建立 300 米缓冲区，计算该缓冲区与施工区表 construction_areas 中 code='A001' 的几何相交部分的面积（平方米，EPSG:3857）。",
+    "plan": {
+      "nodes": [
+        {
+          "id": "s1",
+          "action": "query_feature",
+          "params": {
+            "table": "gas_devices",
+            "code": "D011",
+            "geom_field": "geom"
+          },
+          "depends_on": []
+        },
+        {
+          "id": "s2",
+          "action": "query_feature",
+          "params": {
+            "table": "construction_areas",
+            "code": "A001",
+            "geom_field": "geom"
+          },
+          "depends_on": []
+        },
+        {
+          "id": "s3",
+          "action": "buffer_geometry",
+          "params": {
+            "distance": 300,
+            "unit": "meter",
+            "srid": 3857
+          },
+          "depends_on": [
+            "s1"
+          ]
+        },
+        {
+          "id": "s4",
+          "action": "intersection_geometry",
+          "params": {
+            "srid": 3857
+          },
+          "depends_on": [
+            "s3",
+            "s2"
+          ]
+        },
+        {
+          "id": "s5",
+          "action": "measure_geometry",
+          "params": {
+            "measure_type": "area",
+            "unit": "square_meter",
+            "srid": 3857
+          },
+          "depends_on": [
+            "s4"
+          ]
+        }
+      ],
+      "edges": [
+        [
+          "s1",
+          "s3"
+        ],
+        [
+          "s3",
+          "s4"
+        ],
+        [
+          "s2",
+          "s4"
+        ],
+        [
+          "s4",
+          "s5"
+        ]
+      ]
+    },
+    "note": "planned",
+    "ts": "2026-11-15 19:00:26"
+  },
+  {
+    "question": "以燃气设备表 gas_devices 中 code='D011' 的设备几何为中心，建立 300 米缓冲区，计算该缓冲区与施工区表 construction_areas 中 code='A001' 的几何相交部分的面积（平方米，EPSG:3857）。",
+    "outcome": "success",
+    "note": "executed",
+    "ts": "2026-11-15 19:00:48"
+  }
+]

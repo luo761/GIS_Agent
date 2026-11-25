@@ -1,0 +1,512 @@
+{
+  "id": "D47",
+  "level": "L3",
+  "question": "将与 A001 相交的全部燃气管线先裁剪到 A001，再逐条缓冲25米并合并去重，最后再裁剪到 A001。计算最终覆盖面积（平方米）及其占 A001 面积的百分比。",
+  "mode": "no_replan",
+  "status": "completed",
+  "correct": true,
+  "first_correct": true,
+  "answer": {
+    "area": {
+      "unit": "square_meter",
+      "value": 245339.54051262196,
+      "measure": "area",
+      "is_empty": false,
+      "measure_srid": 3857
+    },
+    "coverage_percent": {
+      "unit": "percent",
+      "value": 24.533954051262196,
+      "numerator": 245339.54051262196,
+      "denominator": 1000000.0
+    }
+  },
+  "expected": {
+    "area": {
+      "unit": "square_meter",
+      "value": 245339.54051262196,
+      "measure": "area",
+      "is_empty": false,
+      "measure_srid": 3857
+    },
+    "coverage_percent": {
+      "unit": "percent",
+      "value": 24.533954051262196,
+      "numerator": 245339.54051262196,
+      "denominator": 1000000
+    }
+  },
+  "diffs": [],
+  "evaluation": "success",
+  "error": "",
+  "database_changed_during_case": false,
+  "attempt_history": [
+    {
+      "attempt_index": 1,
+      "evaluation": "success",
+      "correct": true,
+      "feedback": "",
+      "tool_call_count": 9,
+      "tools": [
+        "query_features",
+        "measure_geometry",
+        "clip_features",
+        "buffer_features",
+        "union_features",
+        "intersection_geometry",
+        "calculate_ratio"
+      ],
+      "subtasks": [
+        {
+          "subtask_id": "t1",
+          "question": "在gas_pipelines表中，筛选与A001相交的全部燃气管线，先裁剪到A001，再逐条缓冲25米并合并去重，最后再裁剪到A001，计算最终覆盖面积（平方米）及其占A001面积的百分比。",
+          "required_capabilities": [
+            "spatial_compute",
+            "attribute_query",
+            "statistics"
+          ],
+          "assigned_agent": "agent_03",
+          "assigned_agent_name": "03",
+          "routing": {
+            "agent_id": "agent_03",
+            "agent_name": "03",
+            "required": [
+              "spatial_compute",
+              "attribute_query",
+              "statistics"
+            ],
+            "scores": {
+              "agent_01": 0.5,
+              "agent_02": 0.5,
+              "agent_03": 0.5,
+              "agent_04": 0.5
+            },
+            "best_score": 0.5,
+            "tied": [
+              "agent_01",
+              "agent_02",
+              "agent_03",
+              "agent_04"
+            ],
+            "random_pick": true,
+            "epsilon": 0.0,
+            "pool": [
+              "agent_01",
+              "agent_02",
+              "agent_03",
+              "agent_04"
+            ]
+          },
+          "plan": {
+            "nodes": [
+              {
+                "id": "s1",
+                "action": "query_features",
+                "params": {
+                  "table": "gas_pipelines",
+                  "relation": "ST_Intersects",
+                  "target": "A001"
+                },
+                "depends_on": []
+              },
+              {
+                "id": "s2",
+                "action": "clip_features",
+                "params": {
+                  "input": "s1",
+                  "clip_geometry": "A001"
+                },
+                "depends_on": [
+                  "s1"
+                ]
+              },
+              {
+                "id": "s3",
+                "action": "buffer_features",
+                "params": {
+                  "input": "s2",
+                  "distance": 25,
+                  "unit": "meter"
+                },
+                "depends_on": [
+                  "s2"
+                ]
+              },
+              {
+                "id": "s4",
+                "action": "union_features",
+                "params": {
+                  "input": "s3"
+                },
+                "depends_on": [
+                  "s3"
+                ]
+              },
+              {
+                "id": "s5",
+                "action": "clip_features",
+                "params": {
+                  "input": "s4",
+                  "clip_geometry": "A001"
+                },
+                "depends_on": [
+                  "s4"
+                ]
+              },
+              {
+                "id": "s6",
+                "action": "measure_features",
+                "params": {
+                  "input": "s5",
+                  "measure": "area",
+                  "unit": "square_meter"
+                },
+                "depends_on": [
+                  "s5"
+                ]
+              },
+              {
+                "id": "s7",
+                "action": "measure_geometry",
+                "params": {
+                  "geometry": "A001",
+                  "measure": "area",
+                  "unit": "square_meter"
+                },
+                "depends_on": []
+              },
+              {
+                "id": "s8",
+                "action": "calculate_ratio",
+                "params": {
+                  "numerator": "s6",
+                  "denominator": "s7",
+                  "output": "percentage"
+                },
+                "depends_on": [
+                  "s6",
+                  "s7"
+                ]
+              }
+            ],
+            "edges": [
+              [
+                "s1",
+                "s2"
+              ],
+              [
+                "s2",
+                "s3"
+              ],
+              [
+                "s3",
+                "s4"
+              ],
+              [
+                "s4",
+                "s5"
+              ],
+              [
+                "s5",
+                "s6"
+              ],
+              [
+                "s6",
+                "s8"
+              ],
+              [
+                "s7",
+                "s8"
+              ]
+            ]
+          },
+          "result": "所有步骤完成，输出最终结果。\n\n```json\n{\n  \"area\": {\n    \"unit\": \"square_meter\",\n    \"value\": 245339.54051262196,\n    \"measure\": \"area\",\n    \"is_empty\": false,\n    \"measure_srid\": 3857\n  },\n  \"coverage_percent\": {\n    \"unit\": \"percent\",\n    \"value\": 24.533954051262196,\n    \"numerator\": 245339.54051262196,\n    \"denominator\": 1000000.0\n  }\n}\n```",
+          "trace": [
+            {
+              "step": "t1",
+              "tool": "query_features",
+              "args": {
+                "layer_name": "gas_pipelines",
+                "relation": "ST_Intersects",
+                "target": {
+                  "layer_name": "construction_areas",
+                  "feature_code": "A001"
+                }
+              },
+              "ok": true,
+              "brief": {
+                "feature_count": 6
+              }
+            },
+            {
+              "step": "t2",
+              "tool": "measure_geometry",
+              "args": {
+                "target": {
+                  "layer_name": "construction_areas",
+                  "feature_code": "A001"
+                },
+                "measure": "area"
+              },
+              "ok": true,
+              "brief": {
+                "value": 1000000.0
+              }
+            },
+            {
+              "step": "t3",
+              "tool": "clip_features",
+              "args": {
+                "features": {
+                  "$ref": "t1.result.feature_set"
+                },
+                "clip_target": {
+                  "layer_name": "construction_areas",
+                  "feature_code": "A001"
+                }
+              },
+              "ok": true,
+              "brief": {
+                "feature_count": 6
+              }
+            },
+            {
+              "step": "t4",
+              "tool": "buffer_features",
+              "args": {
+                "features": {
+                  "$ref": "t3.result.feature_set"
+                },
+                "distance_m": 25
+              },
+              "ok": true,
+              "brief": {
+                "feature_count": 6
+              }
+            },
+            {
+              "step": "t5",
+              "tool": "union_features",
+              "args": {
+                "features": {
+                  "$ref": "t4.result.feature_set"
+                }
+              },
+              "ok": true,
+              "brief": {
+                "geometry_type": null
+              }
+            },
+            {
+              "step": "t6",
+              "tool": "clip_features",
+              "args": {
+                "clip_target": {
+                  "layer_name": "construction_areas",
+                  "feature_code": "A001"
+                },
+                "features": {
+                  "$ref": "t5.result.geometry"
+                }
+              },
+              "ok": false,
+              "error": "ValidationError: 5 validation errors for ClipFeaturesInput\nfeatures.is_complete\n  Field required [type=missing, input_value={'geometry': {'type': 'Po..., 675]]]}, 'srid': 3857}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.14/v/missing\nfeatures.feature_count\n  Field required [type=missing, input_value={'geometry': {'type': 'Po..., 675]]]}, 'srid': 3857}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.14/v/missing\nfeatures.property_fields\n  Field required [type=missing, input_value={'geometry': {'type': 'Po..., 675]]]}, 'srid': 3857}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.14/v/missing\nfeatures.features\n  Field required [type=missing, input_value={'geometry': {'type': 'Po..., 675]]]}, 'srid': 3857}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.14/v/missing\nfeatures.geometry\n  Extra inputs are not permitted [type=extra_forbidden, input_value={'type': 'Polygon', 'coor...726, 675], [525, 675]]]}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.14/v/extra_forbidden"
+            },
+            {
+              "step": "t7",
+              "tool": "intersection_geometry",
+              "args": {
+                "left": {
+                  "$ref": "t5.result.geometry"
+                },
+                "right": {
+                  "layer_name": "construction_areas",
+                  "feature_code": "A001"
+                }
+              },
+              "ok": true,
+              "brief": {
+                "geometry_type": null
+              }
+            },
+            {
+              "step": "t8",
+              "tool": "measure_geometry",
+              "args": {
+                "target": {
+                  "$ref": "t7.result.geometry"
+                },
+                "measure": "area"
+              },
+              "ok": true,
+              "brief": {
+                "value": 245339.54051262196
+              }
+            },
+            {
+              "step": "t9",
+              "tool": "calculate_ratio",
+              "args": {
+                "numerator": {
+                  "$ref": "t8.result"
+                },
+                "denominator": {
+                  "$ref": "t2.result"
+                },
+                "scale": "percent"
+              },
+              "ok": true,
+              "brief": {
+                "value": 24.533954051262196
+              }
+            }
+          ],
+          "tools_used": [
+            "query_features",
+            "measure_geometry",
+            "clip_features",
+            "buffer_features",
+            "union_features",
+            "intersection_geometry",
+            "calculate_ratio"
+          ],
+          "status": "success",
+          "outcome": "success",
+          "error": "",
+          "capability_update": {
+            "ts": "2026-11-15 19:10:46",
+            "agent_id": "agent_03",
+            "agent_name": "03",
+            "dims": [
+              "spatial_compute",
+              "attribute_query",
+              "statistics"
+            ],
+            "outcome": "success",
+            "before": {
+              "spatial_compute": 0.5,
+              "attribute_query": 0.5,
+              "statistics": 0.5
+            },
+            "after": {
+              "spatial_compute": 0.549,
+              "attribute_query": 0.549,
+              "statistics": 0.549
+            },
+            "delta": {
+              "spatial_compute": 0.049,
+              "attribute_query": 0.049,
+              "statistics": 0.049
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "attempt_count": 1,
+  "replans": 0,
+  "failed_attempts": 0,
+  "tool_call_count": 9,
+  "elapsed_s": 33.563,
+  "llm_usage": {
+    "llm_calls": 13,
+    "failed_calls": 0,
+    "input_tokens": 98730,
+    "output_tokens": 1965,
+    "total_tokens": 100695,
+    "usage_reported_calls": 13,
+    "elapsed_s": 31.208321
+  },
+  "capability_changes": [
+    {
+      "ts": "2026-11-15 19:10:46",
+      "agent_id": "agent_03",
+      "agent_name": "03",
+      "dims": [
+        "spatial_compute",
+        "attribute_query",
+        "statistics"
+      ],
+      "outcome": "success",
+      "before": {
+        "spatial_compute": 0.5,
+        "attribute_query": 0.5,
+        "statistics": 0.5
+      },
+      "after": {
+        "spatial_compute": 0.549,
+        "attribute_query": 0.549,
+        "statistics": 0.549
+      },
+      "delta": {
+        "spatial_compute": 0.049,
+        "attribute_query": 0.049,
+        "statistics": 0.049
+      },
+      "subtask_id": "t1"
+    }
+  ],
+  "final_capabilities": [
+    {
+      "agent": "agent_01",
+      "name": "01",
+      "vector": [
+        0.5,
+        0.5,
+        0.5,
+        0.5
+      ],
+      "stats": {
+        "attempts": 0,
+        "successes": 0,
+        "failures": 0
+      }
+    },
+    {
+      "agent": "agent_02",
+      "name": "02",
+      "vector": [
+        0.5,
+        0.5,
+        0.5,
+        0.5
+      ],
+      "stats": {
+        "attempts": 0,
+        "successes": 0,
+        "failures": 0
+      }
+    },
+    {
+      "agent": "agent_03",
+      "name": "03",
+      "vector": [
+        0.549,
+        0.549,
+        0.549,
+        0.5
+      ],
+      "stats": {
+        "attempts": 1,
+        "successes": 1,
+        "failures": 0
+      }
+    },
+    {
+      "agent": "agent_04",
+      "name": "04",
+      "vector": [
+        0.5,
+        0.5,
+        0.5,
+        0.5
+      ],
+      "stats": {
+        "attempts": 0,
+        "successes": 0,
+        "failures": 0
+      }
+    }
+  ],
+  "signature": "7b19aa8fc5930df9e9c54c1fabee2c44fe6fc1e928966bc9d93fb8798d43188f"
+}

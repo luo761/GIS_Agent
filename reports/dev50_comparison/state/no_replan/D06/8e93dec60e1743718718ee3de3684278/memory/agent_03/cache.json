@@ -1,0 +1,101 @@
+[
+  {
+    "question": "计算燃气管线表 gas_pipelines 中 code='G006' 的管线在施工区表 construction_areas 中 code='A003' 的实体部分（排除孔洞）内的长度（米），并返回参与量测的原管线数量。",
+    "plan": {
+      "nodes": [
+        {
+          "id": "s1",
+          "action": "query_features",
+          "params": {
+            "layer_name": "gas_pipelines",
+            "filters": {
+              "code": "G006"
+            },
+            "target": "geom"
+          },
+          "depends_on": []
+        },
+        {
+          "id": "s2",
+          "action": "query_features",
+          "params": {
+            "layer_name": "construction_areas",
+            "filters": {
+              "code": "A003"
+            },
+            "target": "geom"
+          },
+          "depends_on": []
+        },
+        {
+          "id": "s3",
+          "action": "clip_features",
+          "params": {
+            "input": "s1",
+            "clipper": "s2",
+            "exclude_holes": true,
+            "keep_boundary_contact": true
+          },
+          "depends_on": [
+            "s1",
+            "s2"
+          ]
+        },
+        {
+          "id": "s4",
+          "action": "measure_features",
+          "params": {
+            "input": "s3",
+            "measure_type": "length",
+            "unit": "meter"
+          },
+          "depends_on": [
+            "s3"
+          ]
+        },
+        {
+          "id": "s5",
+          "action": "summarize_features",
+          "params": {
+            "input": "s4",
+            "aggregate": "sum",
+            "group_by": null,
+            "output": {
+              "total_length": "sum_length",
+              "feature_count": "count"
+            }
+          },
+          "depends_on": [
+            "s4"
+          ]
+        }
+      ],
+      "edges": [
+        [
+          "s1",
+          "s3"
+        ],
+        [
+          "s2",
+          "s3"
+        ],
+        [
+          "s3",
+          "s4"
+        ],
+        [
+          "s4",
+          "s5"
+        ]
+      ]
+    },
+    "note": "planned",
+    "ts": "2026-11-15 19:00:28"
+  },
+  {
+    "question": "计算燃气管线表 gas_pipelines 中 code='G006' 的管线在施工区表 construction_areas 中 code='A003' 的实体部分（排除孔洞）内的长度（米），并返回参与量测的原管线数量。",
+    "outcome": "success",
+    "note": "executed",
+    "ts": "2026-11-15 19:00:46"
+  }
+]

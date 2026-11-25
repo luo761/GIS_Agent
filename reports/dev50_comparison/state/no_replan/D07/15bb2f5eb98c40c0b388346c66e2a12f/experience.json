@@ -1,0 +1,97 @@
+[
+  {
+    "task_signature": "water/空间计算",
+    "question_feat": "在施工区 A003 实体部分（排除孔洞）内，计算所有水管（water_pipelines）被裁剪后的总长度（米），包含边界接触，并返回非空裁剪结果的源水管数量。",
+    "plan": {
+      "t1": {
+        "nodes": [
+          {
+            "id": "s1",
+            "action": "query_features",
+            "params": {
+              "layer_name": "construction_areas",
+              "filters": {
+                "code": "A003"
+              },
+              "target": "geom"
+            },
+            "depends_on": []
+          },
+          {
+            "id": "s2",
+            "action": "query_features",
+            "params": {
+              "layer_name": "water_pipelines",
+              "filters": {},
+              "target": "geom"
+            },
+            "depends_on": []
+          },
+          {
+            "id": "s3",
+            "action": "clip_features",
+            "params": {
+              "input_layer": "water_pipelines",
+              "clip_layer": "construction_areas",
+              "clip_code": "A003",
+              "exclude_holes": true,
+              "include_boundary": true
+            },
+            "depends_on": [
+              "s1",
+              "s2"
+            ]
+          },
+          {
+            "id": "s4",
+            "action": "measure_features",
+            "params": {
+              "layer": "clipped_water_pipelines",
+              "measure_type": "length",
+              "unit": "meter"
+            },
+            "depends_on": [
+              "s3"
+            ]
+          },
+          {
+            "id": "s5",
+            "action": "summarize_features",
+            "params": {
+              "layer": "clipped_water_pipelines",
+              "operation": "count_non_empty",
+              "measure_field": "length"
+            },
+            "depends_on": [
+              "s4"
+            ]
+          }
+        ],
+        "edges": [
+          [
+            "s1",
+            "s3"
+          ],
+          [
+            "s2",
+            "s3"
+          ],
+          [
+            "s3",
+            "s4"
+          ],
+          [
+            "s4",
+            "s5"
+          ]
+        ]
+      }
+    },
+    "trace": "施工区A003内水管裁剪总长：先query_features定位A003（1个），查全部水管（10个），用ST_Intersects筛选相交水管（3个），再clip_features按A003裁剪得3个要素，measure_features计算长度汇总为700.0米（SRID 3857），最后summarize_features计数得1组。关键算子顺序：query→query→query(ST_Intersects)→clip→measure→summarize，结果形式为长度汇总值+要素计数。",
+    "outcome": "success",
+    "error_lesson": "",
+    "id": "d5fc6912",
+    "hits": 0,
+    "updated_at": "2026-11-15 19:00:39"
+  }
+]

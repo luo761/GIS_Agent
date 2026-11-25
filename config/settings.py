@@ -48,19 +48,15 @@ DATABASE_URL = os.getenv(
 APP_SCHEMA = os.getenv("APP_SCHEMA", "gis_lab")
 # 表结构来源：postgis=从数据库 information_schema 现场读取；demo=使用内置示例
 SCHEMA_SOURCE = os.getenv("SCHEMA_SOURCE", "postgis")
-# 外部 PostGIS 工具集（dev20 项目的 app_development/tool.py）
-POSTGIS_TOOLKIT_ROOT = Path(os.getenv(
-    "POSTGIS_TOOLKIT_ROOT",
-    str(BASE_DIR / "GIS_Agent-jiang_gis_tools_develop" / "GIS_Agent"),
-))
+# 项目内置 PostGIS 工具集：advanced 为全部 10 个工具，composable 为 3 个单几何工具
 POSTGIS_TOOLSET = os.getenv("POSTGIS_TOOLSET", "advanced")
 
 # ---------------------------------------------------------------------------
-# 基准题集（开发用 20 题）
+# 基准题集（原始 20 题与扩充的 50 题，含独立标准答案）
 # ---------------------------------------------------------------------------
 BENCHMARK_DIR = Path(os.getenv(
     "BENCHMARK_DIR",
-    str(BASE_DIR / "GIS_Agent-jiang_gis_tools_develop" / "GIS_Agent" / "data" / "benchmarks"),
+    str(BASE_DIR / "data" / "benchmarks"),
 ))
 BENCHMARK_ABS_TOL = 1e-6
 REPORTS_DIR = BASE_DIR / "reports"

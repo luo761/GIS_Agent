@@ -1,0 +1,382 @@
+{
+  "id": "D31",
+  "level": "L2",
+  "question": "将所有与 A002 相交的燃气管线裁剪到 A002，计算区内总长度（米）与非空裁剪结果的源管线数量，保留非空零长度边界接触记录。",
+  "mode": "with_replan",
+  "status": "completed",
+  "correct": true,
+  "first_correct": true,
+  "answer": {
+    "length": {
+      "unit": "meter",
+      "value": 1400.0,
+      "measure": "length",
+      "measure_srid": 3857,
+      "feature_count": 4
+    }
+  },
+  "expected": {
+    "length": {
+      "unit": "meter",
+      "value": 1400,
+      "measure": "length",
+      "measure_srid": 3857,
+      "feature_count": 4
+    }
+  },
+  "diffs": [],
+  "evaluation": "success",
+  "error": "",
+  "database_changed_during_case": false,
+  "attempt_history": [
+    {
+      "attempt_index": 1,
+      "evaluation": "success",
+      "correct": true,
+      "feedback": "",
+      "tool_call_count": 4,
+      "tools": [
+        "query_features",
+        "clip_features",
+        "measure_features",
+        "summarize_features"
+      ],
+      "subtasks": [
+        {
+          "subtask_id": "t1",
+          "question": "在 gas_pipelines 表中，筛选出与施工区 A002 相交（ST_Intersects）的燃气管线，将其裁剪到 A002 范围内，计算裁剪后非空结果的区内总长度（米），并统计非空裁剪结果的源管线数量，保留边界接触产生的零长度记录。",
+          "required_capabilities": [
+            "spatial_compute",
+            "attribute_query",
+            "statistics"
+          ],
+          "assigned_agent": "agent_03",
+          "assigned_agent_name": "03",
+          "routing": {
+            "agent_id": "agent_03",
+            "agent_name": "03",
+            "required": [
+              "spatial_compute",
+              "attribute_query",
+              "statistics"
+            ],
+            "scores": {
+              "agent_01": 0.5,
+              "agent_02": 0.5,
+              "agent_03": 0.5,
+              "agent_04": 0.5
+            },
+            "best_score": 0.5,
+            "tied": [
+              "agent_01",
+              "agent_02",
+              "agent_03",
+              "agent_04"
+            ],
+            "random_pick": true,
+            "epsilon": 0.0,
+            "pool": [
+              "agent_01",
+              "agent_02",
+              "agent_03",
+              "agent_04"
+            ]
+          },
+          "plan": {
+            "nodes": [
+              {
+                "id": "s1",
+                "action": "query_features",
+                "params": {
+                  "layer_name": "gas_pipelines",
+                  "filters": {
+                    "pipe_type": "燃气管线"
+                  },
+                  "target": "A002",
+                  "relation": "ST_Intersects"
+                },
+                "depends_on": []
+              },
+              {
+                "id": "s2",
+                "action": "clip_features",
+                "params": {
+                  "source": "s1",
+                  "clip_layer": "A002",
+                  "keep_boundary": true
+                },
+                "depends_on": [
+                  "s1"
+                ]
+              },
+              {
+                "id": "s3",
+                "action": "measure_features",
+                "params": {
+                  "source": "s2",
+                  "measure_type": "length",
+                  "unit": "meter",
+                  "srid": 3857
+                },
+                "depends_on": [
+                  "s2"
+                ]
+              },
+              {
+                "id": "s4",
+                "action": "summarize_features",
+                "params": {
+                  "source": "s3",
+                  "metrics": [
+                    {
+                      "type": "sum",
+                      "field": "length",
+                      "alias": "total_length_m"
+                    },
+                    {
+                      "type": "count",
+                      "field": "source_pipeline_id",
+                      "alias": "source_pipeline_count"
+                    }
+                  ]
+                },
+                "depends_on": [
+                  "s3"
+                ]
+              }
+            ],
+            "edges": [
+              [
+                "s1",
+                "s2"
+              ],
+              [
+                "s2",
+                "s3"
+              ],
+              [
+                "s3",
+                "s4"
+              ]
+            ]
+          },
+          "result": "The measure_features summary gives total length 1400.0 m with feature_count 4 (all non-empty results, including the zero-length boundary contact record G003). The source pipeline count is 4.\n\n```json\n{\n  \"length\": {\n    \"unit\": \"meter\",\n    \"value\": 1400.0,\n    \"measure\": \"length\",\n    \"measure_srid\": 3857,\n    \"feature_count\": 4\n  }\n}\n```",
+          "trace": [
+            {
+              "step": "t1",
+              "tool": "query_features",
+              "args": {
+                "layer_name": "gas_pipelines",
+                "target": {
+                  "layer_name": "construction_areas",
+                  "feature_code": "A002"
+                },
+                "relation": "ST_Intersects"
+              },
+              "ok": true,
+              "brief": {
+                "feature_count": 4
+              }
+            },
+            {
+              "step": "t2",
+              "tool": "clip_features",
+              "args": {
+                "features": {
+                  "$ref": "t1.result.feature_set"
+                },
+                "clip_target": {
+                  "layer_name": "construction_areas",
+                  "feature_code": "A002"
+                }
+              },
+              "ok": true,
+              "brief": {
+                "feature_count": 4
+              }
+            },
+            {
+              "step": "t3",
+              "tool": "measure_features",
+              "args": {
+                "features": {
+                  "$ref": "t2.result.feature_set"
+                },
+                "measure": "length"
+              },
+              "ok": true,
+              "brief": {
+                "feature_count": 4,
+                "summary": {
+                  "value": 1400.0,
+                  "unit": "meter",
+                  "measure": "length",
+                  "measure_srid": 3857,
+                  "feature_count": 4
+                }
+              }
+            },
+            {
+              "step": "t4",
+              "tool": "summarize_features",
+              "args": {
+                "features": {
+                  "$ref": "t3.result.feature_set"
+                },
+                "group_by": [
+                  "source_code"
+                ],
+                "aggregate": "sum"
+              },
+              "ok": true,
+              "brief": {
+                "groups": 4
+              }
+            }
+          ],
+          "tools_used": [
+            "query_features",
+            "clip_features",
+            "measure_features",
+            "summarize_features"
+          ],
+          "status": "success",
+          "outcome": "success",
+          "error": "",
+          "capability_update": {
+            "ts": "2026-11-15 19:07:02",
+            "agent_id": "agent_03",
+            "agent_name": "03",
+            "dims": [
+              "spatial_compute",
+              "attribute_query",
+              "statistics"
+            ],
+            "outcome": "success",
+            "before": {
+              "spatial_compute": 0.5,
+              "attribute_query": 0.5,
+              "statistics": 0.5
+            },
+            "after": {
+              "spatial_compute": 0.549,
+              "attribute_query": 0.549,
+              "statistics": 0.549
+            },
+            "delta": {
+              "spatial_compute": 0.049,
+              "attribute_query": 0.049,
+              "statistics": 0.049
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "attempt_count": 1,
+  "replans": 0,
+  "failed_attempts": 0,
+  "tool_call_count": 4,
+  "elapsed_s": 23.641,
+  "llm_usage": {
+    "llm_calls": 9,
+    "failed_calls": 0,
+    "input_tokens": 51245,
+    "output_tokens": 1239,
+    "total_tokens": 52484,
+    "usage_reported_calls": 9,
+    "elapsed_s": 22.634931
+  },
+  "capability_changes": [
+    {
+      "ts": "2026-11-15 19:07:02",
+      "agent_id": "agent_03",
+      "agent_name": "03",
+      "dims": [
+        "spatial_compute",
+        "attribute_query",
+        "statistics"
+      ],
+      "outcome": "success",
+      "before": {
+        "spatial_compute": 0.5,
+        "attribute_query": 0.5,
+        "statistics": 0.5
+      },
+      "after": {
+        "spatial_compute": 0.549,
+        "attribute_query": 0.549,
+        "statistics": 0.549
+      },
+      "delta": {
+        "spatial_compute": 0.049,
+        "attribute_query": 0.049,
+        "statistics": 0.049
+      },
+      "subtask_id": "t1"
+    }
+  ],
+  "final_capabilities": [
+    {
+      "agent": "agent_01",
+      "name": "01",
+      "vector": [
+        0.5,
+        0.5,
+        0.5,
+        0.5
+      ],
+      "stats": {
+        "attempts": 0,
+        "successes": 0,
+        "failures": 0
+      }
+    },
+    {
+      "agent": "agent_02",
+      "name": "02",
+      "vector": [
+        0.5,
+        0.5,
+        0.5,
+        0.5
+      ],
+      "stats": {
+        "attempts": 0,
+        "successes": 0,
+        "failures": 0
+      }
+    },
+    {
+      "agent": "agent_03",
+      "name": "03",
+      "vector": [
+        0.549,
+        0.549,
+        0.549,
+        0.5
+      ],
+      "stats": {
+        "attempts": 1,
+        "successes": 1,
+        "failures": 0
+      }
+    },
+    {
+      "agent": "agent_04",
+      "name": "04",
+      "vector": [
+        0.5,
+        0.5,
+        0.5,
+        0.5
+      ],
+      "stats": {
+        "attempts": 0,
+        "successes": 0,
+        "failures": 0
+      }
+    }
+  ],
+  "signature": "7b19aa8fc5930df9e9c54c1fabee2c44fe6fc1e928966bc9d93fb8798d43188f"
+}

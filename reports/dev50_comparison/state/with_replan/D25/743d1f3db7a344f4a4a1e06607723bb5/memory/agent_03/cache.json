@@ -1,0 +1,44 @@
+[
+  {
+    "question": "在 water_pipelines 表中，按 pipe_type 字段分组统计各类型水管的数量，并按 pipe_type 名称升序输出全部分组结果，不做空间筛选。",
+    "plan": {
+      "nodes": [
+        {
+          "id": "s1",
+          "action": "query_features",
+          "params": {
+            "layer_name": "water_pipelines",
+            "filters": {}
+          },
+          "depends_on": []
+        },
+        {
+          "id": "s2",
+          "action": "summarize_features",
+          "params": {
+            "aggregate": "count",
+            "group_by": "pipe_type",
+            "sort": "pipe_type ASC"
+          },
+          "depends_on": [
+            "s1"
+          ]
+        }
+      ],
+      "edges": [
+        [
+          "s1",
+          "s2"
+        ]
+      ]
+    },
+    "note": "planned",
+    "ts": "2026-11-15 19:05:18"
+  },
+  {
+    "question": "在 water_pipelines 表中，按 pipe_type 字段分组统计各类型水管的数量，并按 pipe_type 名称升序输出全部分组结果，不做空间筛选。",
+    "outcome": "success",
+    "note": "executed",
+    "ts": "2026-11-15 19:05:23"
+  }
+]

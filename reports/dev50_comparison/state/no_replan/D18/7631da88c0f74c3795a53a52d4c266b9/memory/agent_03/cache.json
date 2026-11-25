@@ -1,0 +1,182 @@
+[
+  {
+    "question": "在施工区A001内，分别对gas_pipelines按pressure_level分组汇总裁剪后长度（米），对water_pipelines按pipe_type分组汇总裁剪后长度（米），每类按总长度降序、同长按分组名称升序，输出全部分组，保留零长度非空接触记录。",
+    "plan": {
+      "nodes": [
+        {
+          "id": "s1",
+          "action": "query_features",
+          "params": {
+            "table": "gas_pipelines",
+            "geom": "geom",
+            "filter": "ST_Intersects(geom, (SELECT geom FROM construction_areas WHERE code='A001'))"
+          },
+          "depends_on": []
+        },
+        {
+          "id": "s2",
+          "action": "clip_features",
+          "params": {
+            "source": "s1",
+            "clip_geom": "(SELECT geom FROM construction_areas WHERE code='A001')",
+            "keep_boundary": true
+          },
+          "depends_on": [
+            "s1"
+          ]
+        },
+        {
+          "id": "s3",
+          "action": "measure_features",
+          "params": {
+            "source": "s2",
+            "unit": "meter",
+            "length_field": "clipped_length"
+          },
+          "depends_on": [
+            "s2"
+          ]
+        },
+        {
+          "id": "s4",
+          "action": "summarize_features",
+          "params": {
+            "source": "s3",
+            "aggregate": "sum",
+            "value_field": "clipped_length",
+            "group_by": "pressure_level",
+            "sort": [
+              {
+                "field": "sum",
+                "order": "desc"
+              },
+              {
+                "field": "pressure_level",
+                "order": "asc"
+              }
+            ],
+            "include_zero": true
+          },
+          "depends_on": [
+            "s3"
+          ]
+        },
+        {
+          "id": "s5",
+          "action": "query_features",
+          "params": {
+            "table": "water_pipelines",
+            "geom": "geom",
+            "filter": "ST_Intersects(geom, (SELECT geom FROM construction_areas WHERE code='A001'))"
+          },
+          "depends_on": []
+        },
+        {
+          "id": "s6",
+          "action": "clip_features",
+          "params": {
+            "source": "s5",
+            "clip_geom": "(SELECT geom FROM construction_areas WHERE code='A001')",
+            "keep_boundary": true
+          },
+          "depends_on": [
+            "s5"
+          ]
+        },
+        {
+          "id": "s7",
+          "action": "measure_features",
+          "params": {
+            "source": "s6",
+            "unit": "meter",
+            "length_field": "clipped_length"
+          },
+          "depends_on": [
+            "s6"
+          ]
+        },
+        {
+          "id": "s8",
+          "action": "summarize_features",
+          "params": {
+            "source": "s7",
+            "aggregate": "sum",
+            "value_field": "clipped_length",
+            "group_by": "pipe_type",
+            "sort": [
+              {
+                "field": "sum",
+                "order": "desc"
+              },
+              {
+                "field": "pipe_type",
+                "order": "asc"
+              }
+            ],
+            "include_zero": true
+          },
+          "depends_on": [
+            "s7"
+          ]
+        },
+        {
+          "id": "s9",
+          "action": "merge_results",
+          "params": {
+            "sources": [
+              "s4",
+              "s8"
+            ],
+            "output_format": "json"
+          },
+          "depends_on": [
+            "s4",
+            "s8"
+          ]
+        }
+      ],
+      "edges": [
+        [
+          "s1",
+          "s2"
+        ],
+        [
+          "s2",
+          "s3"
+        ],
+        [
+          "s3",
+          "s4"
+        ],
+        [
+          "s5",
+          "s6"
+        ],
+        [
+          "s6",
+          "s7"
+        ],
+        [
+          "s7",
+          "s8"
+        ],
+        [
+          "s4",
+          "s9"
+        ],
+        [
+          "s8",
+          "s9"
+        ]
+      ]
+    },
+    "note": "planned",
+    "ts": "2026-11-15 19:03:33"
+  },
+  {
+    "question": "在施工区A001内，分别对gas_pipelines按pressure_level分组汇总裁剪后长度（米），对water_pipelines按pipe_type分组汇总裁剪后长度（米），每类按总长度降序、同长按分组名称升序，输出全部分组，保留零长度非空接触记录。",
+    "outcome": "success",
+    "note": "executed",
+    "ts": "2026-11-15 19:03:47"
+  }
+]

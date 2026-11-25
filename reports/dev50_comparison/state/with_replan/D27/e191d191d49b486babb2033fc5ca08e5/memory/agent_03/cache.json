@@ -1,0 +1,47 @@
+[
+  {
+    "question": "计算 gas_pipelines 表中 code='G006' 的管线几何长度（米），不进行任何裁剪，直接量测其 geom 字段长度。",
+    "plan": {
+      "nodes": [
+        {
+          "id": "s1",
+          "action": "query_features",
+          "params": {
+            "table": "gas_pipelines",
+            "where": {
+              "code": "G006"
+            },
+            "geometry_field": "geom"
+          },
+          "depends_on": []
+        },
+        {
+          "id": "s2",
+          "action": "measure_features",
+          "params": {
+            "measure_type": "length",
+            "unit": "meter",
+            "geometry_field": "geom"
+          },
+          "depends_on": [
+            "s1"
+          ]
+        }
+      ],
+      "edges": [
+        [
+          "s1",
+          "s2"
+        ]
+      ]
+    },
+    "note": "planned",
+    "ts": "2026-11-15 19:05:56"
+  },
+  {
+    "question": "计算 gas_pipelines 表中 code='G006' 的管线几何长度（米），不进行任何裁剪，直接量测其 geom 字段长度。",
+    "outcome": "success",
+    "note": "executed",
+    "ts": "2026-11-15 19:06:01"
+  }
+]

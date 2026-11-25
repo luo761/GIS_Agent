@@ -1,0 +1,100 @@
+[
+  {
+    "question": "查询 construction_areas 中 code 为 A001 和 A008 的 geom，计算两区面积直接相加、联合覆盖去重面积和重叠面积（平方米），联合覆盖与直接相加复用同一份区域查询结果。",
+    "plan": {
+      "nodes": [
+        {
+          "id": "s1",
+          "action": "query_features",
+          "params": {
+            "table": "construction_areas",
+            "filters": {
+              "code": [
+                "A001",
+                "A008"
+              ]
+            },
+            "columns": [
+              "code",
+              "geom"
+            ]
+          },
+          "depends_on": []
+        },
+        {
+          "id": "s2",
+          "action": "measure_geometry",
+          "params": {
+            "source": "s1",
+            "mode": "area",
+            "unit": "square_meter"
+          },
+          "depends_on": [
+            "s1"
+          ]
+        },
+        {
+          "id": "s3",
+          "action": "union_features",
+          "params": {
+            "source": "s1",
+            "geometry_column": "geom"
+          },
+          "depends_on": [
+            "s1"
+          ]
+        },
+        {
+          "id": "s4",
+          "action": "measure_geometry",
+          "params": {
+            "source": "s3",
+            "mode": "area",
+            "unit": "square_meter"
+          },
+          "depends_on": [
+            "s3"
+          ]
+        },
+        {
+          "id": "s5",
+          "action": "calculate_overlap_area",
+          "params": {
+            "source": "s1",
+            "geometry_column": "geom",
+            "unit": "square_meter"
+          },
+          "depends_on": [
+            "s1"
+          ]
+        }
+      ],
+      "edges": [
+        [
+          "s1",
+          "s2"
+        ],
+        [
+          "s1",
+          "s3"
+        ],
+        [
+          "s3",
+          "s4"
+        ],
+        [
+          "s1",
+          "s5"
+        ]
+      ]
+    },
+    "note": "planned",
+    "ts": "2026-11-15 19:02:17"
+  },
+  {
+    "question": "查询 construction_areas 中 code 为 A001 和 A008 的 geom，计算两区面积直接相加、联合覆盖去重面积和重叠面积（平方米），联合覆盖与直接相加复用同一份区域查询结果。",
+    "outcome": "success",
+    "note": "executed",
+    "ts": "2026-11-15 19:02:26"
+  }
+]

@@ -1,0 +1,239 @@
+{
+  "status": "blocked",
+  "meta": {
+    "model": "deepseek-v4-pro",
+    "temperature": 0.1,
+    "seed": 20261115,
+    "max_replans": 2
+  },
+  "planned_case_count": 50,
+  "paired_case_count": 0,
+  "summaries": {
+    "no_replan": {
+      "completed": 0,
+      "correct": 0,
+      "accuracy": null,
+      "first_correct": 0,
+      "first_accuracy": null,
+      "rescued_after_first_failure": 0,
+      "tool_calls": 0,
+      "mean_tool_calls": null,
+      "attempts": 0,
+      "mean_attempts": null,
+      "total_elapsed_s": 0,
+      "mean_elapsed_s": null,
+      "replans": 0,
+      "llm_usage": {
+        "llm_calls": 0,
+        "input_tokens": 0,
+        "output_tokens": 0,
+        "total_tokens": 0,
+        "usage_reported_calls": 0
+      }
+    },
+    "with_replan": {
+      "completed": 0,
+      "correct": 0,
+      "accuracy": null,
+      "first_correct": 0,
+      "first_accuracy": null,
+      "rescued_after_first_failure": 0,
+      "tool_calls": 0,
+      "mean_tool_calls": null,
+      "attempts": 0,
+      "mean_attempts": null,
+      "total_elapsed_s": 0,
+      "mean_elapsed_s": null,
+      "replans": 0,
+      "llm_usage": {
+        "llm_calls": 0,
+        "input_tokens": 0,
+        "output_tokens": 0,
+        "total_tokens": 0,
+        "usage_reported_calls": 0
+      }
+    }
+  },
+  "by_level": {
+    "L1": {
+      "no_replan": {
+        "completed": 0,
+        "correct": 0,
+        "accuracy": null,
+        "first_correct": 0,
+        "first_accuracy": null,
+        "rescued_after_first_failure": 0,
+        "tool_calls": 0,
+        "mean_tool_calls": null,
+        "attempts": 0,
+        "mean_attempts": null,
+        "total_elapsed_s": 0,
+        "mean_elapsed_s": null,
+        "replans": 0,
+        "llm_usage": {
+          "llm_calls": 0,
+          "input_tokens": 0,
+          "output_tokens": 0,
+          "total_tokens": 0,
+          "usage_reported_calls": 0
+        }
+      },
+      "with_replan": {
+        "completed": 0,
+        "correct": 0,
+        "accuracy": null,
+        "first_correct": 0,
+        "first_accuracy": null,
+        "rescued_after_first_failure": 0,
+        "tool_calls": 0,
+        "mean_tool_calls": null,
+        "attempts": 0,
+        "mean_attempts": null,
+        "total_elapsed_s": 0,
+        "mean_elapsed_s": null,
+        "replans": 0,
+        "llm_usage": {
+          "llm_calls": 0,
+          "input_tokens": 0,
+          "output_tokens": 0,
+          "total_tokens": 0,
+          "usage_reported_calls": 0
+        }
+      }
+    },
+    "L2": {
+      "no_replan": {
+        "completed": 0,
+        "correct": 0,
+        "accuracy": null,
+        "first_correct": 0,
+        "first_accuracy": null,
+        "rescued_after_first_failure": 0,
+        "tool_calls": 0,
+        "mean_tool_calls": null,
+        "attempts": 0,
+        "mean_attempts": null,
+        "total_elapsed_s": 0,
+        "mean_elapsed_s": null,
+        "replans": 0,
+        "llm_usage": {
+          "llm_calls": 0,
+          "input_tokens": 0,
+          "output_tokens": 0,
+          "total_tokens": 0,
+          "usage_reported_calls": 0
+        }
+      },
+      "with_replan": {
+        "completed": 0,
+        "correct": 0,
+        "accuracy": null,
+        "first_correct": 0,
+        "first_accuracy": null,
+        "rescued_after_first_failure": 0,
+        "tool_calls": 0,
+        "mean_tool_calls": null,
+        "attempts": 0,
+        "mean_attempts": null,
+        "total_elapsed_s": 0,
+        "mean_elapsed_s": null,
+        "replans": 0,
+        "llm_usage": {
+          "llm_calls": 0,
+          "input_tokens": 0,
+          "output_tokens": 0,
+          "total_tokens": 0,
+          "usage_reported_calls": 0
+        }
+      }
+    },
+    "L3": {
+      "no_replan": {
+        "completed": 0,
+        "correct": 0,
+        "accuracy": null,
+        "first_correct": 0,
+        "first_accuracy": null,
+        "rescued_after_first_failure": 0,
+        "tool_calls": 0,
+        "mean_tool_calls": null,
+        "attempts": 0,
+        "mean_attempts": null,
+        "total_elapsed_s": 0,
+        "mean_elapsed_s": null,
+        "replans": 0,
+        "llm_usage": {
+          "llm_calls": 0,
+          "input_tokens": 0,
+          "output_tokens": 0,
+          "total_tokens": 0,
+          "usage_reported_calls": 0
+        }
+      },
+      "with_replan": {
+        "completed": 0,
+        "correct": 0,
+        "accuracy": null,
+        "first_correct": 0,
+        "first_accuracy": null,
+        "rescued_after_first_failure": 0,
+        "tool_calls": 0,
+        "mean_tool_calls": null,
+        "attempts": 0,
+        "mean_attempts": null,
+        "total_elapsed_s": 0,
+        "mean_elapsed_s": null,
+        "replans": 0,
+        "llm_usage": {
+          "llm_calls": 0,
+          "input_tokens": 0,
+          "output_tokens": 0,
+          "total_tokens": 0,
+          "usage_reported_calls": 0
+        }
+      }
+    }
+  },
+  "pairs": [],
+  "blockers": [
+    {
+      "kind": "expected_answers",
+      "message": "以下题目尚缺独立 SQL 标准答案",
+      "case_ids": [
+        "D21",
+        "D22",
+        "D23",
+        "D24",
+        "D25",
+        "D26",
+        "D27",
+        "D28",
+        "D29",
+        "D30",
+        "D31",
+        "D32",
+        "D33",
+        "D34",
+        "D35",
+        "D36",
+        "D37",
+        "D38",
+        "D39",
+        "D40",
+        "D41",
+        "D42",
+        "D43",
+        "D44",
+        "D45",
+        "D46",
+        "D47",
+        "D48",
+        "D49",
+        "D50"
+      ]
+    }
+  ],
+  "paired_accuracy_delta_pp": null,
+  "rescued_case_ids": [],
+  "regressed_case_ids": []
+}

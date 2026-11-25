@@ -1,0 +1,122 @@
+{
+  "schema_version": 1,
+  "initial_capability": 0.5,
+  "dimensions": [
+    "spatial_compute",
+    "attribute_query",
+    "statistics",
+    "mapping"
+  ],
+  "agents": {
+    "agent_01": {
+      "name": "01",
+      "capabilities": {
+        "spatial_compute": 0.5,
+        "attribute_query": 0.5,
+        "statistics": 0.5,
+        "mapping": 0.5
+      },
+      "preferred_tools": [],
+      "stats": {
+        "attempts": 0,
+        "successes": 0,
+        "failures": 0
+      }
+    },
+    "agent_02": {
+      "name": "02",
+      "capabilities": {
+        "spatial_compute": 0.5,
+        "attribute_query": 0.5,
+        "statistics": 0.5,
+        "mapping": 0.5
+      },
+      "preferred_tools": [],
+      "stats": {
+        "attempts": 0,
+        "successes": 0,
+        "failures": 0
+      }
+    },
+    "agent_03": {
+      "name": "03",
+      "capabilities": {
+        "spatial_compute": 0.549,
+        "attribute_query": 0.549,
+        "statistics": 0.549,
+        "mapping": 0.5
+      },
+      "preferred_tools": [
+        "query_features",
+        "clip_features",
+        "measure_features",
+        "summarize_features"
+      ],
+      "stats": {
+        "attempts": 1,
+        "successes": 1,
+        "failures": 0
+      }
+    },
+    "agent_04": {
+      "name": "04",
+      "capabilities": {
+        "spatial_compute": 0.5,
+        "attribute_query": 0.5,
+        "statistics": 0.5,
+        "mapping": 0.5
+      },
+      "preferred_tools": [],
+      "stats": {
+        "attempts": 0,
+        "successes": 0,
+        "failures": 0
+      }
+    }
+  },
+  "history": [
+    {
+      "ts": "2026-11-15 19:03:17",
+      "agent_id": "agent_03",
+      "agent_name": "03",
+      "dims": [
+        "spatial_compute",
+        "attribute_query",
+        "statistics"
+      ],
+      "outcome": "success",
+      "question": "在施工区A001内，分别对gas_pipelines按pressure_level分组汇总裁剪后长度（米），对water_pipelines按pipe_type分组汇总裁剪后长度（米），每类按总长度降序、同长按分组名称升序，输出全部分组，保留零长度非空接触记录。",
+      "task_signature": "general/统计分析",
+      "before": {
+        "spatial_compute": 0.5,
+        "attribute_query": 0.5,
+        "statistics": 0.5
+      },
+      "after": {
+        "spatial_compute": 0.549,
+        "attribute_query": 0.549,
+        "statistics": 0.549
+      },
+      "delta": {
+        "spatial_compute": 0.049,
+        "attribute_query": 0.049,
+        "statistics": 0.049
+      },
+      "vector_before": {
+        "spatial_compute": 0.5,
+        "attribute_query": 0.5,
+        "statistics": 0.5,
+        "mapping": 0.5
+      },
+      "vector_after": {
+        "spatial_compute": 0.549,
+        "attribute_query": 0.549,
+        "statistics": 0.549,
+        "mapping": 0.5
+      },
+      "note": "",
+      "index": 0
+    }
+  ],
+  "updated_at": "2026-11-15 19:03:17"
+}

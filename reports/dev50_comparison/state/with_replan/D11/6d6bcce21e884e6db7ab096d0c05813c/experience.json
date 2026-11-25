@@ -1,0 +1,67 @@
+[
+  {
+    "task_signature": "general/空间计算",
+    "question_feat": "计算施工区表 construction_areas 中 code 为 A001 与 code 为 A008 的两个面要素的重叠面积（平方米），空间参考为 EPSG:3857。",
+    "plan": {
+      "t1": {
+        "nodes": [
+          {
+            "id": "s1",
+            "action": "query_features",
+            "params": {
+              "table": "construction_areas",
+              "filters": {
+                "code": [
+                  "A001",
+                  "A008"
+                ]
+              }
+            },
+            "depends_on": []
+          },
+          {
+            "id": "s2",
+            "action": "intersection_geometry",
+            "params": {
+              "input": [
+                "s1"
+              ]
+            },
+            "depends_on": [
+              "s1"
+            ]
+          },
+          {
+            "id": "s3",
+            "action": "measure_geometry",
+            "params": {
+              "input": "s2",
+              "measure": "area",
+              "unit": "m2",
+              "srid": 3857
+            },
+            "depends_on": [
+              "s2"
+            ]
+          }
+        ],
+        "edges": [
+          [
+            "s1",
+            "s2"
+          ],
+          [
+            "s2",
+            "s3"
+          ]
+        ]
+      }
+    },
+    "trace": "计算施工区重叠面积：先 query_features 按 code in [A001,A008] 过滤 construction_areas，得 2 个要素；再 intersection_geometry 对 A001 与 A008 求交（EPSG:3857），返回空几何类型；最后 measure_geometry 对交集几何测面积，结果 140000.0 平方米。",
+    "outcome": "success",
+    "error_lesson": "",
+    "id": "5139354a",
+    "hits": 0,
+    "updated_at": "2026-11-15 19:01:55"
+  }
+]

@@ -1,6 +1,6 @@
-"""把 dev20 项目的 PostGIS 工具集接入本项目的工具注册表。
+"""把项目内置 PostGIS 工具集接入统一工具注册表。
 
-空间计算逻辑复用外部工具集 `app_development/tool.py`（白名单图层、参数模型、
+空间计算逻辑位于 `tools/gis_toolkit.py`（白名单图层、参数模型、
 完整要素集、PostGIS 空间 SQL），本项目负责：
   · 生成 function-calling schema 并绑定到模型；
   · 工具调用的统一入口；
@@ -8,28 +8,10 @@
 """
 from __future__ import annotations
 
-import os
-import sys
-from pathlib import Path
 from typing import Any, Callable
 
 from config import settings
-from tools import tool_registry
-
-
-def _load_external():
-    """按配置路径加载外部工具集模块（只读调用，不修改其源码）。"""
-    root = Path(settings.POSTGIS_TOOLKIT_ROOT)
-    tool_file = root / "app_development" / "tool.py"
-    if not tool_file.exists():
-        raise FileNotFoundError(f"找不到 PostGIS 工具集: {tool_file}")
-    if str(root) not in sys.path:
-        sys.path.insert(0, str(root))
-    os.environ.setdefault("DATABASE_URL", settings.DATABASE_URL)
-    os.environ.setdefault("APP_SCHEMA", settings.APP_SCHEMA)
-    from app_development import tool as external_tool  # type: ignore
-
-    return external_tool
+from tools import gis_toolkit, tool_registry
 
 
 def _inline_refs(node: Any, defs: dict[str, Any]) -> Any:
@@ -63,7 +45,12 @@ def _make_tool(spec, toolkit) -> Callable[..., Any]:
 
     def tool(**kwargs: Any) -> dict[str, Any]:
         request = spec.validate_arguments(kwargs)
-        return getattr(toolkit, spec.method_name)(request)
+        method = getattr(toolkit, spec.method_name)
+        if spec.invocation == "none":
+            return method()
+        if spec.invocation == "kwargs":
+            return method(**request.model_dump())
+        return method(request)
 
     tool.__name__ = spec.name
     tool.__doc__ = spec.description
@@ -71,11 +58,10 @@ def _make_tool(spec, toolkit) -> Callable[..., Any]:
     return tool
 
 
-_EXTERNAL = _load_external()
-_TOOLKIT = _EXTERNAL.create_toolkit(
+_TOOLKIT = gis_toolkit.create_toolkit(
     settings.POSTGIS_TOOLSET, database_url=settings.DATABASE_URL
 )
-_SPECS: dict[str, Any] = dict(_EXTERNAL.get_tool_registry(settings.POSTGIS_TOOLSET))
+_SPECS: dict[str, Any] = dict(gis_toolkit.get_tool_registry(settings.POSTGIS_TOOLSET))
 
 for _name, _spec in _SPECS.items():
     tool_registry.register(_name)(_make_tool(_spec, _TOOLKIT))

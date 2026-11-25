@@ -287,7 +287,8 @@ def build(run_path: Path, out_path: Path) -> Path:
         "   docker run -d --name gis-postgis -p 5433:5432 -e POSTGRES_USER=gis_user "
         "-e POSTGRES_PASSWORD=123456 -e POSTGRES_DB=gis_agent postgis/postgis:16-3.4-alpine",
         "2) 导入 dev20 的 001_extensions_and_schema.sql 与 002_seed_mock_data.sql；",
-        "3) 在 Test/.env 配置 DATABASE_URL、LLM_MODEL、POSTGIS_TOOLKIT_ROOT；",
+        "3) 在 GIS_Agent/.env 配置 DATABASE_URL、DEEPSEEK_API_KEY、LLM_MODEL、BENCHMARK_DIR；"
+        "工具实现位于本项目 tools/gis_toolkit.py，BENCHMARK_DIR 仅指向含 dev20.json 与 dev20_expected.json 的题集目录；",
         "4) 运行 python scripts/run_dev20_benchmark.py（全量）或加 --case D09（单题）；",
         "5) 报告生成：reports/dev20/dev20_test_report.md 与 dev20_run_*.json。",
     ]:

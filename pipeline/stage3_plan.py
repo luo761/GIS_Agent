@@ -43,6 +43,13 @@ def run_subtask(state: PipelineState, sub: SubTask) -> SubTask:
     own_memory = mem.render_memory(sub.question)
 
     # 2. 生成计划表 / DAG（JSON：nodes + edges，边表示依赖）
+    retry_context = ""
+    if state.replans and state.failure_feedback:
+        retry_context = (
+            f"这是第 {state.replans + 1} 轮作答，上一轮评估失败。\n"
+            f"上一轮失败反馈：{state.failure_feedback}\n"
+            "请根据失败反馈调整步骤、筛选条件或输出结构，再生成修正后的计划。\n\n"
+        )
     sys = "你是GIS任务规划器，只输出JSON格式计划。"
     res = llm.chat_json(
         f"{_capability_line(sub.assigned_agent)}\n\n"
@@ -52,6 +59,7 @@ def run_subtask(state: PipelineState, sub: SubTask) -> SubTask:
         f"{exp_text}\n"
         f"{state.injected_context}\n"
         f"{state.loaded_knowledge}\n\n"
+        f"{retry_context}"
         f"请参考你的专属记忆与共享经验，生成执行计划。输出格式：\n"
         f'{{"plan": {{"nodes": [{{"id": "s1", "action": "工具池算子名或子步骤", '
         f'"params": {{}}, "depends_on": []}}], '

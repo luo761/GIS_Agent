@@ -98,5 +98,5 @@ def tool_schemas() -> list[dict]:
     return [get_openai_tool_schema(name) for name in _REGISTRY]
 
 
-# 导入 PostGIS 工具集以触发注册（空间算子实现位于外部 dev20 项目，只读调用）
+# 导入本地 PostGIS 工具适配器以触发注册
 importlib.import_module("tools.postgis_tools")

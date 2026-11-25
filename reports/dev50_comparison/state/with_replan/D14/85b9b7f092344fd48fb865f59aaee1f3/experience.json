@@ -1,0 +1,201 @@
+[
+  {
+    "task_signature": "gas/空间计算",
+    "question_feat": "在gas_pipelines中筛选与A001相交且pressure_level='高压'的燃气管线，裁剪到A001后分别缓冲50米并合并，得到影响范围；在water_pipelines中筛选与该影响范围相交的水管，裁剪到A001，计算各水管在A001内的长度（米），按长度降序、同长按code升序输出全部水管及总长度，保留零长度边界接触记录。",
+    "plan": {
+      "t1": {
+        "nodes": [
+          {
+            "id": "s1",
+            "action": "query_features",
+            "params": {
+              "table": "gas_pipelines",
+              "filters": {
+                "pressure_level": "高压"
+              }
+            },
+            "depends_on": []
+          },
+          {
+            "id": "s2",
+            "action": "query_features",
+            "params": {
+              "table": "A001"
+            },
+            "depends_on": []
+          },
+          {
+            "id": "s3",
+            "action": "spatial_filter",
+            "params": {
+              "source": "s1",
+              "target": "s2",
+              "predicate": "ST_Intersects"
+            },
+            "depends_on": [
+              "s1",
+              "s2"
+            ]
+          },
+          {
+            "id": "s4",
+            "action": "clip_features",
+            "params": {
+              "source": "s3",
+              "clipper": "s2"
+            },
+            "depends_on": [
+              "s3",
+              "s2"
+            ]
+          },
+          {
+            "id": "s5",
+            "action": "buffer_features",
+            "params": {
+              "source": "s4",
+              "distance": 50,
+              "unit": "meter"
+            },
+            "depends_on": [
+              "s4"
+            ]
+          },
+          {
+            "id": "s6",
+            "action": "union_features",
+            "params": {
+              "source": "s5"
+            },
+            "depends_on": [
+              "s5"
+            ]
+          },
+          {
+            "id": "s7",
+            "action": "query_features",
+            "params": {
+              "table": "water_pipelines"
+            },
+            "depends_on": []
+          },
+          {
+            "id": "s8",
+            "action": "spatial_filter",
+            "params": {
+              "source": "s7",
+              "target": "s6",
+              "predicate": "ST_Intersects"
+            },
+            "depends_on": [
+              "s7",
+              "s6"
+            ]
+          },
+          {
+            "id": "s9",
+            "action": "clip_features",
+            "params": {
+              "source": "s8",
+              "clipper": "s2"
+            },
+            "depends_on": [
+              "s8",
+              "s2"
+            ]
+          },
+          {
+            "id": "s10",
+            "action": "measure_features",
+            "params": {
+              "source": "s9",
+              "measure": "length",
+              "unit": "meter"
+            },
+            "depends_on": [
+              "s9"
+            ]
+          },
+          {
+            "id": "s11",
+            "action": "summarize_features",
+            "params": {
+              "source": "s10",
+              "aggregate": "sum",
+              "group_by": "code",
+              "order_by": [
+                {
+                  "field": "length",
+                  "direction": "desc"
+                },
+                {
+                  "field": "code",
+                  "direction": "asc"
+                }
+              ]
+            },
+            "depends_on": [
+              "s10"
+            ]
+          }
+        ],
+        "edges": [
+          [
+            "s1",
+            "s3"
+          ],
+          [
+            "s2",
+            "s3"
+          ],
+          [
+            "s3",
+            "s4"
+          ],
+          [
+            "s2",
+            "s4"
+          ],
+          [
+            "s4",
+            "s5"
+          ],
+          [
+            "s5",
+            "s6"
+          ],
+          [
+            "s7",
+            "s8"
+          ],
+          [
+            "s6",
+            "s8"
+          ],
+          [
+            "s8",
+            "s9"
+          ],
+          [
+            "s2",
+            "s9"
+          ],
+          [
+            "s9",
+            "s10"
+          ],
+          [
+            "s10",
+            "s11"
+          ]
+        ]
+      }
+    },
+    "trace": "经验摘要：筛选高压燃气管线（2条）与A001相交，裁剪至A001后缓冲50米并合并为影响范围；查询与该范围相交的水管（3条），裁剪至A001，测量长度（总长1700米），按source_code分组求和、长度降序输出，保留零长度记录。关键算子顺序：query_features→clip_features→buffer_features→union_features→query_features(ST_Intersects)→clip_features→measure_features(length)→summarize_features(group_by source_code, sum, sort desc)。",
+    "outcome": "error",
+    "error_lesson": "结果校验未通过；以下字段存在类型、数量或取值问题，请重新计算：$.groups[1].value、$.total_length.value",
+    "id": "129bd966",
+    "hits": 4,
+    "updated_at": "2026-11-15 19:03:29"
+  }
+]

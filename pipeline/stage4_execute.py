@@ -31,7 +31,8 @@ SYSTEM_PROMPT = (
     '  {"$ref": "t1.result.geometry"}\n'
     '  {"$ref": "t2.result.summary"}\n'
     "其中 t1/t2 是工具结果中的 step_id。不要把几何坐标抄进参数。\n"
-    "语义约定：ST_Within 严格位于内部（不含边界），ST_Intersects 相交（含边界）；"
+    "语义约定：ST_Within 按 PostGIS 定义判断，面边界上的点不满足；"
+    "线可以接触面边界，但不能越界，且线内部须与面内部相交。ST_Intersects 相交（含边界）；"
     "长度/面积用 measure_features 或 measure_geometry；分组汇总用 summarize_features。\n"
     "图层与编号：施工区 construction_areas（A001…）、燃气管线 gas_pipelines（G001…）、"
     "燃气设备 gas_devices（D001…）、水管 water_pipelines（W001…）；"

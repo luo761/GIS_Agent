@@ -1,0 +1,611 @@
+{
+  "id": "D19",
+  "level": "L3",
+  "question": "分别统计与 A001、A002 相交且状态正常的设备数，再将两个施工区合并后统计正常设备的联合去重数量。边界设备计入各区，但联合统计中同一个设备只计一次，不能直接把两区数量相加。",
+  "mode": "with_replan",
+  "status": "completed",
+  "correct": true,
+  "first_correct": true,
+  "answer": {
+    "a001_count": 3,
+    "a002_count": 3,
+    "unique_count": 5
+  },
+  "expected": {
+    "a001_count": 3,
+    "a002_count": 3,
+    "unique_count": 5
+  },
+  "diffs": [],
+  "evaluation": "success",
+  "error": "",
+  "database_changed_during_case": false,
+  "attempt_history": [
+    {
+      "attempt_index": 1,
+      "evaluation": "success",
+      "correct": true,
+      "feedback": "",
+      "tool_call_count": 13,
+      "tools": [
+        "query_features",
+        "union_features",
+        "clip_features"
+      ],
+      "subtasks": [
+        {
+          "subtask_id": "t1",
+          "question": "分别统计与施工区A001、A002相交且状态为'正常'的燃气设备数，再将A001与A002合并后统计与合并范围相交且状态为'正常'的燃气设备联合去重数量（边界设备计入各区，联合统计中同一设备只计一次）。",
+          "required_capabilities": [
+            "spatial_compute",
+            "attribute_query",
+            "statistics"
+          ],
+          "assigned_agent": "agent_03",
+          "assigned_agent_name": "03",
+          "routing": {
+            "agent_id": "agent_03",
+            "agent_name": "03",
+            "required": [
+              "spatial_compute",
+              "attribute_query",
+              "statistics"
+            ],
+            "scores": {
+              "agent_01": 0.5,
+              "agent_02": 0.5,
+              "agent_03": 0.5,
+              "agent_04": 0.5
+            },
+            "best_score": 0.5,
+            "tied": [
+              "agent_01",
+              "agent_02",
+              "agent_03",
+              "agent_04"
+            ],
+            "random_pick": true,
+            "epsilon": 0.0,
+            "pool": [
+              "agent_01",
+              "agent_02",
+              "agent_03",
+              "agent_04"
+            ]
+          },
+          "plan": {
+            "nodes": [
+              {
+                "id": "s1",
+                "action": "query_features",
+                "params": {
+                  "layer_name": "construction_areas",
+                  "filters": {
+                    "code": "A001"
+                  }
+                },
+                "depends_on": []
+              },
+              {
+                "id": "s2",
+                "action": "query_features",
+                "params": {
+                  "layer_name": "construction_areas",
+                  "filters": {
+                    "code": "A002"
+                  }
+                },
+                "depends_on": []
+              },
+              {
+                "id": "s3",
+                "action": "query_features",
+                "params": {
+                  "layer_name": "gas_devices",
+                  "filters": {
+                    "status": "正常"
+                  },
+                  "target": "s1_geom",
+                  "relation": "ST_Intersects"
+                },
+                "depends_on": [
+                  "s1"
+                ]
+              },
+              {
+                "id": "s4",
+                "action": "query_features",
+                "params": {
+                  "layer_name": "gas_devices",
+                  "filters": {
+                    "status": "正常"
+                  },
+                  "target": "s2_geom",
+                  "relation": "ST_Intersects"
+                },
+                "depends_on": [
+                  "s2"
+                ]
+              },
+              {
+                "id": "s5",
+                "action": "union_features",
+                "params": {
+                  "inputs": [
+                    "s1_geom",
+                    "s2_geom"
+                  ]
+                },
+                "depends_on": [
+                  "s1",
+                  "s2"
+                ]
+              },
+              {
+                "id": "s6",
+                "action": "query_features",
+                "params": {
+                  "layer_name": "gas_devices",
+                  "filters": {
+                    "status": "正常"
+                  },
+                  "target": "s5_geom",
+                  "relation": "ST_Intersects"
+                },
+                "depends_on": [
+                  "s5"
+                ]
+              },
+              {
+                "id": "s7",
+                "action": "summarize_features",
+                "params": {
+                  "inputs": [
+                    "s3",
+                    "s4",
+                    "s6"
+                  ],
+                  "aggregate": "count"
+                },
+                "depends_on": [
+                  "s3",
+                  "s4",
+                  "s6"
+                ]
+              }
+            ],
+            "edges": [
+              [
+                "s1",
+                "s3"
+              ],
+              [
+                "s2",
+                "s4"
+              ],
+              [
+                "s1",
+                "s5"
+              ],
+              [
+                "s2",
+                "s5"
+              ],
+              [
+                "s5",
+                "s6"
+              ],
+              [
+                "s3",
+                "s7"
+              ],
+              [
+                "s4",
+                "s7"
+              ],
+              [
+                "s6",
+                "s7"
+              ]
+            ]
+          },
+          "result": "联合范围相交的正常设备共 5 个（D001, D002, D003, D006, D012）。\n\n结果：\n- a001_count = 3（D001, D002, D006）\n- a002_count = 3（D003, D006, D012）\n- unique_count = 5（D001, D002, D003, D006, D012）\n\n```json\n{\n  \"a001_count\": 3,\n  \"a002_count\": 3,\n  \"unique_count\": 5\n}\n```",
+          "trace": [
+            {
+              "step": "t1",
+              "tool": "query_features",
+              "args": {
+                "layer_name": "construction_areas",
+                "filters": [
+                  {
+                    "field": "code",
+                    "operator": "eq",
+                    "value": "A001"
+                  }
+                ]
+              },
+              "ok": true,
+              "brief": {
+                "feature_count": 1
+              }
+            },
+            {
+              "step": "t2",
+              "tool": "query_features",
+              "args": {
+                "layer_name": "construction_areas",
+                "filters": [
+                  {
+                    "field": "code",
+                    "operator": "eq",
+                    "value": "A002"
+                  }
+                ]
+              },
+              "ok": true,
+              "brief": {
+                "feature_count": 1
+              }
+            },
+            {
+              "step": "t3",
+              "tool": "query_features",
+              "args": {
+                "layer_name": "gas_devices",
+                "filters": [
+                  {
+                    "field": "status",
+                    "operator": "eq",
+                    "value": "正常"
+                  }
+                ],
+                "target": {
+                  "layer_name": "construction_areas",
+                  "feature_code": "A001"
+                },
+                "relation": "ST_Intersects"
+              },
+              "ok": true,
+              "brief": {
+                "feature_count": 3
+              }
+            },
+            {
+              "step": "t4",
+              "tool": "query_features",
+              "args": {
+                "layer_name": "gas_devices",
+                "filters": [
+                  {
+                    "field": "status",
+                    "operator": "eq",
+                    "value": "正常"
+                  }
+                ],
+                "target": {
+                  "layer_name": "construction_areas",
+                  "feature_code": "A002"
+                },
+                "relation": "ST_Intersects"
+              },
+              "ok": true,
+              "brief": {
+                "feature_count": 3
+              }
+            },
+            {
+              "step": "t5",
+              "tool": "union_features",
+              "args": {
+                "features": {
+                  "$ref": "t1.result.feature_set"
+                }
+              },
+              "ok": true,
+              "brief": {
+                "geometry_type": null
+              }
+            },
+            {
+              "step": "t6",
+              "tool": "query_features",
+              "args": {
+                "layer_name": "construction_areas",
+                "filters": [
+                  {
+                    "field": "code",
+                    "operator": "in",
+                    "value": [
+                      "A001",
+                      "A002"
+                    ]
+                  }
+                ]
+              },
+              "ok": true,
+              "brief": {
+                "feature_count": 2
+              }
+            },
+            {
+              "step": "t7",
+              "tool": "union_features",
+              "args": {
+                "features": {
+                  "$ref": "t6.result.feature_set"
+                }
+              },
+              "ok": true,
+              "brief": {
+                "geometry_type": null
+              }
+            },
+            {
+              "step": "t8",
+              "tool": "query_features",
+              "args": {
+                "layer_name": "gas_devices",
+                "filters": [
+                  {
+                    "field": "status",
+                    "operator": "eq",
+                    "value": "正常"
+                  }
+                ],
+                "relation": "ST_Intersects",
+                "target": {
+                  "geometry": {
+                    "$ref": "t7.result.geometry"
+                  },
+                  "srid": 3857
+                }
+              },
+              "ok": false,
+              "error": "ValueError: 目标几何解析失败，请检查 GeoJSON 的类型、坐标和环结构"
+            },
+            {
+              "step": "t9",
+              "tool": "query_features",
+              "args": {
+                "filters": [
+                  {
+                    "field": "status",
+                    "operator": "eq",
+                    "value": "正常"
+                  }
+                ],
+                "layer_name": "gas_devices",
+                "relation": "ST_Intersects",
+                "target": {
+                  "geometry": {
+                    "$ref": "t7.result.geometry"
+                  },
+                  "srid": 3857
+                }
+              },
+              "ok": false,
+              "error": "ValueError: 目标几何解析失败，请检查 GeoJSON 的类型、坐标和环结构"
+            },
+            {
+              "step": "t10",
+              "tool": "clip_features",
+              "args": {
+                "features": {
+                  "$ref": "t3.result.feature_set"
+                },
+                "clip_target": {
+                  "geometry": {
+                    "$ref": "t7.result.geometry"
+                  },
+                  "srid": 3857
+                }
+              },
+              "ok": false,
+              "error": "ValueError: 目标几何解析失败，请检查 GeoJSON 的类型、坐标和环结构"
+            },
+            {
+              "step": "t11",
+              "tool": "query_features",
+              "args": {
+                "filters": [
+                  {
+                    "field": "status",
+                    "operator": "eq",
+                    "value": "正常"
+                  }
+                ],
+                "layer_name": "gas_devices",
+                "relation": "ST_Intersects",
+                "target": {
+                  "geometry": {
+                    "$ref": "t7.result.geometry"
+                  }
+                }
+              },
+              "ok": false,
+              "error": "ValueError: 目标几何解析失败，请检查 GeoJSON 的类型、坐标和环结构"
+            },
+            {
+              "step": "t12",
+              "tool": "clip_features",
+              "args": {
+                "clip_target": {
+                  "$ref": "t7.result.geometry"
+                },
+                "features": {
+                  "$ref": "t3.result.feature_set"
+                }
+              },
+              "ok": true,
+              "brief": {
+                "feature_count": 3
+              }
+            },
+            {
+              "step": "t13",
+              "tool": "query_features",
+              "args": {
+                "filters": [
+                  {
+                    "field": "status",
+                    "operator": "eq",
+                    "value": "正常"
+                  }
+                ],
+                "layer_name": "gas_devices",
+                "relation": "ST_Intersects",
+                "target": {
+                  "$ref": "t7.result.geometry"
+                }
+              },
+              "ok": true,
+              "brief": {
+                "feature_count": 5
+              }
+            }
+          ],
+          "tools_used": [
+            "query_features",
+            "union_features",
+            "clip_features"
+          ],
+          "status": "success",
+          "outcome": "success",
+          "error": "",
+          "capability_update": {
+            "ts": "2026-11-15 19:04:15",
+            "agent_id": "agent_03",
+            "agent_name": "03",
+            "dims": [
+              "spatial_compute",
+              "attribute_query",
+              "statistics"
+            ],
+            "outcome": "success",
+            "before": {
+              "spatial_compute": 0.5,
+              "attribute_query": 0.5,
+              "statistics": 0.5
+            },
+            "after": {
+              "spatial_compute": 0.549,
+              "attribute_query": 0.549,
+              "statistics": 0.549
+            },
+            "delta": {
+              "spatial_compute": 0.049,
+              "attribute_query": 0.049,
+              "statistics": 0.049
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "attempt_count": 1,
+  "replans": 0,
+  "failed_attempts": 0,
+  "tool_call_count": 13,
+  "elapsed_s": 52.297,
+  "llm_usage": {
+    "llm_calls": 16,
+    "failed_calls": 0,
+    "input_tokens": 138517,
+    "output_tokens": 3437,
+    "total_tokens": 141954,
+    "usage_reported_calls": 16,
+    "elapsed_s": 48.969686
+  },
+  "capability_changes": [
+    {
+      "ts": "2026-11-15 19:04:15",
+      "agent_id": "agent_03",
+      "agent_name": "03",
+      "dims": [
+        "spatial_compute",
+        "attribute_query",
+        "statistics"
+      ],
+      "outcome": "success",
+      "before": {
+        "spatial_compute": 0.5,
+        "attribute_query": 0.5,
+        "statistics": 0.5
+      },
+      "after": {
+        "spatial_compute": 0.549,
+        "attribute_query": 0.549,
+        "statistics": 0.549
+      },
+      "delta": {
+        "spatial_compute": 0.049,
+        "attribute_query": 0.049,
+        "statistics": 0.049
+      },
+      "subtask_id": "t1"
+    }
+  ],
+  "final_capabilities": [
+    {
+      "agent": "agent_01",
+      "name": "01",
+      "vector": [
+        0.5,
+        0.5,
+        0.5,
+        0.5
+      ],
+      "stats": {
+        "attempts": 0,
+        "successes": 0,
+        "failures": 0
+      }
+    },
+    {
+      "agent": "agent_02",
+      "name": "02",
+      "vector": [
+        0.5,
+        0.5,
+        0.5,
+        0.5
+      ],
+      "stats": {
+        "attempts": 0,
+        "successes": 0,
+        "failures": 0
+      }
+    },
+    {
+      "agent": "agent_03",
+      "name": "03",
+      "vector": [
+        0.549,
+        0.549,
+        0.549,
+        0.5
+      ],
+      "stats": {
+        "attempts": 1,
+        "successes": 1,
+        "failures": 0
+      }
+    },
+    {
+      "agent": "agent_04",
+      "name": "04",
+      "vector": [
+        0.5,
+        0.5,
+        0.5,
+        0.5
+      ],
+      "stats": {
+        "attempts": 0,
+        "successes": 0,
+        "failures": 0
+      }
+    }
+  ],
+  "signature": "7b19aa8fc5930df9e9c54c1fabee2c44fe6fc1e928966bc9d93fb8798d43188f"
+}

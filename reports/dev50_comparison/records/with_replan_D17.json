@@ -1,0 +1,576 @@
+{
+  "id": "D17",
+  "level": "L3",
+  "question": "与 A001 相交且正常或告警的设备分别缓冲 300 米，合并后裁剪到 A001。复用该覆盖几何，分别计算覆盖面积（平方米）和其中全部燃气管线的总长度（米），保留非空零长度接触记录。",
+  "mode": "with_replan",
+  "status": "completed",
+  "correct": true,
+  "first_correct": true,
+  "answer": {
+    "area": {
+      "unit": "square_meter",
+      "value": 639185.4490710823,
+      "measure": "area",
+      "is_empty": false,
+      "measure_srid": 3857
+    },
+    "gas_length": {
+      "unit": "meter",
+      "value": 4332.362443880317,
+      "measure": "length",
+      "measure_srid": 3857,
+      "feature_count": 6
+    }
+  },
+  "expected": {
+    "area": {
+      "unit": "square_meter",
+      "value": 639185.4490710819,
+      "measure": "area",
+      "is_empty": false,
+      "measure_srid": 3857
+    },
+    "gas_length": {
+      "unit": "meter",
+      "value": 4332.362443880318,
+      "measure": "length",
+      "measure_srid": 3857,
+      "feature_count": 6
+    }
+  },
+  "diffs": [],
+  "evaluation": "success",
+  "error": "",
+  "database_changed_during_case": false,
+  "attempt_history": [
+    {
+      "attempt_index": 1,
+      "evaluation": "success",
+      "correct": true,
+      "feedback": "",
+      "tool_call_count": 11,
+      "tools": [
+        "query_features",
+        "buffer_features",
+        "union_features",
+        "clip_features",
+        "measure_geometry",
+        "measure_features",
+        "summarize_features"
+      ],
+      "subtasks": [
+        {
+          "subtask_id": "t1",
+          "question": "在gas_devices中筛选与施工区A001相交且状态为正常或告警的设备，对筛选结果缓冲300米并合并，再用该合并几何裁剪到A001范围，得到覆盖几何。基于该覆盖几何，分别计算其面积（平方米）和其中全部gas_pipelines的总长度（米），保留非空且长度大于0的接触记录。",
+          "required_capabilities": [
+            "spatial_compute",
+            "attribute_query",
+            "statistics"
+          ],
+          "assigned_agent": "agent_03",
+          "assigned_agent_name": "03",
+          "routing": {
+            "agent_id": "agent_03",
+            "agent_name": "03",
+            "required": [
+              "spatial_compute",
+              "attribute_query",
+              "statistics"
+            ],
+            "scores": {
+              "agent_01": 0.5,
+              "agent_02": 0.5,
+              "agent_03": 0.5,
+              "agent_04": 0.5
+            },
+            "best_score": 0.5,
+            "tied": [
+              "agent_01",
+              "agent_02",
+              "agent_03",
+              "agent_04"
+            ],
+            "random_pick": true,
+            "epsilon": 0.0,
+            "pool": [
+              "agent_01",
+              "agent_02",
+              "agent_03",
+              "agent_04"
+            ]
+          },
+          "plan": {
+            "nodes": [
+              {
+                "id": "s1",
+                "action": "query_features",
+                "params": {
+                  "table": "gas_devices",
+                  "filters": {
+                    "status": [
+                      "正常",
+                      "告警"
+                    ],
+                    "spatial": {
+                      "relation": "intersects",
+                      "with": "construction_areas",
+                      "code": "A001"
+                    }
+                  }
+                },
+                "depends_on": []
+              },
+              {
+                "id": "s2",
+                "action": "buffer_features",
+                "params": {
+                  "distance": 300,
+                  "unit": "meter"
+                },
+                "depends_on": [
+                  "s1"
+                ]
+              },
+              {
+                "id": "s3",
+                "action": "union_features",
+                "params": {},
+                "depends_on": [
+                  "s2"
+                ]
+              },
+              {
+                "id": "s4",
+                "action": "clip_features",
+                "params": {
+                  "clip_layer": "construction_areas",
+                  "code": "A001"
+                },
+                "depends_on": [
+                  "s3"
+                ]
+              },
+              {
+                "id": "s5",
+                "action": "measure_features",
+                "params": {
+                  "measure": "area",
+                  "unit": "square_meter"
+                },
+                "depends_on": [
+                  "s4"
+                ]
+              },
+              {
+                "id": "s6",
+                "action": "query_features",
+                "params": {
+                  "table": "gas_pipelines",
+                  "filters": {
+                    "spatial": {
+                      "relation": "intersects",
+                      "with": "s4_result"
+                    }
+                  }
+                },
+                "depends_on": [
+                  "s4"
+                ]
+              },
+              {
+                "id": "s7",
+                "action": "clip_features",
+                "params": {
+                  "clip_layer": "s4_result"
+                },
+                "depends_on": [
+                  "s6"
+                ]
+              },
+              {
+                "id": "s8",
+                "action": "measure_features",
+                "params": {
+                  "measure": "length",
+                  "unit": "meter"
+                },
+                "depends_on": [
+                  "s7"
+                ]
+              },
+              {
+                "id": "s9",
+                "action": "filter_features",
+                "params": {
+                  "condition": "length > 0 AND geom IS NOT NULL"
+                },
+                "depends_on": [
+                  "s8"
+                ]
+              }
+            ],
+            "edges": [
+              [
+                "s1",
+                "s2"
+              ],
+              [
+                "s2",
+                "s3"
+              ],
+              [
+                "s3",
+                "s4"
+              ],
+              [
+                "s4",
+                "s5"
+              ],
+              [
+                "s4",
+                "s6"
+              ],
+              [
+                "s6",
+                "s7"
+              ],
+              [
+                "s7",
+                "s8"
+              ],
+              [
+                "s8",
+                "s9"
+              ]
+            ]
+          },
+          "result": "The summary shows 6 features with total length 4332.36m. All 6 features have non-zero length (the clip already dropped empty geometries, and boundary-contact records like G003 have length 422m > 0). No zero-length records remain.\n\nThe final results:\n- area: 639185.45 m²\n- gas_length: 4332.36 m, feature_count 6\n\n```json\n{\n  \"area\": {\n    \"unit\": \"square_meter\",\n    \"value\": 639185.4490710823,\n    \"measure\": \"area\",\n    \"is_empty\": false,\n    \"measure_srid\": 3857\n  },\n  \"gas_length\": {\n    \"unit\": \"meter\",\n    \"value\": 4332.362443880317,\n    \"measure\": \"length\",\n    \"measure_srid\": 3857,\n    \"feature_count\": 6\n  }\n}\n```",
+          "trace": [
+            {
+              "step": "t1",
+              "tool": "query_features",
+              "args": {
+                "layer_name": "gas_devices",
+                "filters": [
+                  {
+                    "field": "status",
+                    "operator": "in",
+                    "value": [
+                      "正常",
+                      "告警"
+                    ]
+                  }
+                ],
+                "target": {
+                  "layer_name": "construction_areas",
+                  "feature_code": "A001"
+                },
+                "relation": "ST_Intersects"
+              },
+              "ok": true,
+              "brief": {
+                "feature_count": 4
+              }
+            },
+            {
+              "step": "t2",
+              "tool": "buffer_features",
+              "args": {
+                "features": {
+                  "$ref": "t1.result.feature_set"
+                },
+                "distance_m": 300
+              },
+              "ok": true,
+              "brief": {
+                "feature_count": 4
+              }
+            },
+            {
+              "step": "t3",
+              "tool": "union_features",
+              "args": {
+                "features": {
+                  "$ref": "t2.result.feature_set"
+                }
+              },
+              "ok": true,
+              "brief": {
+                "geometry_type": null
+              }
+            },
+            {
+              "step": "t4",
+              "tool": "clip_features",
+              "args": {
+                "features": {
+                  "$ref": "t3.result.geometry"
+                },
+                "clip_target": {
+                  "layer_name": "construction_areas",
+                  "feature_code": "A001"
+                }
+              },
+              "ok": false,
+              "error": "ValidationError: 5 validation errors for ClipFeaturesInput\nfeatures.is_complete\n  Field required [type=missing, input_value={'geometry': {'type': 'Po...26934]]]}, 'srid': 3857}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.14/v/missing\nfeatures.feature_count\n  Field required [type=missing, input_value={'geometry': {'type': 'Po...26934]]]}, 'srid': 3857}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.14/v/missing\nfeatures.property_fields\n  Field required [type=missing, input_value={'geometry': {'type': 'Po...26934]]]}, 'srid': 3857}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.14/v/missing\nfeatures.features\n  Field required [type=missing, input_value={'geometry': {'type': 'Po...26934]]]}, 'srid': 3857}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.14/v/missing\nfeatures.geometry\n  Extra inputs are not permitted [type=extra_forbidden, input_value={'type': 'Polygon', 'coor... -14.805029709526934]]]}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.14/v/extra_forbidden"
+            },
+            {
+              "step": "t5",
+              "tool": "clip_features",
+              "args": {
+                "clip_target": {
+                  "layer_name": "construction_areas",
+                  "feature_code": "A001"
+                },
+                "features": {
+                  "$ref": "t2.result.feature_set"
+                }
+              },
+              "ok": true,
+              "brief": {
+                "feature_count": 4
+              }
+            },
+            {
+              "step": "t6",
+              "tool": "union_features",
+              "args": {
+                "features": {
+                  "$ref": "t5.result.feature_set"
+                }
+              },
+              "ok": true,
+              "brief": {
+                "geometry_type": null
+              }
+            },
+            {
+              "step": "t7",
+              "tool": "measure_geometry",
+              "args": {
+                "target": {
+                  "$ref": "t6.result.geometry"
+                },
+                "measure": "area"
+              },
+              "ok": true,
+              "brief": {
+                "value": 639185.4490710823
+              }
+            },
+            {
+              "step": "t8",
+              "tool": "query_features",
+              "args": {
+                "layer_name": "gas_pipelines",
+                "target": {
+                  "$ref": "t6.result.geometry"
+                },
+                "relation": "ST_Intersects"
+              },
+              "ok": true,
+              "brief": {
+                "feature_count": 6
+              }
+            },
+            {
+              "step": "t9",
+              "tool": "clip_features",
+              "args": {
+                "clip_target": {
+                  "$ref": "t6.result.geometry"
+                },
+                "features": {
+                  "$ref": "t8.result.feature_set"
+                }
+              },
+              "ok": true,
+              "brief": {
+                "feature_count": 6
+              }
+            },
+            {
+              "step": "t10",
+              "tool": "measure_features",
+              "args": {
+                "features": {
+                  "$ref": "t9.result.feature_set"
+                },
+                "measure": "length"
+              },
+              "ok": true,
+              "brief": {
+                "feature_count": 6,
+                "summary": {
+                  "value": 4332.362443880317,
+                  "unit": "meter",
+                  "measure": "length",
+                  "measure_srid": 3857,
+                  "feature_count": 6
+                }
+              }
+            },
+            {
+              "step": "t11",
+              "tool": "summarize_features",
+              "args": {
+                "features": {
+                  "$ref": "t10.result.feature_set"
+                },
+                "aggregate": "sum"
+              },
+              "ok": true,
+              "brief": {
+                "groups": 1
+              }
+            }
+          ],
+          "tools_used": [
+            "query_features",
+            "buffer_features",
+            "union_features",
+            "clip_features",
+            "measure_geometry",
+            "measure_features",
+            "summarize_features"
+          ],
+          "status": "success",
+          "outcome": "success",
+          "error": "",
+          "capability_update": {
+            "ts": "2026-11-15 19:04:03",
+            "agent_id": "agent_03",
+            "agent_name": "03",
+            "dims": [
+              "spatial_compute",
+              "attribute_query",
+              "statistics"
+            ],
+            "outcome": "success",
+            "before": {
+              "spatial_compute": 0.5,
+              "attribute_query": 0.5,
+              "statistics": 0.5
+            },
+            "after": {
+              "spatial_compute": 0.549,
+              "attribute_query": 0.549,
+              "statistics": 0.549
+            },
+            "delta": {
+              "spatial_compute": 0.049,
+              "attribute_query": 0.049,
+              "statistics": 0.049
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "attempt_count": 1,
+  "replans": 0,
+  "failed_attempts": 0,
+  "tool_call_count": 11,
+  "elapsed_s": 38.625,
+  "llm_usage": {
+    "llm_calls": 15,
+    "failed_calls": 0,
+    "input_tokens": 129455,
+    "output_tokens": 2225,
+    "total_tokens": 131680,
+    "usage_reported_calls": 15,
+    "elapsed_s": 36.028688
+  },
+  "capability_changes": [
+    {
+      "ts": "2026-11-15 19:04:03",
+      "agent_id": "agent_03",
+      "agent_name": "03",
+      "dims": [
+        "spatial_compute",
+        "attribute_query",
+        "statistics"
+      ],
+      "outcome": "success",
+      "before": {
+        "spatial_compute": 0.5,
+        "attribute_query": 0.5,
+        "statistics": 0.5
+      },
+      "after": {
+        "spatial_compute": 0.549,
+        "attribute_query": 0.549,
+        "statistics": 0.549
+      },
+      "delta": {
+        "spatial_compute": 0.049,
+        "attribute_query": 0.049,
+        "statistics": 0.049
+      },
+      "subtask_id": "t1"
+    }
+  ],
+  "final_capabilities": [
+    {
+      "agent": "agent_01",
+      "name": "01",
+      "vector": [
+        0.5,
+        0.5,
+        0.5,
+        0.5
+      ],
+      "stats": {
+        "attempts": 0,
+        "successes": 0,
+        "failures": 0
+      }
+    },
+    {
+      "agent": "agent_02",
+      "name": "02",
+      "vector": [
+        0.5,
+        0.5,
+        0.5,
+        0.5
+      ],
+      "stats": {
+        "attempts": 0,
+        "successes": 0,
+        "failures": 0
+      }
+    },
+    {
+      "agent": "agent_03",
+      "name": "03",
+      "vector": [
+        0.549,
+        0.549,
+        0.549,
+        0.5
+      ],
+      "stats": {
+        "attempts": 1,
+        "successes": 1,
+        "failures": 0
+      }
+    },
+    {
+      "agent": "agent_04",
+      "name": "04",
+      "vector": [
+        0.5,
+        0.5,
+        0.5,
+        0.5
+      ],
+      "stats": {
+        "attempts": 0,
+        "successes": 0,
+        "failures": 0
+      }
+    }
+  ],
+  "signature": "7b19aa8fc5930df9e9c54c1fabee2c44fe6fc1e928966bc9d93fb8798d43188f"
+}

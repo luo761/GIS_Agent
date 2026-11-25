@@ -1,0 +1,48 @@
+[
+  {
+    "task_signature": "gas/空间计算",
+    "question_feat": "统计施工区 A001 内（严格位于内部，不含边界）状态为正常的燃气设备数量。",
+    "plan": {
+      "t1": {
+        "nodes": [
+          {
+            "id": "s1",
+            "action": "query_features",
+            "params": {
+              "layer_name": "gas_devices",
+              "filters": {
+                "status": "正常"
+              },
+              "target": "construction_areas",
+              "target_code": "A001",
+              "relation": "ST_Within"
+            },
+            "depends_on": []
+          },
+          {
+            "id": "s2",
+            "action": "summarize_features",
+            "params": {
+              "aggregate": "count"
+            },
+            "depends_on": [
+              "s1"
+            ]
+          }
+        ],
+        "edges": [
+          [
+            "s1",
+            "s2"
+          ]
+        ]
+      }
+    },
+    "trace": "query_features(layer=gas_devices, filters=[status eq 正常], target=construction_areas/A001, relation=ST_Within) → feature_count=2；summarize_features(aggregate=count) → groups=1。",
+    "outcome": "success",
+    "error_lesson": "",
+    "id": "72c7cb5b",
+    "hits": 0,
+    "updated_at": "2026-11-15 18:59:28"
+  }
+]

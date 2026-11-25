@@ -1,0 +1,47 @@
+[
+  {
+    "task_signature": "general/空间计算",
+    "question_feat": "计算施工区表 construction_areas 中 code='A002' 与 code='A008' 两个面要素的交集面积（平方米），允许空交集，不把公共边界长度作为面积。",
+    "plan": {
+      "t1": {
+        "nodes": [
+          {
+            "id": "s1",
+            "action": "intersection_geometry",
+            "params": {
+              "table": "construction_areas",
+              "code1": "A002",
+              "code2": "A008",
+              "output_geom": "intersection_geom"
+            },
+            "depends_on": []
+          },
+          {
+            "id": "s2",
+            "action": "measure_geometry",
+            "params": {
+              "geometry": "intersection_geom",
+              "measure": "area",
+              "unit": "square_meter"
+            },
+            "depends_on": [
+              "s1"
+            ]
+          }
+        ],
+        "edges": [
+          [
+            "s1",
+            "s2"
+          ]
+        ]
+      }
+    },
+    "trace": "[t1] 计算 construction_areas 中 A002 与 A008 面要素交集面积（平方米，允许空交集，不计公共边界长度）。调用 intersection_geometry({'left': {'layer_name': 'construction_areas', 'feature_code': 'A002'}, 'right': {'layer_name': 'construction_areas', 'feature_code': 'A008'}, 'target_srid': 3857}) 返回 {'geometry_type': None}；再调用 measure_geometry({'target': {'$ref': 't1.result.geometry'}, 'measure': 'area'}) 返回 {'value': 100000.0}。",
+    "outcome": "success",
+    "error_lesson": "",
+    "id": "7e72d64d",
+    "hits": 0,
+    "updated_at": "2026-11-15 19:07:37"
+  }
+]

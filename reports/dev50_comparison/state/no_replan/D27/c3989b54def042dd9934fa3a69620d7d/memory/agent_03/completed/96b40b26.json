@@ -1,0 +1,39 @@
+{
+  "id": "96b40b26",
+  "agent_id": "agent_03",
+  "question_feat": "计算燃气管线表 gas_pipelines 中 code='G006' 的管线几何长度（米），不进行任何裁剪，直接量测其完整长度。",
+  "plan": {
+    "nodes": [
+      {
+        "id": "s1",
+        "action": "query_features",
+        "params": {
+          "table": "gas_pipelines",
+          "where": "code='G006'"
+        },
+        "depends_on": []
+      },
+      {
+        "id": "s2",
+        "action": "measure_features",
+        "params": {
+          "feature_set": "$s1",
+          "unit": "meter"
+        },
+        "depends_on": [
+          "s1"
+        ]
+      }
+    ],
+    "edges": [
+      [
+        "s1",
+        "s2"
+      ]
+    ]
+  },
+  "result_summary": "{\"length\": {\"unit\": \"meter\", \"value\": 800.0, \"measure\": \"length\", \"is_empty\": false, \"measure_srid\": 3857}}",
+  "outcome": "success",
+  "error": "",
+  "ts": "2026-11-15 19:05:40"
+}

@@ -19,10 +19,16 @@ from typing import Any, Iterable
 from agents import agent_registry
 from agents.capability_store import CapabilityStore
 from config import settings
+import yaml  # 放到文件顶部的导入部分
 
-_AGENTS_CFG = agent_registry.load_agents_config()
+_DOMAINS_CFG = yaml.safe_load(
+    (settings.BASE_DIR / "config" / "domains_taxonomy.yaml")
+    .read_text(encoding="utf-8")
+) or {}
 
-_TASK_TYPE_CAPS: dict[str, list[str]] = dict(_AGENTS_CFG.get("task_type_capabilities", {}))
+_TASK_TYPE_CAPS: dict[str, list[str]] = dict(
+    _DOMAINS_CFG.get("task_type_capabilities", {})
+)
 
 _RNG = random.Random(agent_registry.routing_cfg().get("random_seed"))
 

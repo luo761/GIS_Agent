@@ -7,6 +7,9 @@
 """
 from __future__ import annotations
 
+import copy
+from dataclasses import asdict
+
 from pipeline.pipeline_state import PipelineState
 from pipeline import llm_client as llm
 from experience.experience_pool import ExperiencePool
@@ -44,7 +47,9 @@ def _traces_text(state: PipelineState) -> str:
     for s in state.subtasks:
         chunks.append(f"[{s.subtask_id}｜智能体 {s.assigned_agent_name}] {s.question}")
         for t in s.trace:
-            chunks.append(f"  {t.get('tool')}({t.get('params')}) -> {t.get('result')}")
+            args = t.get("args", t.get("params"))
+            result = t.get("brief", t.get("result")) if t.get("ok", True) else t.get("error")
+            chunks.append(f"  {t.get('tool')}({args}) -> {result}")
         if s.error:
             chunks.append(f"  错误：{s.error}")
     return "\n".join(chunks)
@@ -107,7 +112,24 @@ def _evolve(state: PipelineState, faulty_ids: set[str]) -> list[dict]:
 
 
 # ---------------------------------------------------------------- 主流程
-def run(state: PipelineState) -> PipelineState:
+def _record_attempt(state: PipelineState) -> None:
+    """在下一轮覆盖 SubTask 之前保留完整评估快照与全部工具调用数。"""
+    subtasks = copy.deepcopy([asdict(sub) for sub in state.subtasks])
+    tool_names = dict.fromkeys(
+        step.get("tool") for sub in subtasks for step in sub["trace"] if step.get("tool")
+    )
+    state.attempt_history.append({
+        "attempt_index": len(state.attempt_history) + 1,
+        "evaluation": state.evaluation,
+        "correct": state.evaluation == "success",
+        "feedback": state.failure_feedback,
+        "tool_call_count": sum(len(sub["trace"]) for sub in subtasks),
+        "tools": list(tool_names),
+        "subtasks": subtasks,
+    })
+
+
+def _run(state: PipelineState) -> PipelineState:
     ground_truth = state.ground_truth
     faulty_ids: set[str] = set()
 
@@ -151,6 +173,9 @@ def run(state: PipelineState) -> PipelineState:
     _evolve(state, faulty_ids)
     chart = get_default_store().refresh_chart()
     state.capability_chart = chart.get("html") or ""
+    if state.evaluation == "failed":
+        state.failed_attempts += 1
+    _record_attempt(state)
 
     # 4) 汇总输出 / 经验入库
     if state.evaluation == "success":
@@ -166,6 +191,5 @@ def run(state: PipelineState) -> PipelineState:
         _store.write(_compress_experience(state, "success"))
     else:
         _store.write(_compress_experience(state, "error"))
-        state.replans += 1
 
     return state

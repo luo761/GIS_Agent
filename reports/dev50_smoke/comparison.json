@@ -1,0 +1,144 @@
+{
+  "status": "completed",
+  "meta": {
+    "suite": "postgis_dev50_v1",
+    "model": "deepseek-v4-pro",
+    "temperature": 0.1,
+    "seed": 20261115,
+    "max_replans": 2,
+    "toolset": "advanced",
+    "schema_source": "postgis",
+    "database_fingerprint": "b9297a5590f1e4d8958b30d61ad2c224174aafbaaced2b42267f18d152249402",
+    "source_fingerprint": "facbad7be6353730b77a3f3a73b35415e582847caf38b4f5b1fbcf8ba846f04f",
+    "absolute_tolerance": 1e-06,
+    "cases_hash": "f706331379322da5349ee7274b764f80fc55804a56bad21dbd8a521ead01fa95",
+    "case_ids": [
+      "D01"
+    ],
+    "isolation": "fresh_process_and_empty_state_per_case_and_mode",
+    "feedback": "field_paths_only_no_expected_values",
+    "python_version": "3.12.15",
+    "dependencies": {
+      "langgraph": "1.2.15",
+      "langchain-core": "1.6.10",
+      "langchain-deepseek": "1.1.1",
+      "pydantic": "2.14.1",
+      "psycopg": "3.3.6"
+    },
+    "worker_timeout_s": 1200,
+    "this_invocation_elapsed_s": 35.343
+  },
+  "planned_case_count": 1,
+  "paired_case_count": 1,
+  "summaries": {
+    "no_replan": {
+      "completed": 1,
+      "correct": 1,
+      "accuracy": 1.0,
+      "first_correct": 1,
+      "first_accuracy": 1.0,
+      "rescued_after_first_failure": 0,
+      "tool_calls": 2,
+      "mean_tool_calls": 2.0,
+      "attempts": 1,
+      "mean_attempts": 1.0,
+      "total_elapsed_s": 14.219,
+      "mean_elapsed_s": 14.219,
+      "replans": 0,
+      "llm_usage": {
+        "llm_calls": 7,
+        "input_tokens": 27614,
+        "output_tokens": 654,
+        "total_tokens": 28268,
+        "usage_reported_calls": 7
+      }
+    },
+    "with_replan": {
+      "completed": 1,
+      "correct": 1,
+      "accuracy": 1.0,
+      "first_correct": 1,
+      "first_accuracy": 1.0,
+      "rescued_after_first_failure": 0,
+      "tool_calls": 3,
+      "mean_tool_calls": 3.0,
+      "attempts": 1,
+      "mean_attempts": 1.0,
+      "total_elapsed_s": 17.938,
+      "mean_elapsed_s": 17.938,
+      "replans": 0,
+      "llm_usage": {
+        "llm_calls": 8,
+        "input_tokens": 37008,
+        "output_tokens": 814,
+        "total_tokens": 37822,
+        "usage_reported_calls": 8
+      }
+    }
+  },
+  "by_level": {
+    "L1": {
+      "no_replan": {
+        "completed": 1,
+        "correct": 1,
+        "accuracy": 1.0,
+        "first_correct": 1,
+        "first_accuracy": 1.0,
+        "rescued_after_first_failure": 0,
+        "tool_calls": 2,
+        "mean_tool_calls": 2.0,
+        "attempts": 1,
+        "mean_attempts": 1.0,
+        "total_elapsed_s": 14.219,
+        "mean_elapsed_s": 14.219,
+        "replans": 0,
+        "llm_usage": {
+          "llm_calls": 7,
+          "input_tokens": 27614,
+          "output_tokens": 654,
+          "total_tokens": 28268,
+          "usage_reported_calls": 7
+        }
+      },
+      "with_replan": {
+        "completed": 1,
+        "correct": 1,
+        "accuracy": 1.0,
+        "first_correct": 1,
+        "first_accuracy": 1.0,
+        "rescued_after_first_failure": 0,
+        "tool_calls": 3,
+        "mean_tool_calls": 3.0,
+        "attempts": 1,
+        "mean_attempts": 1.0,
+        "total_elapsed_s": 17.938,
+        "mean_elapsed_s": 17.938,
+        "replans": 0,
+        "llm_usage": {
+          "llm_calls": 8,
+          "input_tokens": 37008,
+          "output_tokens": 814,
+          "total_tokens": 37822,
+          "usage_reported_calls": 8
+        }
+      }
+    }
+  },
+  "pairs": [
+    {
+      "id": "D01",
+      "level": "L1",
+      "question": "统计严格位于施工区 A001 内、状态为正常的燃气设备数量，边界上的设备不计入。",
+      "no_replan_correct": true,
+      "with_replan_correct": true,
+      "with_replan_first_correct": true,
+      "accuracy_delta": 0,
+      "tool_calls_delta": 1,
+      "elapsed_delta_s": 3.719
+    }
+  ],
+  "blockers": [],
+  "paired_accuracy_delta_pp": 0.0,
+  "rescued_case_ids": [],
+  "regressed_case_ids": []
+}

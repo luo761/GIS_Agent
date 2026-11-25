@@ -1,0 +1,78 @@
+[
+  {
+    "task_signature": "gas/统计分析",
+    "question_feat": "查询与施工区A003（含孔洞）相交（ST_Intersects，含边界接触）的全部燃气设备（gas_devices），按status分组计数，按状态名称升序输出全部分组；孔洞内设备不计入。",
+    "plan": {
+      "t1": {
+        "nodes": [
+          {
+            "id": "s1",
+            "action": "query_features",
+            "params": {
+              "layer_name": "construction_areas",
+              "filters": {
+                "code": "A003"
+              },
+              "target": "geom"
+            },
+            "depends_on": []
+          },
+          {
+            "id": "s2",
+            "action": "query_features",
+            "params": {
+              "layer_name": "gas_devices",
+              "filters": {},
+              "target": "geom"
+            },
+            "depends_on": []
+          },
+          {
+            "id": "s3",
+            "action": "spatial_filter",
+            "params": {
+              "relation": "ST_Intersects",
+              "exclude_holes": true
+            },
+            "depends_on": [
+              "s1",
+              "s2"
+            ]
+          },
+          {
+            "id": "s4",
+            "action": "summarize_features",
+            "params": {
+              "aggregate": "count",
+              "group_by": "status",
+              "sort": "group_key_asc"
+            },
+            "depends_on": [
+              "s3"
+            ]
+          }
+        ],
+        "edges": [
+          [
+            "s1",
+            "s3"
+          ],
+          [
+            "s2",
+            "s3"
+          ],
+          [
+            "s3",
+            "s4"
+          ]
+        ]
+      }
+    },
+    "trace": "执行轨迹摘要：先查施工区A003（1条），再查全部燃气设备（12条）。用ST_Intersects查询与A003相交设备（1条），排除孔洞内设备后，对剩余9个设备（D004-D012）按status分组计数，按状态名升序输出。最终summarize_features返回1个分组。关键算子顺序：query_features（过滤/相交）→ query_features（IN过滤）→ summarize_features（group_by status, count, sort asc）。",
+    "outcome": "success",
+    "error_lesson": "",
+    "id": "2d6476e9",
+    "hits": 0,
+    "updated_at": "2026-11-15 19:05:09"
+  }
+]

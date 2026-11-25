@@ -1,0 +1,672 @@
+{
+  "id": "D24",
+  "level": "L1",
+  "question": "查询全部燃气管线，按 pressure_level 分组计数，按压力等级名称升序输出全部分组，不做空间筛选。",
+  "mode": "with_replan",
+  "status": "completed",
+  "correct": false,
+  "first_correct": false,
+  "answer": {
+    "unit": "feature",
+    "groups": [
+      {
+        "group": {
+          "pressure_level": "低压"
+        },
+        "value": 5.0,
+        "feature_count": 5.0
+      },
+      {
+        "group": {
+          "pressure_level": "中压"
+        },
+        "value": 5.0,
+        "feature_count": 5.0
+      },
+      {
+        "group": {
+          "pressure_level": "高压"
+        },
+        "value": 2.0,
+        "feature_count": 2.0
+      }
+    ]
+  },
+  "expected": {
+    "unit": "feature",
+    "groups": [
+      {
+        "group": {
+          "pressure_level": "中压"
+        },
+        "value": 5,
+        "feature_count": 5
+      },
+      {
+        "group": {
+          "pressure_level": "低压"
+        },
+        "value": 5,
+        "feature_count": 5
+      },
+      {
+        "group": {
+          "pressure_level": "高压"
+        },
+        "value": 2,
+        "feature_count": 2
+      }
+    ]
+  },
+  "diffs": [
+    "$.groups[0].group.pressure_level: '低压'，期望 '中压'",
+    "$.groups[1].group.pressure_level: '中压'，期望 '低压'"
+  ],
+  "evaluation": "failed",
+  "error": "",
+  "database_changed_during_case": false,
+  "attempt_history": [
+    {
+      "attempt_index": 1,
+      "evaluation": "failed",
+      "correct": false,
+      "feedback": "结果校验未通过；以下字段存在类型、数量或取值问题，请重新计算：$.groups[0].group.pressure_level、$.groups[1].group.pressure_level",
+      "tool_call_count": 3,
+      "tools": [
+        "query_features",
+        "summarize_features"
+      ],
+      "subtasks": [
+        {
+          "subtask_id": "t1",
+          "question": "查询 gas_pipelines 表中全部燃气管线，按 pressure_level 字段分组统计各压力等级的管线数量，并按压力等级名称升序输出所有分组。",
+          "required_capabilities": [
+            "attribute_query",
+            "statistics"
+          ],
+          "assigned_agent": "agent_03",
+          "assigned_agent_name": "03",
+          "routing": {
+            "agent_id": "agent_03",
+            "agent_name": "03",
+            "required": [
+              "attribute_query",
+              "statistics"
+            ],
+            "scores": {
+              "agent_01": 0.5,
+              "agent_02": 0.5,
+              "agent_03": 0.5,
+              "agent_04": 0.5
+            },
+            "best_score": 0.5,
+            "tied": [
+              "agent_01",
+              "agent_02",
+              "agent_03",
+              "agent_04"
+            ],
+            "random_pick": true,
+            "epsilon": 0.0,
+            "pool": [
+              "agent_01",
+              "agent_02",
+              "agent_03",
+              "agent_04"
+            ]
+          },
+          "plan": {
+            "nodes": [
+              {
+                "id": "s1",
+                "action": "query_features",
+                "params": {
+                  "layer_name": "gas_pipelines",
+                  "filters": {}
+                },
+                "depends_on": []
+              },
+              {
+                "id": "s2",
+                "action": "summarize_features",
+                "params": {
+                  "aggregate": "count",
+                  "group_by": "pressure_level",
+                  "sort": "group_name_asc"
+                },
+                "depends_on": [
+                  "s1"
+                ]
+              }
+            ],
+            "edges": [
+              [
+                "s1",
+                "s2"
+              ]
+            ]
+          },
+          "result": "按压力等级名称升序（中文拼音/字典序）：低压、中压、高压。\n\n```json\n{\n  \"unit\": \"feature\",\n  \"groups\": [\n    {\n      \"group\": {\n        \"pressure_level\": \"低压\"\n      },\n      \"value\": 5.0,\n      \"feature_count\": 5.0\n    },\n    {\n      \"group\": {\n        \"pressure_level\": \"中压\"\n      },\n      \"value\": 5.0,\n      \"feature_count\": 5.0\n    },\n    {\n      \"group\": {\n        \"pressure_level\": \"高压\"\n      },\n      \"value\": 2.0,\n      \"feature_count\": 2.0\n    }\n  ]\n}\n```",
+          "trace": [
+            {
+              "step": "t1",
+              "tool": "query_features",
+              "args": {
+                "layer_name": "gas_pipelines"
+              },
+              "ok": true,
+              "brief": {
+                "feature_count": 12
+              }
+            },
+            {
+              "step": "t2",
+              "tool": "summarize_features",
+              "args": {
+                "features": {
+                  "$ref": "t1.result.feature_set"
+                },
+                "aggregate": "count",
+                "group_by": [
+                  "pressure_level"
+                ],
+                "sort": "group_asc"
+              },
+              "ok": true,
+              "brief": {
+                "groups": 3
+              }
+            },
+            {
+              "step": "t3",
+              "tool": "summarize_features",
+              "args": {
+                "aggregate": "count",
+                "features": {
+                  "$ref": "t1.result.feature_set"
+                },
+                "group_by": [
+                  "pressure_level"
+                ],
+                "sort": "group_asc"
+              },
+              "ok": true,
+              "brief": {
+                "groups": 3
+              }
+            }
+          ],
+          "tools_used": [
+            "query_features",
+            "summarize_features"
+          ],
+          "status": "success",
+          "outcome": "failure",
+          "error": "",
+          "capability_update": {
+            "ts": "2026-11-15 19:05:05",
+            "agent_id": "agent_03",
+            "agent_name": "03",
+            "dims": [
+              "attribute_query",
+              "statistics"
+            ],
+            "outcome": "failure",
+            "before": {
+              "attribute_query": 0.5,
+              "statistics": 0.5
+            },
+            "after": {
+              "attribute_query": 0.464,
+              "statistics": 0.464
+            },
+            "delta": {
+              "attribute_query": -0.036,
+              "statistics": -0.036
+            }
+          }
+        }
+      ]
+    },
+    {
+      "attempt_index": 2,
+      "evaluation": "failed",
+      "correct": false,
+      "feedback": "结果校验未通过；以下字段存在类型、数量或取值问题，请重新计算：$.groups[0].group.pressure_level、$.groups[1].group.pressure_level",
+      "tool_call_count": 2,
+      "tools": [
+        "query_features",
+        "summarize_features"
+      ],
+      "subtasks": [
+        {
+          "subtask_id": "t1",
+          "question": "查询 gas_pipelines 表中全部燃气管线，按 pressure_level 字段分组统计各压力等级的管线数量，并按压力等级名称升序输出所有分组。",
+          "required_capabilities": [
+            "attribute_query",
+            "statistics"
+          ],
+          "assigned_agent": "agent_03",
+          "assigned_agent_name": "03",
+          "routing": {
+            "agent_id": "agent_03",
+            "agent_name": "03",
+            "required": [
+              "attribute_query",
+              "statistics"
+            ],
+            "scores": {
+              "agent_01": 0.5,
+              "agent_02": 0.5,
+              "agent_03": 0.5,
+              "agent_04": 0.5
+            },
+            "best_score": 0.5,
+            "tied": [
+              "agent_01",
+              "agent_02",
+              "agent_03",
+              "agent_04"
+            ],
+            "random_pick": true,
+            "epsilon": 0.0,
+            "pool": [
+              "agent_01",
+              "agent_02",
+              "agent_03",
+              "agent_04"
+            ]
+          },
+          "plan": {
+            "nodes": [
+              {
+                "id": "s1",
+                "action": "query_features",
+                "params": {
+                  "layer_name": "gas_pipelines",
+                  "filters": {}
+                },
+                "depends_on": []
+              },
+              {
+                "id": "s2",
+                "action": "summarize_features",
+                "params": {
+                  "aggregate": "count",
+                  "group_by": "pressure_level",
+                  "sort": "group_name_asc",
+                  "output_format": "groups_with_name_and_count"
+                },
+                "depends_on": [
+                  "s1"
+                ]
+              }
+            ],
+            "edges": [
+              [
+                "s1",
+                "s2"
+              ]
+            ]
+          },
+          "result": "按压力等级名称升序（低压、中压、高压）：\n\n```json\n{\n  \"unit\": \"feature\",\n  \"groups\": [\n    {\n      \"group\": {\"pressure_level\": \"低压\"},\n      \"value\": 5.0,\n      \"feature_count\": 5.0\n    },\n    {\n      \"group\": {\"pressure_level\": \"中压\"},\n      \"value\": 5.0,\n      \"feature_count\": 5.0\n    },\n    {\n      \"group\": {\"pressure_level\": \"高压\"},\n      \"value\": 2.0,\n      \"feature_count\": 2.0\n    }\n  ]\n}\n```",
+          "trace": [
+            {
+              "step": "t1",
+              "tool": "query_features",
+              "args": {
+                "layer_name": "gas_pipelines"
+              },
+              "ok": true,
+              "brief": {
+                "feature_count": 12
+              }
+            },
+            {
+              "step": "t2",
+              "tool": "summarize_features",
+              "args": {
+                "features": {
+                  "$ref": "t1.result.feature_set"
+                },
+                "group_by": [
+                  "pressure_level"
+                ],
+                "aggregate": "count",
+                "sort": "group_asc"
+              },
+              "ok": true,
+              "brief": {
+                "groups": 3
+              }
+            }
+          ],
+          "tools_used": [
+            "query_features",
+            "summarize_features"
+          ],
+          "status": "success",
+          "outcome": "failure",
+          "error": "",
+          "capability_update": {
+            "ts": "2026-11-15 19:05:16",
+            "agent_id": "agent_03",
+            "agent_name": "03",
+            "dims": [
+              "attribute_query",
+              "statistics"
+            ],
+            "outcome": "failure",
+            "before": {
+              "attribute_query": 0.464,
+              "statistics": 0.464
+            },
+            "after": {
+              "attribute_query": 0.4309,
+              "statistics": 0.4309
+            },
+            "delta": {
+              "attribute_query": -0.0331,
+              "statistics": -0.0331
+            }
+          }
+        }
+      ]
+    },
+    {
+      "attempt_index": 3,
+      "evaluation": "failed",
+      "correct": false,
+      "feedback": "结果校验未通过；以下字段存在类型、数量或取值问题，请重新计算：$.groups[0].group.pressure_level、$.groups[1].group.pressure_level",
+      "tool_call_count": 2,
+      "tools": [
+        "query_features",
+        "summarize_features"
+      ],
+      "subtasks": [
+        {
+          "subtask_id": "t1",
+          "question": "查询 gas_pipelines 表中全部燃气管线，按 pressure_level 字段分组统计各压力等级的管线数量，并按压力等级名称升序输出所有分组。",
+          "required_capabilities": [
+            "attribute_query",
+            "statistics"
+          ],
+          "assigned_agent": "agent_03",
+          "assigned_agent_name": "03",
+          "routing": {
+            "agent_id": "agent_03",
+            "agent_name": "03",
+            "required": [
+              "attribute_query",
+              "statistics"
+            ],
+            "scores": {
+              "agent_01": 0.5,
+              "agent_02": 0.5,
+              "agent_03": 0.5,
+              "agent_04": 0.5
+            },
+            "best_score": 0.5,
+            "tied": [
+              "agent_01",
+              "agent_02",
+              "agent_03",
+              "agent_04"
+            ],
+            "random_pick": true,
+            "epsilon": 0.0,
+            "pool": [
+              "agent_01",
+              "agent_02",
+              "agent_03",
+              "agent_04"
+            ]
+          },
+          "plan": {
+            "nodes": [
+              {
+                "id": "s1",
+                "action": "query_features",
+                "params": {
+                  "layer_name": "gas_pipelines",
+                  "filters": {}
+                },
+                "depends_on": []
+              },
+              {
+                "id": "s2",
+                "action": "summarize_features",
+                "params": {
+                  "aggregate": "count",
+                  "group_by": "pressure_level",
+                  "sort": "group_name_asc",
+                  "output_format": "groups_with_name_and_count",
+                  "group_field_type": "text",
+                  "group_value_format": "string"
+                },
+                "depends_on": [
+                  "s1"
+                ]
+              }
+            ],
+            "edges": [
+              [
+                "s1",
+                "s2"
+              ]
+            ]
+          },
+          "result": "按压力等级名称升序：低压、中压、高压。\n\n```json\n{\n  \"unit\": \"feature\",\n  \"groups\": [\n    {\n      \"group\": {\"pressure_level\": \"低压\"},\n      \"value\": 5.0,\n      \"feature_count\": 5.0\n    },\n    {\n      \"group\": {\"pressure_level\": \"中压\"},\n      \"value\": 5.0,\n      \"feature_count\": 5.0\n    },\n    {\n      \"group\": {\"pressure_level\": \"高压\"},\n      \"value\": 2.0,\n      \"feature_count\": 2.0\n    }\n  ]\n}\n```",
+          "trace": [
+            {
+              "step": "t1",
+              "tool": "query_features",
+              "args": {
+                "layer_name": "gas_pipelines"
+              },
+              "ok": true,
+              "brief": {
+                "feature_count": 12
+              }
+            },
+            {
+              "step": "t2",
+              "tool": "summarize_features",
+              "args": {
+                "features": {
+                  "$ref": "t1.result.feature_set"
+                },
+                "group_by": [
+                  "pressure_level"
+                ],
+                "aggregate": "count",
+                "sort": "group_asc"
+              },
+              "ok": true,
+              "brief": {
+                "groups": 3
+              }
+            }
+          ],
+          "tools_used": [
+            "query_features",
+            "summarize_features"
+          ],
+          "status": "success",
+          "outcome": "failure",
+          "error": "",
+          "capability_update": {
+            "ts": "2026-11-15 19:05:26",
+            "agent_id": "agent_03",
+            "agent_name": "03",
+            "dims": [
+              "attribute_query",
+              "statistics"
+            ],
+            "outcome": "failure",
+            "before": {
+              "attribute_query": 0.4309,
+              "statistics": 0.4309
+            },
+            "after": {
+              "attribute_query": 0.4004,
+              "statistics": 0.4004
+            },
+            "delta": {
+              "attribute_query": -0.0305,
+              "statistics": -0.0305
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "attempt_count": 3,
+  "replans": 2,
+  "failed_attempts": 3,
+  "tool_call_count": 7,
+  "elapsed_s": 38.516,
+  "llm_usage": {
+    "llm_calls": 18,
+    "failed_calls": 0,
+    "input_tokens": 90610,
+    "output_tokens": 1788,
+    "total_tokens": 92398,
+    "usage_reported_calls": 18,
+    "elapsed_s": 37.677643
+  },
+  "capability_changes": [
+    {
+      "ts": "2026-11-15 19:05:05",
+      "agent_id": "agent_03",
+      "agent_name": "03",
+      "dims": [
+        "attribute_query",
+        "statistics"
+      ],
+      "outcome": "failure",
+      "before": {
+        "attribute_query": 0.5,
+        "statistics": 0.5
+      },
+      "after": {
+        "attribute_query": 0.464,
+        "statistics": 0.464
+      },
+      "delta": {
+        "attribute_query": -0.036,
+        "statistics": -0.036
+      },
+      "subtask_id": "t1"
+    },
+    {
+      "ts": "2026-11-15 19:05:16",
+      "agent_id": "agent_03",
+      "agent_name": "03",
+      "dims": [
+        "attribute_query",
+        "statistics"
+      ],
+      "outcome": "failure",
+      "before": {
+        "attribute_query": 0.464,
+        "statistics": 0.464
+      },
+      "after": {
+        "attribute_query": 0.4309,
+        "statistics": 0.4309
+      },
+      "delta": {
+        "attribute_query": -0.0331,
+        "statistics": -0.0331
+      },
+      "subtask_id": "t1"
+    },
+    {
+      "ts": "2026-11-15 19:05:26",
+      "agent_id": "agent_03",
+      "agent_name": "03",
+      "dims": [
+        "attribute_query",
+        "statistics"
+      ],
+      "outcome": "failure",
+      "before": {
+        "attribute_query": 0.4309,
+        "statistics": 0.4309
+      },
+      "after": {
+        "attribute_query": 0.4004,
+        "statistics": 0.4004
+      },
+      "delta": {
+        "attribute_query": -0.0305,
+        "statistics": -0.0305
+      },
+      "subtask_id": "t1"
+    }
+  ],
+  "final_capabilities": [
+    {
+      "agent": "agent_01",
+      "name": "01",
+      "vector": [
+        0.5,
+        0.5,
+        0.5,
+        0.5
+      ],
+      "stats": {
+        "attempts": 0,
+        "successes": 0,
+        "failures": 0
+      }
+    },
+    {
+      "agent": "agent_02",
+      "name": "02",
+      "vector": [
+        0.5,
+        0.5,
+        0.5,
+        0.5
+      ],
+      "stats": {
+        "attempts": 0,
+        "successes": 0,
+        "failures": 0
+      }
+    },
+    {
+      "agent": "agent_03",
+      "name": "03",
+      "vector": [
+        0.5,
+        0.4004,
+        0.4004,
+        0.5
+      ],
+      "stats": {
+        "attempts": 3,
+        "successes": 0,
+        "failures": 3
+      }
+    },
+    {
+      "agent": "agent_04",
+      "name": "04",
+      "vector": [
+        0.5,
+        0.5,
+        0.5,
+        0.5
+      ],
+      "stats": {
+        "attempts": 0,
+        "successes": 0,
+        "failures": 0
+      }
+    }
+  ],
+  "signature": "7b19aa8fc5930df9e9c54c1fabee2c44fe6fc1e928966bc9d93fb8798d43188f"
+}

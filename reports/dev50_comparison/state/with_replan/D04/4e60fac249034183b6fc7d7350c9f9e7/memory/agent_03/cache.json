@@ -1,0 +1,49 @@
+[
+  {
+    "question": "查询 gas_devices 表中 status='正常' 的设备，按 device_type 分组计数，并按 device_type 升序输出全部分组。",
+    "plan": {
+      "nodes": [
+        {
+          "id": "s1",
+          "action": "query_features",
+          "params": {
+            "table": "gas_devices",
+            "filters": {
+              "status": "正常"
+            }
+          },
+          "depends_on": []
+        },
+        {
+          "id": "s2",
+          "action": "summarize_features",
+          "params": {
+            "aggregate": "count",
+            "group_by": "device_type",
+            "sort": {
+              "field": "device_type",
+              "order": "asc"
+            }
+          },
+          "depends_on": [
+            "s1"
+          ]
+        }
+      ],
+      "edges": [
+        [
+          "s1",
+          "s2"
+        ]
+      ]
+    },
+    "note": "planned",
+    "ts": "2026-11-15 18:59:20"
+  },
+  {
+    "question": "查询 gas_devices 表中 status='正常' 的设备，按 device_type 分组计数，并按 device_type 升序输出全部分组。",
+    "outcome": "success",
+    "note": "executed",
+    "ts": "2026-11-15 18:59:26"
+  }
+]

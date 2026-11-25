@@ -1,0 +1,1043 @@
+{
+  "suite": "postgis_dev50_v1",
+  "version": 1,
+  "case_count": 50,
+  "original_case_count": 20,
+  "description": "原dev20保持不变并新增30题；标准答案由独立只读PostGIS SQL生成。",
+  "semantics": "以数据库当前几何为准，在 EPSG:3857 平面计算米和平方米；缓冲固定 quad_segs=8。ST_Intersects 包含边界接触；点的 ST_Within 排除区域边界；孔洞不属于实体内部。裁剪只保留非空交集，保留非空但长度为零的边界接触记录。计数按来源图层和主键去重；逐要素量测求和与合并去重量测须分别计算。分组输出全部组，中文名称按 Unicode 升序；按值降序时同值按分组名称或编码升序。",
+  "cases": [
+    {
+      "id": "D01",
+      "level": "L1",
+      "question": "统计严格位于施工区 A001 内、状态为正常的燃气设备数量，边界上的设备不计入。",
+      "tags": [
+        "original_dev20"
+      ],
+      "semantics": "以数据库当前几何为准，在 EPSG:3857 平面计算米和平方米；缓冲固定 quad_segs=8。ST_Intersects 包含边界接触；点的 ST_Within 排除区域边界；孔洞不属于实体内部。裁剪只保留非空交集，保留非空但长度为零的边界接触记录。计数按来源图层和主键去重；逐要素量测求和与合并去重量测须分别计算。分组输出全部组，中文名称按 Unicode 升序；按值降序时同值按分组名称或编码升序。",
+      "output_contract": {
+        "count": "源要素去重计数。"
+      },
+      "origin": "reports/dev20/dev20_latest.json: results.expected and question; model answer excluded",
+      "reference_sql": "WITH raw_areas AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".construction_areas), raw_gas AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".gas_pipelines), raw_water AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".water_pipelines), raw_devices AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".gas_devices), raw_roads AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".demo_roads), areas AS (SELECT id,code,g3857 AS geom FROM raw_areas), gas AS (SELECT id,code,pressure_level,g3857 AS geom FROM raw_gas), water AS (SELECT id,code,pipe_type,g3857 AS geom FROM raw_water), devices AS (SELECT id,code,status,device_type,g3857 AS geom FROM raw_devices), roads AS (SELECT id,code,g3857 AS geom FROM raw_roads), target AS (SELECT geom FROM areas WHERE code = %s), selected AS (SELECT d.* FROM devices d CROSS JOIN target t WHERE ST_Within(d.geom,t.geom) AND d.status = ANY(%s)) SELECT jsonb_build_object('count', (SELECT COUNT(*) FROM selected)) AS answer",
+      "reference_params": [
+        "A001",
+        [
+          "正常"
+        ]
+      ]
+    },
+    {
+      "id": "D02",
+      "level": "L1",
+      "question": "统计与施工区 A001 相交、状态为正常或告警的燃气设备数量，包含边界设备，同一设备只计一次。",
+      "tags": [
+        "original_dev20"
+      ],
+      "semantics": "以数据库当前几何为准，在 EPSG:3857 平面计算米和平方米；缓冲固定 quad_segs=8。ST_Intersects 包含边界接触；点的 ST_Within 排除区域边界；孔洞不属于实体内部。裁剪只保留非空交集，保留非空但长度为零的边界接触记录。计数按来源图层和主键去重；逐要素量测求和与合并去重量测须分别计算。分组输出全部组，中文名称按 Unicode 升序；按值降序时同值按分组名称或编码升序。",
+      "output_contract": {
+        "count": "源要素去重计数。"
+      },
+      "origin": "reports/dev20/dev20_latest.json: results.expected and question; model answer excluded",
+      "reference_sql": "WITH raw_areas AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".construction_areas), raw_gas AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".gas_pipelines), raw_water AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".water_pipelines), raw_devices AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".gas_devices), raw_roads AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".demo_roads), areas AS (SELECT id,code,g3857 AS geom FROM raw_areas), gas AS (SELECT id,code,pressure_level,g3857 AS geom FROM raw_gas), water AS (SELECT id,code,pipe_type,g3857 AS geom FROM raw_water), devices AS (SELECT id,code,status,device_type,g3857 AS geom FROM raw_devices), roads AS (SELECT id,code,g3857 AS geom FROM raw_roads), target AS (SELECT geom FROM areas WHERE code = %s), selected AS (SELECT d.* FROM devices d CROSS JOIN target t WHERE ST_Intersects(d.geom,t.geom) AND d.status = ANY(%s)) SELECT jsonb_build_object('count', (SELECT COUNT(*) FROM selected)) AS answer",
+      "reference_params": [
+        "A001",
+        [
+          "正常",
+          "告警"
+        ]
+      ]
+    },
+    {
+      "id": "D03",
+      "level": "L1",
+      "question": "统计与含孔洞的施工区 A003 相交、状态为正常的燃气设备数量，孔洞内的设备不计入，边界接触计入。",
+      "tags": [
+        "original_dev20"
+      ],
+      "semantics": "以数据库当前几何为准，在 EPSG:3857 平面计算米和平方米；缓冲固定 quad_segs=8。ST_Intersects 包含边界接触；点的 ST_Within 排除区域边界；孔洞不属于实体内部。裁剪只保留非空交集，保留非空但长度为零的边界接触记录。计数按来源图层和主键去重；逐要素量测求和与合并去重量测须分别计算。分组输出全部组，中文名称按 Unicode 升序；按值降序时同值按分组名称或编码升序。",
+      "output_contract": {
+        "count": "源要素去重计数。"
+      },
+      "origin": "reports/dev20/dev20_latest.json: results.expected and question; model answer excluded",
+      "reference_sql": "WITH raw_areas AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".construction_areas), raw_gas AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".gas_pipelines), raw_water AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".water_pipelines), raw_devices AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".gas_devices), raw_roads AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".demo_roads), areas AS (SELECT id,code,g3857 AS geom FROM raw_areas), gas AS (SELECT id,code,pressure_level,g3857 AS geom FROM raw_gas), water AS (SELECT id,code,pipe_type,g3857 AS geom FROM raw_water), devices AS (SELECT id,code,status,device_type,g3857 AS geom FROM raw_devices), roads AS (SELECT id,code,g3857 AS geom FROM raw_roads), target AS (SELECT geom FROM areas WHERE code = %s), selected AS (SELECT d.* FROM devices d CROSS JOIN target t WHERE ST_Intersects(d.geom,t.geom) AND d.status = ANY(%s)) SELECT jsonb_build_object('count', (SELECT COUNT(*) FROM selected)) AS answer",
+      "reference_params": [
+        "A003",
+        [
+          "正常"
+        ]
+      ]
+    },
+    {
+      "id": "D04",
+      "level": "L1",
+      "question": "查询全部状态为正常的燃气设备，按 device_type 分组计数，按设备类型名称升序输出全部分组。",
+      "tags": [
+        "original_dev20"
+      ],
+      "semantics": "以数据库当前几何为准，在 EPSG:3857 平面计算米和平方米；缓冲固定 quad_segs=8。ST_Intersects 包含边界接触；点的 ST_Within 排除区域边界；孔洞不属于实体内部。裁剪只保留非空交集，保留非空但长度为零的边界接触记录。计数按来源图层和主键去重；逐要素量测求和与合并去重量测须分别计算。分组输出全部组，中文名称按 Unicode 升序；按值降序时同值按分组名称或编码升序。",
+      "output_contract": {
+        "unit": "计量单位，feature/meter/square_meter，按题意。",
+        "groups": "全部分组数组；各项包含 group 对象、value、feature_count，顺序按题意。"
+      },
+      "origin": "reports/dev20/dev20_latest.json: results.expected and question; model answer excluded",
+      "reference_sql": "WITH raw_areas AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".construction_areas), raw_gas AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".gas_pipelines), raw_water AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".water_pipelines), raw_devices AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".gas_devices), raw_roads AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".demo_roads), areas AS (SELECT id,code,g3857 AS geom FROM raw_areas), gas AS (SELECT id,code,pressure_level,g3857 AS geom FROM raw_gas), water AS (SELECT id,code,pipe_type,g3857 AS geom FROM raw_water), devices AS (SELECT id,code,status,device_type,g3857 AS geom FROM raw_devices), roads AS (SELECT id,code,g3857 AS geom FROM raw_roads), selected AS (SELECT * FROM devices WHERE status=%s) SELECT jsonb_build_object('unit','feature','groups',(SELECT COALESCE(jsonb_agg(jsonb_build_object('group', jsonb_build_object('device_type', label), 'value', value, 'feature_count', n) ORDER BY label COLLATE \"C\"), '[]'::jsonb) FROM (SELECT device_type AS label, COUNT(*) AS value, COUNT(*) AS n FROM selected GROUP BY device_type) grouped)) AS answer",
+      "reference_params": [
+        "正常"
+      ]
+    },
+    {
+      "id": "D05",
+      "level": "L2",
+      "question": "将所有与 A001 相交的燃气管线裁剪到 A001，按 pressure_level 汇总区内长度（米），按总长度降序、同长按压力名称升序，输出全部分组。边界上的线段计入。",
+      "tags": [
+        "original_dev20"
+      ],
+      "semantics": "以数据库当前几何为准，在 EPSG:3857 平面计算米和平方米；缓冲固定 quad_segs=8。ST_Intersects 包含边界接触；点的 ST_Within 排除区域边界；孔洞不属于实体内部。裁剪只保留非空交集，保留非空但长度为零的边界接触记录。计数按来源图层和主键去重；逐要素量测求和与合并去重量测须分别计算。分组输出全部组，中文名称按 Unicode 升序；按值降序时同值按分组名称或编码升序。",
+      "output_contract": {
+        "unit": "计量单位，feature/meter/square_meter，按题意。",
+        "groups": "全部分组数组；各项包含 group 对象、value、feature_count，顺序按题意。"
+      },
+      "origin": "reports/dev20/dev20_latest.json: results.expected and question; model answer excluded",
+      "reference_sql": "WITH raw_areas AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".construction_areas), raw_gas AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".gas_pipelines), raw_water AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".water_pipelines), raw_devices AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".gas_devices), raw_roads AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".demo_roads), areas AS (SELECT id,code,g3857 AS geom FROM raw_areas), gas AS (SELECT id,code,pressure_level,g3857 AS geom FROM raw_gas), water AS (SELECT id,code,pipe_type,g3857 AS geom FROM raw_water), devices AS (SELECT id,code,status,device_type,g3857 AS geom FROM raw_devices), roads AS (SELECT id,code,g3857 AS geom FROM raw_roads), target AS (SELECT geom FROM areas WHERE code = %s), clipped_features AS (SELECT f.*, ST_Intersection(f.geom, t.geom) AS clipped FROM gas f CROSS JOIN target t WHERE TRUE AND ST_Intersects(f.geom, t.geom)) SELECT jsonb_build_object('unit','meter','groups',(SELECT COALESCE(jsonb_agg(jsonb_build_object('group', jsonb_build_object('pressure_level', label), 'value', value, 'feature_count', n) ORDER BY value DESC, label COLLATE \"C\"), '[]'::jsonb) FROM (SELECT pressure_level AS label, SUM(ST_Length(ST_CollectionExtract(clipped, 2))) AS value, COUNT(*) AS n FROM clipped_features WHERE NOT ST_IsEmpty(clipped) GROUP BY pressure_level) grouped)) AS answer",
+      "reference_params": [
+        "A001"
+      ]
+    },
+    {
+      "id": "D06",
+      "level": "L2",
+      "question": "计算燃气管线 G006 位于施工区 A003 实体部分内的长度（米），排除孔洞，并返回参与量测的原管线数量。",
+      "tags": [
+        "original_dev20"
+      ],
+      "semantics": "以数据库当前几何为准，在 EPSG:3857 平面计算米和平方米；缓冲固定 quad_segs=8。ST_Intersects 包含边界接触；点的 ST_Within 排除区域边界；孔洞不属于实体内部。裁剪只保留非空交集，保留非空但长度为零的边界接触记录。计数按来源图层和主键去重；逐要素量测求和与合并去重量测须分别计算。分组输出全部组，中文名称按 Unicode 升序；按值降序时同值按分组名称或编码升序。",
+      "output_contract": {
+        "length": "要素集量测汇总，包含 value、unit、measure、measure_srid=3857、feature_count，空集合数量和值均为0。"
+      },
+      "origin": "reports/dev20/dev20_latest.json: results.expected and question; model answer excluded",
+      "reference_sql": "WITH raw_areas AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".construction_areas), raw_gas AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".gas_pipelines), raw_water AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".water_pipelines), raw_devices AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".gas_devices), raw_roads AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".demo_roads), areas AS (SELECT id,code,g3857 AS geom FROM raw_areas), gas AS (SELECT id,code,pressure_level,g3857 AS geom FROM raw_gas), water AS (SELECT id,code,pipe_type,g3857 AS geom FROM raw_water), devices AS (SELECT id,code,status,device_type,g3857 AS geom FROM raw_devices), roads AS (SELECT id,code,g3857 AS geom FROM raw_roads), target AS (SELECT geom FROM areas WHERE code = %s), clipped_features AS (SELECT f.*, ST_Intersection(f.geom, t.geom) AS clipped FROM gas f CROSS JOIN target t WHERE f.code = 'G006' AND ST_Intersects(f.geom, t.geom)) SELECT jsonb_build_object('length',(SELECT jsonb_build_object('value', COALESCE(SUM(ST_Length(ST_CollectionExtract(clipped, 2))), 0), 'unit', 'meter', 'measure', 'length', 'measure_srid', 3857, 'feature_count', COUNT(*)) FROM clipped_features WHERE NOT ST_IsEmpty(clipped))) AS answer",
+      "reference_params": [
+        "A003"
+      ]
+    },
+    {
+      "id": "D07",
+      "level": "L2",
+      "question": "计算所有水管位于施工区 A003 实体部分内的总长度（米），排除孔洞，包含边界接触，并返回非空裁剪结果的源水管数量。",
+      "tags": [
+        "original_dev20"
+      ],
+      "semantics": "以数据库当前几何为准，在 EPSG:3857 平面计算米和平方米；缓冲固定 quad_segs=8。ST_Intersects 包含边界接触；点的 ST_Within 排除区域边界；孔洞不属于实体内部。裁剪只保留非空交集，保留非空但长度为零的边界接触记录。计数按来源图层和主键去重；逐要素量测求和与合并去重量测须分别计算。分组输出全部组，中文名称按 Unicode 升序；按值降序时同值按分组名称或编码升序。",
+      "output_contract": {
+        "length": "要素集量测汇总，包含 value、unit、measure、measure_srid=3857、feature_count，空集合数量和值均为0。"
+      },
+      "origin": "reports/dev20/dev20_latest.json: results.expected and question; model answer excluded",
+      "reference_sql": "WITH raw_areas AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".construction_areas), raw_gas AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".gas_pipelines), raw_water AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".water_pipelines), raw_devices AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".gas_devices), raw_roads AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".demo_roads), areas AS (SELECT id,code,g3857 AS geom FROM raw_areas), gas AS (SELECT id,code,pressure_level,g3857 AS geom FROM raw_gas), water AS (SELECT id,code,pipe_type,g3857 AS geom FROM raw_water), devices AS (SELECT id,code,status,device_type,g3857 AS geom FROM raw_devices), roads AS (SELECT id,code,g3857 AS geom FROM raw_roads), target AS (SELECT geom FROM areas WHERE code = %s), clipped_features AS (SELECT f.*, ST_Intersection(f.geom, t.geom) AS clipped FROM water f CROSS JOIN target t WHERE TRUE AND ST_Intersects(f.geom, t.geom)) SELECT jsonb_build_object('length',(SELECT jsonb_build_object('value', COALESCE(SUM(ST_Length(ST_CollectionExtract(clipped, 2))), 0), 'unit', 'meter', 'measure', 'length', 'measure_srid', 3857, 'feature_count', COUNT(*)) FROM clipped_features WHERE NOT ST_IsEmpty(clipped))) AS answer",
+      "reference_params": [
+        "A003"
+      ]
+    },
+    {
+      "id": "D08",
+      "level": "L2",
+      "question": "以燃气设备 D011 为中心建立 300 米缓冲区，计算缓冲区位于 A001 内的面积（平方米）。",
+      "tags": [
+        "original_dev20"
+      ],
+      "semantics": "以数据库当前几何为准，在 EPSG:3857 平面计算米和平方米；缓冲固定 quad_segs=8。ST_Intersects 包含边界接触；点的 ST_Within 排除区域边界；孔洞不属于实体内部。裁剪只保留非空交集，保留非空但长度为零的边界接触记录。计数按来源图层和主键去重；逐要素量测求和与合并去重量测须分别计算。分组输出全部组，中文名称按 Unicode 升序；按值降序时同值按分组名称或编码升序。",
+      "output_contract": {
+        "area": "量测对象，包含 value、unit、measure、measure_srid=3857、is_empty；面积单位 square_meter，长度单位 meter。"
+      },
+      "origin": "reports/dev20/dev20_latest.json: results.expected and question; model answer excluded",
+      "reference_sql": "WITH raw_areas AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".construction_areas), raw_gas AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".gas_pipelines), raw_water AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".water_pipelines), raw_devices AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".gas_devices), raw_roads AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".demo_roads), areas AS (SELECT id,code,g3857 AS geom FROM raw_areas), gas AS (SELECT id,code,pressure_level,g3857 AS geom FROM raw_gas), water AS (SELECT id,code,pipe_type,g3857 AS geom FROM raw_water), devices AS (SELECT id,code,status,device_type,g3857 AS geom FROM raw_devices), roads AS (SELECT id,code,g3857 AS geom FROM raw_roads), target AS (SELECT geom FROM areas WHERE code = %s), buffered AS (SELECT ST_Buffer(geom,%s,'quad_segs=8') AS geom FROM devices WHERE code=%s), result AS (SELECT ST_Intersection(t.geom,b.geom) AS geom FROM target t CROSS JOIN buffered b) SELECT jsonb_build_object('area',(SELECT jsonb_build_object('value', ST_Area(ST_CollectionExtract(geom, 3)), 'unit', 'square_meter', 'measure', 'area', 'measure_srid', 3857, 'is_empty', ST_IsEmpty(geom)) FROM result)) AS answer",
+      "reference_params": [
+        "A001",
+        300,
+        "D011"
+      ]
+    },
+    {
+      "id": "D09",
+      "level": "L2",
+      "question": "以燃气设备 D011 为中心建立 700 米缓冲区，计算缓冲区位于 A001 内的面积（平方米）。",
+      "tags": [
+        "original_dev20"
+      ],
+      "semantics": "以数据库当前几何为准，在 EPSG:3857 平面计算米和平方米；缓冲固定 quad_segs=8。ST_Intersects 包含边界接触；点的 ST_Within 排除区域边界；孔洞不属于实体内部。裁剪只保留非空交集，保留非空但长度为零的边界接触记录。计数按来源图层和主键去重；逐要素量测求和与合并去重量测须分别计算。分组输出全部组，中文名称按 Unicode 升序；按值降序时同值按分组名称或编码升序。",
+      "output_contract": {
+        "area": "量测对象，包含 value、unit、measure、measure_srid=3857、is_empty；面积单位 square_meter，长度单位 meter。"
+      },
+      "origin": "reports/dev20/dev20_latest.json: results.expected and question; model answer excluded",
+      "reference_sql": "WITH raw_areas AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".construction_areas), raw_gas AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".gas_pipelines), raw_water AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".water_pipelines), raw_devices AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".gas_devices), raw_roads AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".demo_roads), areas AS (SELECT id,code,g3857 AS geom FROM raw_areas), gas AS (SELECT id,code,pressure_level,g3857 AS geom FROM raw_gas), water AS (SELECT id,code,pipe_type,g3857 AS geom FROM raw_water), devices AS (SELECT id,code,status,device_type,g3857 AS geom FROM raw_devices), roads AS (SELECT id,code,g3857 AS geom FROM raw_roads), target AS (SELECT geom FROM areas WHERE code = %s), buffered AS (SELECT ST_Buffer(geom,%s,'quad_segs=8') AS geom FROM devices WHERE code=%s), result AS (SELECT ST_Intersection(t.geom,b.geom) AS geom FROM target t CROSS JOIN buffered b) SELECT jsonb_build_object('area',(SELECT jsonb_build_object('value', ST_Area(ST_CollectionExtract(geom, 3)), 'unit', 'square_meter', 'measure', 'area', 'measure_srid', 3857, 'is_empty', ST_IsEmpty(geom)) FROM result)) AS answer",
+      "reference_params": [
+        "A001",
+        700,
+        "D011"
+      ]
+    },
+    {
+      "id": "D10",
+      "level": "L2",
+      "question": "计算施工区 A001 与 A002 交集的长度（米）；两区仅共边时，返回公共边界长度而不是面积。",
+      "tags": [
+        "original_dev20"
+      ],
+      "semantics": "以数据库当前几何为准，在 EPSG:3857 平面计算米和平方米；缓冲固定 quad_segs=8。ST_Intersects 包含边界接触；点的 ST_Within 排除区域边界；孔洞不属于实体内部。裁剪只保留非空交集，保留非空但长度为零的边界接触记录。计数按来源图层和主键去重；逐要素量测求和与合并去重量测须分别计算。分组输出全部组，中文名称按 Unicode 升序；按值降序时同值按分组名称或编码升序。",
+      "output_contract": {
+        "length": "量测对象，包含 value、unit、measure、measure_srid=3857、is_empty；面积单位 square_meter，长度单位 meter。"
+      },
+      "origin": "reports/dev20/dev20_latest.json: results.expected and question; model answer excluded",
+      "reference_sql": "WITH raw_areas AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".construction_areas), raw_gas AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".gas_pipelines), raw_water AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".water_pipelines), raw_devices AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".gas_devices), raw_roads AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".demo_roads), areas AS (SELECT id,code,g3857 AS geom FROM raw_areas), gas AS (SELECT id,code,pressure_level,g3857 AS geom FROM raw_gas), water AS (SELECT id,code,pipe_type,g3857 AS geom FROM raw_water), devices AS (SELECT id,code,status,device_type,g3857 AS geom FROM raw_devices), roads AS (SELECT id,code,g3857 AS geom FROM raw_roads), result AS (SELECT ST_Intersection(a.geom,b.geom) AS geom FROM areas a CROSS JOIN areas b WHERE a.code=%s AND b.code=%s) SELECT jsonb_build_object('length',(SELECT jsonb_build_object('value', ST_Length(ST_CollectionExtract(geom, 2)), 'unit', 'meter', 'measure', 'length', 'measure_srid', 3857, 'is_empty', ST_IsEmpty(geom)) FROM result)) AS answer",
+      "reference_params": [
+        "A001",
+        "A002"
+      ]
+    },
+    {
+      "id": "D11",
+      "level": "L2",
+      "question": "计算施工区 A001 与狭长施工区 A008 的重叠面积（平方米）。",
+      "tags": [
+        "original_dev20"
+      ],
+      "semantics": "以数据库当前几何为准，在 EPSG:3857 平面计算米和平方米；缓冲固定 quad_segs=8。ST_Intersects 包含边界接触；点的 ST_Within 排除区域边界；孔洞不属于实体内部。裁剪只保留非空交集，保留非空但长度为零的边界接触记录。计数按来源图层和主键去重；逐要素量测求和与合并去重量测须分别计算。分组输出全部组，中文名称按 Unicode 升序；按值降序时同值按分组名称或编码升序。",
+      "output_contract": {
+        "area": "量测对象，包含 value、unit、measure、measure_srid=3857、is_empty；面积单位 square_meter，长度单位 meter。"
+      },
+      "origin": "reports/dev20/dev20_latest.json: results.expected and question; model answer excluded",
+      "reference_sql": "WITH raw_areas AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".construction_areas), raw_gas AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".gas_pipelines), raw_water AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".water_pipelines), raw_devices AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".gas_devices), raw_roads AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".demo_roads), areas AS (SELECT id,code,g3857 AS geom FROM raw_areas), gas AS (SELECT id,code,pressure_level,g3857 AS geom FROM raw_gas), water AS (SELECT id,code,pipe_type,g3857 AS geom FROM raw_water), devices AS (SELECT id,code,status,device_type,g3857 AS geom FROM raw_devices), roads AS (SELECT id,code,g3857 AS geom FROM raw_roads), result AS (SELECT ST_Intersection(a.geom,b.geom) AS geom FROM areas a CROSS JOIN areas b WHERE a.code=%s AND b.code=%s) SELECT jsonb_build_object('area',(SELECT jsonb_build_object('value', ST_Area(ST_CollectionExtract(geom, 3)), 'unit', 'square_meter', 'measure', 'area', 'measure_srid', 3857, 'is_empty', ST_IsEmpty(geom)) FROM result)) AS answer",
+      "reference_params": [
+        "A001",
+        "A008"
+      ]
+    },
+    {
+      "id": "D12",
+      "level": "L2",
+      "question": "计算所有水管位于孤立施工区 A009 内的总长度（米），并返回非空裁剪结果的源水管数量。若没有匹配水管，长度和数量都返回 0，不报目标不存在。",
+      "tags": [
+        "original_dev20"
+      ],
+      "semantics": "以数据库当前几何为准，在 EPSG:3857 平面计算米和平方米；缓冲固定 quad_segs=8。ST_Intersects 包含边界接触；点的 ST_Within 排除区域边界；孔洞不属于实体内部。裁剪只保留非空交集，保留非空但长度为零的边界接触记录。计数按来源图层和主键去重；逐要素量测求和与合并去重量测须分别计算。分组输出全部组，中文名称按 Unicode 升序；按值降序时同值按分组名称或编码升序。",
+      "output_contract": {
+        "length": "要素集量测汇总，包含 value、unit、measure、measure_srid=3857、feature_count，空集合数量和值均为0。"
+      },
+      "origin": "reports/dev20/dev20_latest.json: results.expected and question; model answer excluded",
+      "reference_sql": "WITH raw_areas AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".construction_areas), raw_gas AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".gas_pipelines), raw_water AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".water_pipelines), raw_devices AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".gas_devices), raw_roads AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".demo_roads), areas AS (SELECT id,code,g3857 AS geom FROM raw_areas), gas AS (SELECT id,code,pressure_level,g3857 AS geom FROM raw_gas), water AS (SELECT id,code,pipe_type,g3857 AS geom FROM raw_water), devices AS (SELECT id,code,status,device_type,g3857 AS geom FROM raw_devices), roads AS (SELECT id,code,g3857 AS geom FROM raw_roads), target AS (SELECT geom FROM areas WHERE code = %s), clipped_features AS (SELECT f.*, ST_Intersection(f.geom, t.geom) AS clipped FROM water f CROSS JOIN target t WHERE TRUE AND ST_Intersects(f.geom, t.geom)) SELECT jsonb_build_object('length',(SELECT jsonb_build_object('value', COALESCE(SUM(ST_Length(ST_CollectionExtract(clipped, 2))), 0), 'unit', 'meter', 'measure', 'length', 'measure_srid', 3857, 'feature_count', COUNT(*)) FROM clipped_features WHERE NOT ST_IsEmpty(clipped))) AS answer",
+      "reference_params": [
+        "A009"
+      ]
+    },
+    {
+      "id": "D13",
+      "level": "L3",
+      "question": "对与 A001 相交且正常或告警的燃气设备分别建立 300 米缓冲区，合并重叠后裁剪到 A001，求覆盖面积（平方米）以及占 A001 面积的百分比。边界设备计入。",
+      "tags": [
+        "original_dev20"
+      ],
+      "semantics": "以数据库当前几何为准，在 EPSG:3857 平面计算米和平方米；缓冲固定 quad_segs=8。ST_Intersects 包含边界接触；点的 ST_Within 排除区域边界；孔洞不属于实体内部。裁剪只保留非空交集，保留非空但长度为零的边界接触记录。计数按来源图层和主键去重；逐要素量测求和与合并去重量测须分别计算。分组输出全部组，中文名称按 Unicode 升序；按值降序时同值按分组名称或编码升序。",
+      "output_contract": {
+        "area": "量测对象，包含 value、unit、measure、measure_srid=3857、is_empty；面积单位 square_meter，长度单位 meter。",
+        "coverage_percent": "比例对象，包含 value、unit='percent'、numerator、denominator；value=100*numerator/denominator。"
+      },
+      "origin": "reports/dev20/dev20_latest.json: results.expected and question; model answer excluded",
+      "reference_sql": "WITH raw_areas AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".construction_areas), raw_gas AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".gas_pipelines), raw_water AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".water_pipelines), raw_devices AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".gas_devices), raw_roads AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".demo_roads), areas AS (SELECT id,code,g3857 AS geom FROM raw_areas), gas AS (SELECT id,code,pressure_level,g3857 AS geom FROM raw_gas), water AS (SELECT id,code,pipe_type,g3857 AS geom FROM raw_water), devices AS (SELECT id,code,status,device_type,g3857 AS geom FROM raw_devices), roads AS (SELECT id,code,g3857 AS geom FROM raw_roads), target AS (SELECT geom FROM areas WHERE code = %s), selected AS (SELECT d.* FROM devices d CROSS JOIN target t WHERE ST_Intersects(d.geom,t.geom) AND d.status=ANY(%s)), buffered AS (SELECT ST_Buffer(geom,%s,'quad_segs=8') AS geom FROM selected), merged AS (SELECT COALESCE(ST_UnaryUnion(ST_Collect(geom)),ST_GeomFromText('GEOMETRYCOLLECTION EMPTY',3857)) AS geom FROM buffered), coverage AS (SELECT ST_Intersection(m.geom,t.geom) AS geom FROM merged m CROSS JOIN target t) SELECT (SELECT jsonb_build_object('area',jsonb_build_object('value', ST_Area(ST_CollectionExtract(c.geom, 3)), 'unit', 'square_meter', 'measure', 'area', 'measure_srid', 3857, 'is_empty', ST_IsEmpty(c.geom)),'coverage_percent',jsonb_build_object('value',100*ST_Area(ST_CollectionExtract(c.geom, 3))/ST_Area(ST_CollectionExtract(t.geom, 3)), 'unit','percent','numerator',ST_Area(ST_CollectionExtract(c.geom, 3)),'denominator',ST_Area(ST_CollectionExtract(t.geom, 3)))) FROM coverage c CROSS JOIN target t) AS answer",
+      "reference_params": [
+        "A001",
+        [
+          "正常",
+          "告警"
+        ],
+        300
+      ]
+    },
+    {
+      "id": "D14",
+      "level": "L2",
+      "question": "取与 A001 相交的高压燃气管线，先裁剪到 A001，再分别缓冲 50 米并合并。计算各水管在该影响范围且在 A001 内的长度（米），按长度降序、同长按水管编码升序输出全部水管及总长度。保留非空的零长度边界接触记录。",
+      "tags": [
+        "original_dev20"
+      ],
+      "semantics": "以数据库当前几何为准，在 EPSG:3857 平面计算米和平方米；缓冲固定 quad_segs=8。ST_Intersects 包含边界接触；点的 ST_Within 排除区域边界；孔洞不属于实体内部。裁剪只保留非空交集，保留非空但长度为零的边界接触记录。计数按来源图层和主键去重；逐要素量测求和与合并去重量测须分别计算。分组输出全部组，中文名称按 Unicode 升序；按值降序时同值按分组名称或编码升序。",
+      "output_contract": {
+        "unit": "计量单位，feature/meter/square_meter，按题意。",
+        "groups": "全部分组数组；各项包含 group 对象、value、feature_count，顺序按题意。",
+        "total_length": "要素集量测汇总，包含 value、unit、measure、measure_srid=3857、feature_count，空集合数量和值均为0。"
+      },
+      "origin": "reports/dev20/dev20_latest.json: results.expected and question; model answer excluded",
+      "reference_sql": "WITH raw_areas AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".construction_areas), raw_gas AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".gas_pipelines), raw_water AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".water_pipelines), raw_devices AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".gas_devices), raw_roads AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".demo_roads), areas AS (SELECT id,code,g3857 AS geom FROM raw_areas), gas AS (SELECT id,code,pressure_level,g3857 AS geom FROM raw_gas), water AS (SELECT id,code,pipe_type,g3857 AS geom FROM raw_water), devices AS (SELECT id,code,status,device_type,g3857 AS geom FROM raw_devices), roads AS (SELECT id,code,g3857 AS geom FROM raw_roads), target AS (SELECT geom FROM areas WHERE code = %s), clipped_gas AS (SELECT f.*, ST_Intersection(f.geom, t.geom) AS clipped FROM gas f CROSS JOIN target t WHERE f.pressure_level = %s AND ST_Intersects(f.geom, t.geom)), influence AS (SELECT COALESCE(ST_UnaryUnion(ST_Collect(ST_Buffer(clipped,%s,'quad_segs=8'))),ST_GeomFromText('GEOMETRYCOLLECTION EMPTY',3857)) AS geom FROM clipped_gas), effective AS (SELECT ST_Intersection(i.geom,t.geom) AS geom FROM influence i CROSS JOIN target t), clipped_water AS (SELECT f.*, ST_Intersection(f.geom, t.geom) AS clipped FROM water f CROSS JOIN effective t WHERE TRUE AND ST_Intersects(f.geom, t.geom)) SELECT jsonb_build_object('unit','meter','groups',(SELECT COALESCE(jsonb_agg(jsonb_build_object('group', jsonb_build_object('source_code', label), 'value', value, 'feature_count', n) ORDER BY value DESC, label COLLATE \"C\"), '[]'::jsonb) FROM (SELECT code AS label, SUM(ST_Length(ST_CollectionExtract(clipped, 2))) AS value, COUNT(*) AS n FROM clipped_water WHERE NOT ST_IsEmpty(clipped) GROUP BY code) grouped),'total_length',(SELECT jsonb_build_object('value', COALESCE(SUM(ST_Length(ST_CollectionExtract(clipped, 2))), 0), 'unit', 'meter', 'measure', 'length', 'measure_srid', 3857, 'feature_count', COUNT(*)) FROM clipped_water WHERE NOT ST_IsEmpty(clipped))) AS answer",
+      "reference_params": [
+        "A001",
+        "高压",
+        50
+      ]
+    },
+    {
+      "id": "D15",
+      "level": "L3",
+      "question": "对与 A001 相交且状态正常的设备分别缓冲 200 米，不裁剪缓冲区。分别给出所有缓冲面积直接相加的结果，以及缓冲合并去重后的面积（平方米），复用同一批缓冲结果。",
+      "tags": [
+        "original_dev20"
+      ],
+      "semantics": "以数据库当前几何为准，在 EPSG:3857 平面计算米和平方米；缓冲固定 quad_segs=8。ST_Intersects 包含边界接触；点的 ST_Within 排除区域边界；孔洞不属于实体内部。裁剪只保留非空交集，保留非空但长度为零的边界接触记录。计数按来源图层和主键去重；逐要素量测求和与合并去重量测须分别计算。分组输出全部组，中文名称按 Unicode 升序；按值降序时同值按分组名称或编码升序。",
+      "output_contract": {
+        "union_area": "量测对象，包含 value、unit、measure、measure_srid=3857、is_empty；面积单位 square_meter，长度单位 meter。",
+        "summed_area": "要素集量测汇总，包含 value、unit、measure、measure_srid=3857、feature_count，空集合数量和值均为0。"
+      },
+      "origin": "reports/dev20/dev20_latest.json: results.expected and question; model answer excluded",
+      "reference_sql": "WITH raw_areas AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".construction_areas), raw_gas AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".gas_pipelines), raw_water AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".water_pipelines), raw_devices AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".gas_devices), raw_roads AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".demo_roads), areas AS (SELECT id,code,g3857 AS geom FROM raw_areas), gas AS (SELECT id,code,pressure_level,g3857 AS geom FROM raw_gas), water AS (SELECT id,code,pipe_type,g3857 AS geom FROM raw_water), devices AS (SELECT id,code,status,device_type,g3857 AS geom FROM raw_devices), roads AS (SELECT id,code,g3857 AS geom FROM raw_roads), target AS (SELECT geom FROM areas WHERE code = %s), selected AS (SELECT d.* FROM devices d CROSS JOIN target t WHERE ST_Intersects(d.geom,t.geom) AND d.status=ANY(%s)), buffered AS (SELECT ST_Buffer(geom,%s,'quad_segs=8') AS geom FROM selected), merged AS (SELECT COALESCE(ST_UnaryUnion(ST_Collect(geom)),ST_GeomFromText('GEOMETRYCOLLECTION EMPTY',3857)) AS geom FROM buffered) SELECT jsonb_build_object('union_area',(SELECT jsonb_build_object('value', ST_Area(ST_CollectionExtract(geom, 3)), 'unit', 'square_meter', 'measure', 'area', 'measure_srid', 3857, 'is_empty', ST_IsEmpty(geom)) FROM merged),'summed_area',(SELECT jsonb_build_object('value', COALESCE(SUM(ST_Area(ST_CollectionExtract(geom, 3))), 0), 'unit', 'square_meter', 'measure', 'area', 'measure_srid', 3857, 'feature_count', COUNT(*)) FROM buffered)) AS answer",
+      "reference_params": [
+        "A001",
+        [
+          "正常"
+        ],
+        200
+      ]
+    },
+    {
+      "id": "D16",
+      "level": "L3",
+      "question": "针对 A001 和 A008，分别计算两区面积直接相加、联合覆盖去重面积和重叠面积（平方米），不要将三者混淆。联合覆盖与直接相加应复用同一份区域查询结果。",
+      "tags": [
+        "original_dev20"
+      ],
+      "semantics": "以数据库当前几何为准，在 EPSG:3857 平面计算米和平方米；缓冲固定 quad_segs=8。ST_Intersects 包含边界接触；点的 ST_Within 排除区域边界；孔洞不属于实体内部。裁剪只保留非空交集，保留非空但长度为零的边界接触记录。计数按来源图层和主键去重；逐要素量测求和与合并去重量测须分别计算。分组输出全部组，中文名称按 Unicode 升序；按值降序时同值按分组名称或编码升序。",
+      "output_contract": {
+        "union_area": "量测对象，包含 value、unit、measure、measure_srid=3857、is_empty；面积单位 square_meter，长度单位 meter。",
+        "summed_area": "要素集量测汇总，包含 value、unit、measure、measure_srid=3857、feature_count，空集合数量和值均为0。",
+        "overlap_area": "量测对象，包含 value、unit、measure、measure_srid=3857、is_empty；面积单位 square_meter，长度单位 meter。"
+      },
+      "origin": "reports/dev20/dev20_latest.json: results.expected and question; model answer excluded",
+      "reference_sql": "WITH raw_areas AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".construction_areas), raw_gas AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".gas_pipelines), raw_water AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".water_pipelines), raw_devices AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".gas_devices), raw_roads AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".demo_roads), areas AS (SELECT id,code,g3857 AS geom FROM raw_areas), gas AS (SELECT id,code,pressure_level,g3857 AS geom FROM raw_gas), water AS (SELECT id,code,pipe_type,g3857 AS geom FROM raw_water), devices AS (SELECT id,code,status,device_type,g3857 AS geom FROM raw_devices), roads AS (SELECT id,code,g3857 AS geom FROM raw_roads), selected AS (SELECT * FROM areas WHERE code=ANY(%s)), merged AS (SELECT ST_UnaryUnion(ST_Collect(geom)) AS geom FROM selected), overlap AS (SELECT ST_Intersection(a.geom,b.geom) AS geom FROM areas a CROSS JOIN areas b WHERE a.code=%s AND b.code=%s) SELECT jsonb_build_object('union_area',(SELECT jsonb_build_object('value', ST_Area(ST_CollectionExtract(geom, 3)), 'unit', 'square_meter', 'measure', 'area', 'measure_srid', 3857, 'is_empty', ST_IsEmpty(geom)) FROM merged),'summed_area',(SELECT jsonb_build_object('value', COALESCE(SUM(ST_Area(ST_CollectionExtract(geom, 3))), 0), 'unit', 'square_meter', 'measure', 'area', 'measure_srid', 3857, 'feature_count', COUNT(*)) FROM selected),'overlap_area',(SELECT jsonb_build_object('value', ST_Area(ST_CollectionExtract(geom, 3)), 'unit', 'square_meter', 'measure', 'area', 'measure_srid', 3857, 'is_empty', ST_IsEmpty(geom)) FROM overlap)) AS answer",
+      "reference_params": [
+        [
+          "A001",
+          "A008"
+        ],
+        "A001",
+        "A008"
+      ]
+    },
+    {
+      "id": "D17",
+      "level": "L3",
+      "question": "与 A001 相交且正常或告警的设备分别缓冲 300 米，合并后裁剪到 A001。复用该覆盖几何，分别计算覆盖面积（平方米）和其中全部燃气管线的总长度（米），保留非空零长度接触记录。",
+      "tags": [
+        "original_dev20"
+      ],
+      "semantics": "以数据库当前几何为准，在 EPSG:3857 平面计算米和平方米；缓冲固定 quad_segs=8。ST_Intersects 包含边界接触；点的 ST_Within 排除区域边界；孔洞不属于实体内部。裁剪只保留非空交集，保留非空但长度为零的边界接触记录。计数按来源图层和主键去重；逐要素量测求和与合并去重量测须分别计算。分组输出全部组，中文名称按 Unicode 升序；按值降序时同值按分组名称或编码升序。",
+      "output_contract": {
+        "area": "量测对象，包含 value、unit、measure、measure_srid=3857、is_empty；面积单位 square_meter，长度单位 meter。",
+        "gas_length": "要素集量测汇总，包含 value、unit、measure、measure_srid=3857、feature_count，空集合数量和值均为0。"
+      },
+      "origin": "reports/dev20/dev20_latest.json: results.expected and question; model answer excluded",
+      "reference_sql": "WITH raw_areas AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".construction_areas), raw_gas AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".gas_pipelines), raw_water AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".water_pipelines), raw_devices AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".gas_devices), raw_roads AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".demo_roads), areas AS (SELECT id,code,g3857 AS geom FROM raw_areas), gas AS (SELECT id,code,pressure_level,g3857 AS geom FROM raw_gas), water AS (SELECT id,code,pipe_type,g3857 AS geom FROM raw_water), devices AS (SELECT id,code,status,device_type,g3857 AS geom FROM raw_devices), roads AS (SELECT id,code,g3857 AS geom FROM raw_roads), target AS (SELECT geom FROM areas WHERE code = %s), selected AS (SELECT d.* FROM devices d CROSS JOIN target t WHERE ST_Intersects(d.geom,t.geom) AND d.status=ANY(%s)), buffered AS (SELECT ST_Buffer(geom,%s,'quad_segs=8') AS geom FROM selected), merged AS (SELECT COALESCE(ST_UnaryUnion(ST_Collect(geom)),ST_GeomFromText('GEOMETRYCOLLECTION EMPTY',3857)) AS geom FROM buffered), coverage AS (SELECT ST_Intersection(m.geom,t.geom) AS geom FROM merged m CROSS JOIN target t), clipped_gas AS (SELECT f.*, ST_Intersection(f.geom, t.geom) AS clipped FROM gas f CROSS JOIN coverage t WHERE TRUE AND ST_Intersects(f.geom, t.geom)) SELECT jsonb_build_object('area',(SELECT jsonb_build_object('value', ST_Area(ST_CollectionExtract(geom, 3)), 'unit', 'square_meter', 'measure', 'area', 'measure_srid', 3857, 'is_empty', ST_IsEmpty(geom)) FROM coverage),'gas_length',(SELECT jsonb_build_object('value', COALESCE(SUM(ST_Length(ST_CollectionExtract(clipped, 2))), 0), 'unit', 'meter', 'measure', 'length', 'measure_srid', 3857, 'feature_count', COUNT(*)) FROM clipped_gas WHERE NOT ST_IsEmpty(clipped))) AS answer",
+      "reference_params": [
+        "A001",
+        [
+          "正常",
+          "告警"
+        ],
+        300
+      ]
+    },
+    {
+      "id": "D18",
+      "level": "L3",
+      "question": "在 A001 内分别统计两类数据：燃气管线按 pressure_level 分组汇总裁剪后长度，水管按 pipe_type 分组汇总裁剪后长度，单位均为米。每类按总长度降序、同长按分组名称升序，输出全部分组，保留零长度非空接触记录。",
+      "tags": [
+        "original_dev20"
+      ],
+      "semantics": "以数据库当前几何为准，在 EPSG:3857 平面计算米和平方米；缓冲固定 quad_segs=8。ST_Intersects 包含边界接触；点的 ST_Within 排除区域边界；孔洞不属于实体内部。裁剪只保留非空交集，保留非空但长度为零的边界接触记录。计数按来源图层和主键去重；逐要素量测求和与合并去重量测须分别计算。分组输出全部组，中文名称按 Unicode 升序；按值降序时同值按分组名称或编码升序。",
+      "output_contract": {
+        "unit": "计量单位，feature/meter/square_meter，按题意。",
+        "gas_groups": "全部分组数组；各项包含 group 对象、value、feature_count，顺序按题意。",
+        "water_groups": "全部分组数组；各项包含 group 对象、value、feature_count，顺序按题意。"
+      },
+      "origin": "reports/dev20/dev20_latest.json: results.expected and question; model answer excluded",
+      "reference_sql": "WITH raw_areas AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".construction_areas), raw_gas AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".gas_pipelines), raw_water AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".water_pipelines), raw_devices AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".gas_devices), raw_roads AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".demo_roads), areas AS (SELECT id,code,g3857 AS geom FROM raw_areas), gas AS (SELECT id,code,pressure_level,g3857 AS geom FROM raw_gas), water AS (SELECT id,code,pipe_type,g3857 AS geom FROM raw_water), devices AS (SELECT id,code,status,device_type,g3857 AS geom FROM raw_devices), roads AS (SELECT id,code,g3857 AS geom FROM raw_roads), target AS (SELECT geom FROM areas WHERE code = %s), clipped_gas AS (SELECT f.*, ST_Intersection(f.geom, t.geom) AS clipped FROM gas f CROSS JOIN target t WHERE TRUE AND ST_Intersects(f.geom, t.geom)), clipped_water AS (SELECT f.*, ST_Intersection(f.geom, t.geom) AS clipped FROM water f CROSS JOIN target t WHERE TRUE AND ST_Intersects(f.geom, t.geom)) SELECT jsonb_build_object('unit','meter','gas_groups',(SELECT COALESCE(jsonb_agg(jsonb_build_object('group', jsonb_build_object('pressure_level', label), 'value', value, 'feature_count', n) ORDER BY value DESC, label COLLATE \"C\"), '[]'::jsonb) FROM (SELECT pressure_level AS label, SUM(ST_Length(ST_CollectionExtract(clipped, 2))) AS value, COUNT(*) AS n FROM clipped_gas WHERE NOT ST_IsEmpty(clipped) GROUP BY pressure_level) grouped),'water_groups',(SELECT COALESCE(jsonb_agg(jsonb_build_object('group', jsonb_build_object('pipe_type', label), 'value', value, 'feature_count', n) ORDER BY value DESC, label COLLATE \"C\"), '[]'::jsonb) FROM (SELECT pipe_type AS label, SUM(ST_Length(ST_CollectionExtract(clipped, 2))) AS value, COUNT(*) AS n FROM clipped_water WHERE NOT ST_IsEmpty(clipped) GROUP BY pipe_type) grouped)) AS answer",
+      "reference_params": [
+        "A001"
+      ]
+    },
+    {
+      "id": "D19",
+      "level": "L3",
+      "question": "分别统计与 A001、A002 相交且状态正常的设备数，再将两个施工区合并后统计正常设备的联合去重数量。边界设备计入各区，但联合统计中同一个设备只计一次，不能直接把两区数量相加。",
+      "tags": [
+        "original_dev20"
+      ],
+      "semantics": "以数据库当前几何为准，在 EPSG:3857 平面计算米和平方米；缓冲固定 quad_segs=8。ST_Intersects 包含边界接触；点的 ST_Within 排除区域边界；孔洞不属于实体内部。裁剪只保留非空交集，保留非空但长度为零的边界接触记录。计数按来源图层和主键去重；逐要素量测求和与合并去重量测须分别计算。分组输出全部组，中文名称按 Unicode 升序；按值降序时同值按分组名称或编码升序。",
+      "output_contract": {
+        "a001_count": "与A001相交的源设备去重数量。",
+        "a002_count": "与A002相交的源设备去重数量。",
+        "unique_count": "联合范围内的源设备去重数量。"
+      },
+      "origin": "reports/dev20/dev20_latest.json: results.expected and question; model answer excluded",
+      "reference_sql": "WITH raw_areas AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".construction_areas), raw_gas AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".gas_pipelines), raw_water AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".water_pipelines), raw_devices AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".gas_devices), raw_roads AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".demo_roads), areas AS (SELECT id,code,g3857 AS geom FROM raw_areas), gas AS (SELECT id,code,pressure_level,g3857 AS geom FROM raw_gas), water AS (SELECT id,code,pipe_type,g3857 AS geom FROM raw_water), devices AS (SELECT id,code,status,device_type,g3857 AS geom FROM raw_devices), roads AS (SELECT id,code,g3857 AS geom FROM raw_roads), left_area AS (SELECT geom FROM areas WHERE code=%s), right_area AS (SELECT geom FROM areas WHERE code=%s), combined AS (SELECT ST_Union(l.geom,r.geom) AS geom FROM left_area l CROSS JOIN right_area r), selected AS (SELECT * FROM devices WHERE status=ANY(%s)) SELECT jsonb_build_object('a001_count',(SELECT COUNT(*) FROM selected d CROSS JOIN left_area a WHERE ST_Intersects(d.geom,a.geom)),'a002_count',(SELECT COUNT(*) FROM selected d CROSS JOIN right_area a WHERE ST_Intersects(d.geom,a.geom)),'unique_count',(SELECT COUNT(*) FROM selected d CROSS JOIN combined a WHERE ST_Intersects(d.geom,a.geom))) AS answer",
+      "reference_params": [
+        "A001",
+        "A002",
+        [
+          "正常"
+        ]
+      ]
+    },
+    {
+      "id": "D20",
+      "level": "L3",
+      "question": "取与 A001 相交的高压燃气管线，先裁剪到 A001，再分别缓冲 50 米合并为同一影响范围。复用该范围：（1）统计 A001 内正常或告警设备，按状态升序分组计数；（2）计算 A001 内各水管受影响长度（米），按长度降序、同长按编码升序，并给出总长度。边界计入，水管非空零长度接触记录保留。",
+      "tags": [
+        "original_dev20"
+      ],
+      "semantics": "以数据库当前几何为准，在 EPSG:3857 平面计算米和平方米；缓冲固定 quad_segs=8。ST_Intersects 包含边界接触；点的 ST_Within 排除区域边界；孔洞不属于实体内部。裁剪只保留非空交集，保留非空但长度为零的边界接触记录。计数按来源图层和主键去重；逐要素量测求和与合并去重量测须分别计算。分组输出全部组，中文名称按 Unicode 升序；按值降序时同值按分组名称或编码升序。",
+      "output_contract": {
+        "water_unit": "固定为meter。",
+        "device_unit": "固定为feature。",
+        "total_length": "要素集量测汇总，包含 value、unit、measure、measure_srid=3857、feature_count，空集合数量和值均为0。",
+        "water_groups": "全部分组数组；各项包含 group 对象、value、feature_count，顺序按题意。",
+        "device_groups": "全部分组数组；各项包含 group 对象、value、feature_count，顺序按题意。"
+      },
+      "origin": "reports/dev20/dev20_latest.json: results.expected and question; model answer excluded",
+      "reference_sql": "WITH raw_areas AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".construction_areas), raw_gas AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".gas_pipelines), raw_water AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".water_pipelines), raw_devices AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".gas_devices), raw_roads AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".demo_roads), areas AS (SELECT id,code,g3857 AS geom FROM raw_areas), gas AS (SELECT id,code,pressure_level,g3857 AS geom FROM raw_gas), water AS (SELECT id,code,pipe_type,g3857 AS geom FROM raw_water), devices AS (SELECT id,code,status,device_type,g3857 AS geom FROM raw_devices), roads AS (SELECT id,code,g3857 AS geom FROM raw_roads), target AS (SELECT geom FROM areas WHERE code = %s), clipped_gas AS (SELECT f.*, ST_Intersection(f.geom, t.geom) AS clipped FROM gas f CROSS JOIN target t WHERE f.pressure_level = %s AND ST_Intersects(f.geom, t.geom)), influence AS (SELECT COALESCE(ST_UnaryUnion(ST_Collect(ST_Buffer(clipped,%s,'quad_segs=8'))),ST_GeomFromText('GEOMETRYCOLLECTION EMPTY',3857)) AS geom FROM clipped_gas), effective AS (SELECT ST_Intersection(i.geom,t.geom) AS geom FROM influence i CROSS JOIN target t), clipped_water AS (SELECT f.*, ST_Intersection(f.geom, t.geom) AS clipped FROM water f CROSS JOIN effective t WHERE TRUE AND ST_Intersects(f.geom, t.geom)), selected_devices AS (SELECT d.* FROM devices d CROSS JOIN effective e WHERE ST_Intersects(d.geom,e.geom) AND d.status=ANY(%s)) SELECT jsonb_build_object('water_unit','meter','device_unit','feature','total_length',(SELECT jsonb_build_object('value', COALESCE(SUM(ST_Length(ST_CollectionExtract(clipped, 2))), 0), 'unit', 'meter', 'measure', 'length', 'measure_srid', 3857, 'feature_count', COUNT(*)) FROM clipped_water WHERE NOT ST_IsEmpty(clipped)),'water_groups',(SELECT COALESCE(jsonb_agg(jsonb_build_object('group', jsonb_build_object('source_code', label), 'value', value, 'feature_count', n) ORDER BY value DESC, label COLLATE \"C\"), '[]'::jsonb) FROM (SELECT code AS label, SUM(ST_Length(ST_CollectionExtract(clipped, 2))) AS value, COUNT(*) AS n FROM clipped_water WHERE NOT ST_IsEmpty(clipped) GROUP BY code) grouped),'device_groups',(SELECT COALESCE(jsonb_agg(jsonb_build_object('group', jsonb_build_object('status', label), 'value', value, 'feature_count', n) ORDER BY label COLLATE \"C\"), '[]'::jsonb) FROM (SELECT status AS label, COUNT(*) AS value, COUNT(*) AS n FROM selected_devices GROUP BY status) grouped)) AS answer",
+      "reference_params": [
+        "A001",
+        "高压",
+        50,
+        [
+          "正常",
+          "告警"
+        ]
+      ]
+    },
+    {
+      "id": "D21",
+      "level": "L1",
+      "question": "统计严格位于施工区 A002 内且状态为正常的燃气设备数量，区域边界上的设备不计入。",
+      "tags": [
+        "query",
+        "within",
+        "boundary"
+      ],
+      "semantics": "以数据库当前几何为准，在 EPSG:3857 平面计算米和平方米；缓冲固定 quad_segs=8。ST_Intersects 包含边界接触；点的 ST_Within 排除区域边界；孔洞不属于实体内部。裁剪只保留非空交集，保留非空但长度为零的边界接触记录。计数按来源图层和主键去重；逐要素量测求和与合并去重量测须分别计算。分组输出全部组，中文名称按 Unicode 升序；按值降序时同值按分组名称或编码升序。",
+      "output_contract": {
+        "count": "满足条件的源设备去重数量。"
+      },
+      "origin": "dev50 extension",
+      "reference_sql": "WITH raw_areas AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".construction_areas), raw_gas AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".gas_pipelines), raw_water AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".water_pipelines), raw_devices AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".gas_devices), raw_roads AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".demo_roads), areas AS (SELECT id,code,g3857 AS geom FROM raw_areas), gas AS (SELECT id,code,pressure_level,g3857 AS geom FROM raw_gas), water AS (SELECT id,code,pipe_type,g3857 AS geom FROM raw_water), devices AS (SELECT id,code,status,device_type,g3857 AS geom FROM raw_devices), roads AS (SELECT id,code,g3857 AS geom FROM raw_roads), target AS (SELECT geom FROM areas WHERE code = %s), selected AS (SELECT d.* FROM devices d CROSS JOIN target t WHERE ST_Within(d.geom,t.geom) AND d.status = ANY(%s)) SELECT jsonb_build_object('count', (SELECT COUNT(*) FROM selected)) AS answer",
+      "reference_params": [
+        "A002",
+        [
+          "正常"
+        ]
+      ]
+    },
+    {
+      "id": "D22",
+      "level": "L1",
+      "question": "统计与施工区 A002 相交且状态为正常或告警的燃气设备数量，包含边界接触，同一设备只计一次。",
+      "tags": [
+        "query",
+        "intersects",
+        "attribute_in"
+      ],
+      "semantics": "以数据库当前几何为准，在 EPSG:3857 平面计算米和平方米；缓冲固定 quad_segs=8。ST_Intersects 包含边界接触；点的 ST_Within 排除区域边界；孔洞不属于实体内部。裁剪只保留非空交集，保留非空但长度为零的边界接触记录。计数按来源图层和主键去重；逐要素量测求和与合并去重量测须分别计算。分组输出全部组，中文名称按 Unicode 升序；按值降序时同值按分组名称或编码升序。",
+      "output_contract": {
+        "count": "满足条件的源设备去重数量。"
+      },
+      "origin": "dev50 extension",
+      "reference_sql": "WITH raw_areas AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".construction_areas), raw_gas AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".gas_pipelines), raw_water AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".water_pipelines), raw_devices AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".gas_devices), raw_roads AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".demo_roads), areas AS (SELECT id,code,g3857 AS geom FROM raw_areas), gas AS (SELECT id,code,pressure_level,g3857 AS geom FROM raw_gas), water AS (SELECT id,code,pipe_type,g3857 AS geom FROM raw_water), devices AS (SELECT id,code,status,device_type,g3857 AS geom FROM raw_devices), roads AS (SELECT id,code,g3857 AS geom FROM raw_roads), target AS (SELECT geom FROM areas WHERE code = %s), selected AS (SELECT d.* FROM devices d CROSS JOIN target t WHERE ST_Intersects(d.geom,t.geom) AND d.status = ANY(%s)) SELECT jsonb_build_object('count', (SELECT COUNT(*) FROM selected)) AS answer",
+      "reference_params": [
+        "A002",
+        [
+          "正常",
+          "告警"
+        ]
+      ]
+    },
+    {
+      "id": "D23",
+      "level": "L1",
+      "question": "查询与含孔洞施工区 A003 相交的全部燃气设备，按 status 分组计数，按状态名称升序输出全部分组；孔洞内设备不计入，边界接触计入。",
+      "tags": [
+        "query",
+        "hole",
+        "group_count"
+      ],
+      "semantics": "以数据库当前几何为准，在 EPSG:3857 平面计算米和平方米；缓冲固定 quad_segs=8。ST_Intersects 包含边界接触；点的 ST_Within 排除区域边界；孔洞不属于实体内部。裁剪只保留非空交集，保留非空但长度为零的边界接触记录。计数按来源图层和主键去重；逐要素量测求和与合并去重量测须分别计算。分组输出全部组，中文名称按 Unicode 升序；按值降序时同值按分组名称或编码升序。",
+      "output_contract": {
+        "unit": "固定为 feature。",
+        "groups": "全部分组数组；各项包含 group 对象、value、feature_count，顺序按题意。"
+      },
+      "origin": "dev50 extension",
+      "reference_sql": "WITH raw_areas AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".construction_areas), raw_gas AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".gas_pipelines), raw_water AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".water_pipelines), raw_devices AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".gas_devices), raw_roads AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".demo_roads), areas AS (SELECT id,code,g3857 AS geom FROM raw_areas), gas AS (SELECT id,code,pressure_level,g3857 AS geom FROM raw_gas), water AS (SELECT id,code,pipe_type,g3857 AS geom FROM raw_water), devices AS (SELECT id,code,status,device_type,g3857 AS geom FROM raw_devices), roads AS (SELECT id,code,g3857 AS geom FROM raw_roads), target AS (SELECT geom FROM areas WHERE code = %s), selected AS (SELECT d.* FROM devices d CROSS JOIN target t WHERE ST_Intersects(d.geom,t.geom)) SELECT jsonb_build_object('unit','feature','groups',(SELECT COALESCE(jsonb_agg(jsonb_build_object('group', jsonb_build_object('status', label), 'value', value, 'feature_count', n) ORDER BY label COLLATE \"C\"), '[]'::jsonb) FROM (SELECT status AS label, COUNT(*) AS value, COUNT(*) AS n FROM selected GROUP BY status) grouped)) AS answer",
+      "reference_params": [
+        "A003"
+      ]
+    },
+    {
+      "id": "D24",
+      "level": "L1",
+      "question": "查询全部燃气管线，按 pressure_level 分组计数，按压力等级名称升序输出全部分组，不做空间筛选。",
+      "tags": [
+        "query",
+        "group_count"
+      ],
+      "semantics": "以数据库当前几何为准，在 EPSG:3857 平面计算米和平方米；缓冲固定 quad_segs=8。ST_Intersects 包含边界接触；点的 ST_Within 排除区域边界；孔洞不属于实体内部。裁剪只保留非空交集，保留非空但长度为零的边界接触记录。计数按来源图层和主键去重；逐要素量测求和与合并去重量测须分别计算。分组输出全部组，中文名称按 Unicode 升序；按值降序时同值按分组名称或编码升序。",
+      "output_contract": {
+        "unit": "固定为 feature。",
+        "groups": "全部分组数组；各项包含 group 对象、value、feature_count，顺序按题意。"
+      },
+      "origin": "dev50 extension",
+      "reference_sql": "WITH raw_areas AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".construction_areas), raw_gas AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".gas_pipelines), raw_water AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".water_pipelines), raw_devices AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".gas_devices), raw_roads AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".demo_roads), areas AS (SELECT id,code,g3857 AS geom FROM raw_areas), gas AS (SELECT id,code,pressure_level,g3857 AS geom FROM raw_gas), water AS (SELECT id,code,pipe_type,g3857 AS geom FROM raw_water), devices AS (SELECT id,code,status,device_type,g3857 AS geom FROM raw_devices), roads AS (SELECT id,code,g3857 AS geom FROM raw_roads) SELECT jsonb_build_object('unit','feature','groups',(SELECT COALESCE(jsonb_agg(jsonb_build_object('group', jsonb_build_object('pressure_level', label), 'value', value, 'feature_count', n) ORDER BY label COLLATE \"C\"), '[]'::jsonb) FROM (SELECT pressure_level AS label, COUNT(*) AS value, COUNT(*) AS n FROM gas GROUP BY pressure_level) grouped)) AS answer",
+      "reference_params": []
+    },
+    {
+      "id": "D25",
+      "level": "L1",
+      "question": "查询全部水管，按 pipe_type 分组计数，按管线类型名称升序输出全部分组，不做空间筛选。",
+      "tags": [
+        "query",
+        "group_count"
+      ],
+      "semantics": "以数据库当前几何为准，在 EPSG:3857 平面计算米和平方米；缓冲固定 quad_segs=8。ST_Intersects 包含边界接触；点的 ST_Within 排除区域边界；孔洞不属于实体内部。裁剪只保留非空交集，保留非空但长度为零的边界接触记录。计数按来源图层和主键去重；逐要素量测求和与合并去重量测须分别计算。分组输出全部组，中文名称按 Unicode 升序；按值降序时同值按分组名称或编码升序。",
+      "output_contract": {
+        "unit": "固定为 feature。",
+        "groups": "全部分组数组；各项包含 group 对象、value、feature_count，顺序按题意。"
+      },
+      "origin": "dev50 extension",
+      "reference_sql": "WITH raw_areas AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".construction_areas), raw_gas AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".gas_pipelines), raw_water AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".water_pipelines), raw_devices AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".gas_devices), raw_roads AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".demo_roads), areas AS (SELECT id,code,g3857 AS geom FROM raw_areas), gas AS (SELECT id,code,pressure_level,g3857 AS geom FROM raw_gas), water AS (SELECT id,code,pipe_type,g3857 AS geom FROM raw_water), devices AS (SELECT id,code,status,device_type,g3857 AS geom FROM raw_devices), roads AS (SELECT id,code,g3857 AS geom FROM raw_roads) SELECT jsonb_build_object('unit','feature','groups',(SELECT COALESCE(jsonb_agg(jsonb_build_object('group', jsonb_build_object('pipe_type', label), 'value', value, 'feature_count', n) ORDER BY label COLLATE \"C\"), '[]'::jsonb) FROM (SELECT pipe_type AS label, COUNT(*) AS value, COUNT(*) AS n FROM water GROUP BY pipe_type) grouped)) AS answer",
+      "reference_params": []
+    },
+    {
+      "id": "D26",
+      "level": "L1",
+      "question": "计算施工区 A001 的实体面积（平方米），不要计算周长。",
+      "tags": [
+        "single_geometry",
+        "area"
+      ],
+      "semantics": "以数据库当前几何为准，在 EPSG:3857 平面计算米和平方米；缓冲固定 quad_segs=8。ST_Intersects 包含边界接触；点的 ST_Within 排除区域边界；孔洞不属于实体内部。裁剪只保留非空交集，保留非空但长度为零的边界接触记录。计数按来源图层和主键去重；逐要素量测求和与合并去重量测须分别计算。分组输出全部组，中文名称按 Unicode 升序；按值降序时同值按分组名称或编码升序。",
+      "output_contract": {
+        "area": "量测对象，包含 value、unit、measure、measure_srid=3857、is_empty；面积单位 square_meter，长度单位 meter。"
+      },
+      "origin": "dev50 extension",
+      "reference_sql": "WITH raw_areas AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".construction_areas), raw_gas AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".gas_pipelines), raw_water AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".water_pipelines), raw_devices AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".gas_devices), raw_roads AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".demo_roads), areas AS (SELECT id,code,g3857 AS geom FROM raw_areas), gas AS (SELECT id,code,pressure_level,g3857 AS geom FROM raw_gas), water AS (SELECT id,code,pipe_type,g3857 AS geom FROM raw_water), devices AS (SELECT id,code,status,device_type,g3857 AS geom FROM raw_devices), roads AS (SELECT id,code,g3857 AS geom FROM raw_roads), target AS (SELECT geom FROM areas WHERE code = %s) SELECT jsonb_build_object('area',(SELECT jsonb_build_object('value', ST_Area(ST_CollectionExtract(geom, 3)), 'unit', 'square_meter', 'measure', 'area', 'measure_srid', 3857, 'is_empty', ST_IsEmpty(geom)) FROM target)) AS answer",
+      "reference_params": [
+        "A001"
+      ]
+    },
+    {
+      "id": "D27",
+      "level": "L1",
+      "question": "计算燃气管线 G006 的完整长度（米），不与任何施工区裁剪。",
+      "tags": [
+        "single_geometry",
+        "length"
+      ],
+      "semantics": "以数据库当前几何为准，在 EPSG:3857 平面计算米和平方米；缓冲固定 quad_segs=8。ST_Intersects 包含边界接触；点的 ST_Within 排除区域边界；孔洞不属于实体内部。裁剪只保留非空交集，保留非空但长度为零的边界接触记录。计数按来源图层和主键去重；逐要素量测求和与合并去重量测须分别计算。分组输出全部组，中文名称按 Unicode 升序；按值降序时同值按分组名称或编码升序。",
+      "output_contract": {
+        "length": "量测对象，包含 value、unit、measure、measure_srid=3857、is_empty；面积单位 square_meter，长度单位 meter。"
+      },
+      "origin": "dev50 extension",
+      "reference_sql": "WITH raw_areas AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".construction_areas), raw_gas AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".gas_pipelines), raw_water AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".water_pipelines), raw_devices AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".gas_devices), raw_roads AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".demo_roads), areas AS (SELECT id,code,g3857 AS geom FROM raw_areas), gas AS (SELECT id,code,pressure_level,g3857 AS geom FROM raw_gas), water AS (SELECT id,code,pipe_type,g3857 AS geom FROM raw_water), devices AS (SELECT id,code,status,device_type,g3857 AS geom FROM raw_devices), roads AS (SELECT id,code,g3857 AS geom FROM raw_roads), selected AS (SELECT geom FROM gas WHERE code=%s) SELECT jsonb_build_object('length',(SELECT jsonb_build_object('value', ST_Length(ST_CollectionExtract(geom, 2)), 'unit', 'meter', 'measure', 'length', 'measure_srid', 3857, 'is_empty', ST_IsEmpty(geom)) FROM selected)) AS answer",
+      "reference_params": [
+        "G006"
+      ]
+    },
+    {
+      "id": "D28",
+      "level": "L1",
+      "question": "计算全部道路 demo_roads 的长度总和（米），并返回参与量测的源道路数量；道路逐条量测后求和，不做空间合并去重。",
+      "tags": [
+        "feature_measure",
+        "sum"
+      ],
+      "semantics": "以数据库当前几何为准，在 EPSG:3857 平面计算米和平方米；缓冲固定 quad_segs=8。ST_Intersects 包含边界接触；点的 ST_Within 排除区域边界；孔洞不属于实体内部。裁剪只保留非空交集，保留非空但长度为零的边界接触记录。计数按来源图层和主键去重；逐要素量测求和与合并去重量测须分别计算。分组输出全部组，中文名称按 Unicode 升序；按值降序时同值按分组名称或编码升序。",
+      "output_contract": {
+        "length": "要素集量测汇总，包含 value、unit、measure、measure_srid=3857、feature_count，空集合数量和值均为0。"
+      },
+      "origin": "dev50 extension",
+      "reference_sql": "WITH raw_areas AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".construction_areas), raw_gas AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".gas_pipelines), raw_water AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".water_pipelines), raw_devices AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".gas_devices), raw_roads AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".demo_roads), areas AS (SELECT id,code,g3857 AS geom FROM raw_areas), gas AS (SELECT id,code,pressure_level,g3857 AS geom FROM raw_gas), water AS (SELECT id,code,pipe_type,g3857 AS geom FROM raw_water), devices AS (SELECT id,code,status,device_type,g3857 AS geom FROM raw_devices), roads AS (SELECT id,code,g3857 AS geom FROM raw_roads) SELECT jsonb_build_object('length',(SELECT jsonb_build_object('value', COALESCE(SUM(ST_Length(ST_CollectionExtract(geom, 2))), 0), 'unit', 'meter', 'measure', 'length', 'measure_srid', 3857, 'feature_count', COUNT(*)) FROM roads)) AS answer",
+      "reference_params": []
+    },
+    {
+      "id": "D29",
+      "level": "L1",
+      "question": "查询燃气设备中 status 严格等于字符串“__不存在的状态__”的要素，返回匹配设备数量。没有匹配时返回0，不能当成目标要素不存在而报错。",
+      "tags": [
+        "query",
+        "empty_set"
+      ],
+      "semantics": "以数据库当前几何为准，在 EPSG:3857 平面计算米和平方米；缓冲固定 quad_segs=8。ST_Intersects 包含边界接触；点的 ST_Within 排除区域边界；孔洞不属于实体内部。裁剪只保留非空交集，保留非空但长度为零的边界接触记录。计数按来源图层和主键去重；逐要素量测求和与合并去重量测须分别计算。分组输出全部组，中文名称按 Unicode 升序；按值降序时同值按分组名称或编码升序。",
+      "output_contract": {
+        "count": "满足指定属性条件的设备数量。"
+      },
+      "origin": "dev50 extension",
+      "reference_sql": "WITH raw_areas AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".construction_areas), raw_gas AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".gas_pipelines), raw_water AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".water_pipelines), raw_devices AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".gas_devices), raw_roads AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".demo_roads), areas AS (SELECT id,code,g3857 AS geom FROM raw_areas), gas AS (SELECT id,code,pressure_level,g3857 AS geom FROM raw_gas), water AS (SELECT id,code,pipe_type,g3857 AS geom FROM raw_water), devices AS (SELECT id,code,status,device_type,g3857 AS geom FROM raw_devices), roads AS (SELECT id,code,g3857 AS geom FROM raw_roads), selected AS (SELECT * FROM devices WHERE status=%s) SELECT jsonb_build_object('count', (SELECT COUNT(*) FROM selected)) AS answer",
+      "reference_params": [
+        "__不存在的状态__"
+      ]
+    },
+    {
+      "id": "D30",
+      "level": "L1",
+      "question": "统计严格位于孤立施工区 A009 内且状态为正常的燃气设备数量，边界设备不计入；无匹配时返回0。",
+      "tags": [
+        "query",
+        "within",
+        "empty_set"
+      ],
+      "semantics": "以数据库当前几何为准，在 EPSG:3857 平面计算米和平方米；缓冲固定 quad_segs=8。ST_Intersects 包含边界接触；点的 ST_Within 排除区域边界；孔洞不属于实体内部。裁剪只保留非空交集，保留非空但长度为零的边界接触记录。计数按来源图层和主键去重；逐要素量测求和与合并去重量测须分别计算。分组输出全部组，中文名称按 Unicode 升序；按值降序时同值按分组名称或编码升序。",
+      "output_contract": {
+        "count": "满足条件的设备数量。"
+      },
+      "origin": "dev50 extension",
+      "reference_sql": "WITH raw_areas AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".construction_areas), raw_gas AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".gas_pipelines), raw_water AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".water_pipelines), raw_devices AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".gas_devices), raw_roads AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".demo_roads), areas AS (SELECT id,code,g3857 AS geom FROM raw_areas), gas AS (SELECT id,code,pressure_level,g3857 AS geom FROM raw_gas), water AS (SELECT id,code,pipe_type,g3857 AS geom FROM raw_water), devices AS (SELECT id,code,status,device_type,g3857 AS geom FROM raw_devices), roads AS (SELECT id,code,g3857 AS geom FROM raw_roads), target AS (SELECT geom FROM areas WHERE code = %s), selected AS (SELECT d.* FROM devices d CROSS JOIN target t WHERE ST_Within(d.geom,t.geom) AND d.status = ANY(%s)) SELECT jsonb_build_object('count', (SELECT COUNT(*) FROM selected)) AS answer",
+      "reference_params": [
+        "A009",
+        [
+          "正常"
+        ]
+      ]
+    },
+    {
+      "id": "D31",
+      "level": "L2",
+      "question": "将所有与 A002 相交的燃气管线裁剪到 A002，计算区内总长度（米）与非空裁剪结果的源管线数量，保留非空零长度边界接触记录。",
+      "tags": [
+        "clip",
+        "length",
+        "boundary"
+      ],
+      "semantics": "以数据库当前几何为准，在 EPSG:3857 平面计算米和平方米；缓冲固定 quad_segs=8。ST_Intersects 包含边界接触；点的 ST_Within 排除区域边界；孔洞不属于实体内部。裁剪只保留非空交集，保留非空但长度为零的边界接触记录。计数按来源图层和主键去重；逐要素量测求和与合并去重量测须分别计算。分组输出全部组，中文名称按 Unicode 升序；按值降序时同值按分组名称或编码升序。",
+      "output_contract": {
+        "length": "要素集量测汇总，包含 value、unit、measure、measure_srid=3857、feature_count，空集合数量和值均为0。"
+      },
+      "origin": "dev50 extension",
+      "reference_sql": "WITH raw_areas AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".construction_areas), raw_gas AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".gas_pipelines), raw_water AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".water_pipelines), raw_devices AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".gas_devices), raw_roads AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".demo_roads), areas AS (SELECT id,code,g3857 AS geom FROM raw_areas), gas AS (SELECT id,code,pressure_level,g3857 AS geom FROM raw_gas), water AS (SELECT id,code,pipe_type,g3857 AS geom FROM raw_water), devices AS (SELECT id,code,status,device_type,g3857 AS geom FROM raw_devices), roads AS (SELECT id,code,g3857 AS geom FROM raw_roads), target AS (SELECT geom FROM areas WHERE code = %s), clipped_features AS (SELECT f.*, ST_Intersection(f.geom, t.geom) AS clipped FROM gas f CROSS JOIN target t WHERE TRUE AND ST_Intersects(f.geom, t.geom)) SELECT jsonb_build_object('length',(SELECT jsonb_build_object('value', COALESCE(SUM(ST_Length(ST_CollectionExtract(clipped, 2))), 0), 'unit', 'meter', 'measure', 'length', 'measure_srid', 3857, 'feature_count', COUNT(*)) FROM clipped_features WHERE NOT ST_IsEmpty(clipped))) AS answer",
+      "reference_params": [
+        "A002"
+      ]
+    },
+    {
+      "id": "D32",
+      "level": "L2",
+      "question": "统计整条几何满足 ST_Within(水管, A001) 的水管数量，不做裁剪。此处严格采用 PostGIS ST_Within 的关系定义：线可以接触边界，但不能有部分位于区域外，且线内部与区域内部必须相交。",
+      "tags": [
+        "query",
+        "within",
+        "line_relation"
+      ],
+      "semantics": "以数据库当前几何为准，在 EPSG:3857 平面计算米和平方米；缓冲固定 quad_segs=8。ST_Intersects 包含边界接触；点的 ST_Within 排除区域边界；孔洞不属于实体内部。裁剪只保留非空交集，保留非空但长度为零的边界接触记录。计数按来源图层和主键去重；逐要素量测求和与合并去重量测须分别计算。分组输出全部组，中文名称按 Unicode 升序；按值降序时同值按分组名称或编码升序。",
+      "output_contract": {
+        "count": "满足完整线几何 ST_Within 关系的源水管数量。"
+      },
+      "origin": "dev50 extension",
+      "reference_sql": "WITH raw_areas AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".construction_areas), raw_gas AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".gas_pipelines), raw_water AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".water_pipelines), raw_devices AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".gas_devices), raw_roads AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".demo_roads), areas AS (SELECT id,code,g3857 AS geom FROM raw_areas), gas AS (SELECT id,code,pressure_level,g3857 AS geom FROM raw_gas), water AS (SELECT id,code,pipe_type,g3857 AS geom FROM raw_water), devices AS (SELECT id,code,status,device_type,g3857 AS geom FROM raw_devices), roads AS (SELECT id,code,g3857 AS geom FROM raw_roads), target AS (SELECT geom FROM areas WHERE code = %s), selected AS (SELECT w.* FROM water w CROSS JOIN target t WHERE ST_Within(w.geom,t.geom)) SELECT jsonb_build_object('count', (SELECT COUNT(*) FROM selected)) AS answer",
+      "reference_params": [
+        "A001"
+      ]
+    },
+    {
+      "id": "D33",
+      "level": "L2",
+      "question": "对燃气管线 G001 的完整几何建立20米缓冲区，计算缓冲面积（平方米）；不按施工区裁剪，缓冲采用 quad_segs=8。",
+      "tags": [
+        "buffer",
+        "area"
+      ],
+      "semantics": "以数据库当前几何为准，在 EPSG:3857 平面计算米和平方米；缓冲固定 quad_segs=8。ST_Intersects 包含边界接触；点的 ST_Within 排除区域边界；孔洞不属于实体内部。裁剪只保留非空交集，保留非空但长度为零的边界接触记录。计数按来源图层和主键去重；逐要素量测求和与合并去重量测须分别计算。分组输出全部组，中文名称按 Unicode 升序；按值降序时同值按分组名称或编码升序。",
+      "output_contract": {
+        "area": "量测对象，包含 value、unit、measure、measure_srid=3857、is_empty；面积单位 square_meter，长度单位 meter。"
+      },
+      "origin": "dev50 extension",
+      "reference_sql": "WITH raw_areas AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".construction_areas), raw_gas AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".gas_pipelines), raw_water AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".water_pipelines), raw_devices AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".gas_devices), raw_roads AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".demo_roads), areas AS (SELECT id,code,g3857 AS geom FROM raw_areas), gas AS (SELECT id,code,pressure_level,g3857 AS geom FROM raw_gas), water AS (SELECT id,code,pipe_type,g3857 AS geom FROM raw_water), devices AS (SELECT id,code,status,device_type,g3857 AS geom FROM raw_devices), roads AS (SELECT id,code,g3857 AS geom FROM raw_roads), buffered AS (SELECT ST_Buffer(geom,%s,'quad_segs=8') AS geom FROM gas WHERE code=%s) SELECT jsonb_build_object('area',(SELECT jsonb_build_object('value', ST_Area(ST_CollectionExtract(geom, 3)), 'unit', 'square_meter', 'measure', 'area', 'measure_srid', 3857, 'is_empty', ST_IsEmpty(geom)) FROM buffered)) AS answer",
+      "reference_params": [
+        20,
+        "G001"
+      ]
+    },
+    {
+      "id": "D34",
+      "level": "L2",
+      "question": "计算施工区 A001 与孤立施工区 A009 的交集面积（平方米），允许合法空交集；空结果面积为0且 is_empty 为true。",
+      "tags": [
+        "intersection",
+        "empty_geometry",
+        "area"
+      ],
+      "semantics": "以数据库当前几何为准，在 EPSG:3857 平面计算米和平方米；缓冲固定 quad_segs=8。ST_Intersects 包含边界接触；点的 ST_Within 排除区域边界；孔洞不属于实体内部。裁剪只保留非空交集，保留非空但长度为零的边界接触记录。计数按来源图层和主键去重；逐要素量测求和与合并去重量测须分别计算。分组输出全部组，中文名称按 Unicode 升序；按值降序时同值按分组名称或编码升序。",
+      "output_contract": {
+        "area": "量测对象，包含 value、unit、measure、measure_srid=3857、is_empty；面积单位 square_meter，长度单位 meter。"
+      },
+      "origin": "dev50 extension",
+      "reference_sql": "WITH raw_areas AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".construction_areas), raw_gas AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".gas_pipelines), raw_water AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".water_pipelines), raw_devices AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".gas_devices), raw_roads AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".demo_roads), areas AS (SELECT id,code,g3857 AS geom FROM raw_areas), gas AS (SELECT id,code,pressure_level,g3857 AS geom FROM raw_gas), water AS (SELECT id,code,pipe_type,g3857 AS geom FROM raw_water), devices AS (SELECT id,code,status,device_type,g3857 AS geom FROM raw_devices), roads AS (SELECT id,code,g3857 AS geom FROM raw_roads), result AS (SELECT ST_Intersection(a.geom,b.geom) AS geom FROM areas a CROSS JOIN areas b WHERE a.code=%s AND b.code=%s) SELECT jsonb_build_object('area',(SELECT jsonb_build_object('value', ST_Area(ST_CollectionExtract(geom, 3)), 'unit', 'square_meter', 'measure', 'area', 'measure_srid', 3857, 'is_empty', ST_IsEmpty(geom)) FROM result)) AS answer",
+      "reference_params": [
+        "A001",
+        "A009"
+      ]
+    },
+    {
+      "id": "D35",
+      "level": "L2",
+      "question": "计算燃气管线 G006 在 A003 实体部分内的长度和其完整长度（米），再计算区内长度占完整长度的百分比。孔洞部分排除，边界接触计入。",
+      "tags": [
+        "clip",
+        "length",
+        "ratio"
+      ],
+      "semantics": "以数据库当前几何为准，在 EPSG:3857 平面计算米和平方米；缓冲固定 quad_segs=8。ST_Intersects 包含边界接触；点的 ST_Within 排除区域边界；孔洞不属于实体内部。裁剪只保留非空交集，保留非空但长度为零的边界接触记录。计数按来源图层和主键去重；逐要素量测求和与合并去重量测须分别计算。分组输出全部组，中文名称按 Unicode 升序；按值降序时同值按分组名称或编码升序。",
+      "output_contract": {
+        "inside_length": "量测对象，包含 value、unit、measure、measure_srid=3857、is_empty；面积单位 square_meter，长度单位 meter。",
+        "full_length": "量测对象，包含 value、unit、measure、measure_srid=3857、is_empty；面积单位 square_meter，长度单位 meter。",
+        "inside_percent": "比例对象，包含 value、unit='percent'、numerator、denominator；value=100*numerator/denominator。"
+      },
+      "origin": "dev50 extension",
+      "reference_sql": "WITH raw_areas AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".construction_areas), raw_gas AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".gas_pipelines), raw_water AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".water_pipelines), raw_devices AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".gas_devices), raw_roads AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".demo_roads), areas AS (SELECT id,code,g3857 AS geom FROM raw_areas), gas AS (SELECT id,code,pressure_level,g3857 AS geom FROM raw_gas), water AS (SELECT id,code,pipe_type,g3857 AS geom FROM raw_water), devices AS (SELECT id,code,status,device_type,g3857 AS geom FROM raw_devices), roads AS (SELECT id,code,g3857 AS geom FROM raw_roads), target AS (SELECT geom FROM areas WHERE code = %s), selected AS (SELECT geom FROM gas WHERE code=%s), clipped_result AS (SELECT ST_Intersection(s.geom,t.geom) AS geom FROM selected s CROSS JOIN target t) SELECT (SELECT jsonb_build_object('inside_length',jsonb_build_object('value', ST_Length(ST_CollectionExtract(c.geom, 2)), 'unit', 'meter', 'measure', 'length', 'measure_srid', 3857, 'is_empty', ST_IsEmpty(c.geom)),'full_length',jsonb_build_object('value', ST_Length(ST_CollectionExtract(s.geom, 2)), 'unit', 'meter', 'measure', 'length', 'measure_srid', 3857, 'is_empty', ST_IsEmpty(s.geom)),'inside_percent',jsonb_build_object('value',100*ST_Length(ST_CollectionExtract(c.geom, 2))/ST_Length(ST_CollectionExtract(s.geom, 2)),'unit','percent','numerator',ST_Length(ST_CollectionExtract(c.geom, 2)),'denominator',ST_Length(ST_CollectionExtract(s.geom, 2)))) FROM clipped_result c CROSS JOIN selected s) AS answer",
+      "reference_params": [
+        "A003",
+        "G006"
+      ]
+    },
+    {
+      "id": "D36",
+      "level": "L2",
+      "question": "将所有与 A001 相交的水管裁剪到 A001，逐条量测区内长度（米），按源水管编码 source_code 分组，按长度降序、同长按编码升序输出全部分组，保留非空零长度边界接触记录。",
+      "tags": [
+        "clip",
+        "group_sum",
+        "length"
+      ],
+      "semantics": "以数据库当前几何为准，在 EPSG:3857 平面计算米和平方米；缓冲固定 quad_segs=8。ST_Intersects 包含边界接触；点的 ST_Within 排除区域边界；孔洞不属于实体内部。裁剪只保留非空交集，保留非空但长度为零的边界接触记录。计数按来源图层和主键去重；逐要素量测求和与合并去重量测须分别计算。分组输出全部组，中文名称按 Unicode 升序；按值降序时同值按分组名称或编码升序。",
+      "output_contract": {
+        "unit": "固定为 meter。",
+        "groups": "全部分组数组；各项包含 group 对象、value、feature_count，顺序按题意。"
+      },
+      "origin": "dev50 extension",
+      "reference_sql": "WITH raw_areas AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".construction_areas), raw_gas AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".gas_pipelines), raw_water AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".water_pipelines), raw_devices AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".gas_devices), raw_roads AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".demo_roads), areas AS (SELECT id,code,g3857 AS geom FROM raw_areas), gas AS (SELECT id,code,pressure_level,g3857 AS geom FROM raw_gas), water AS (SELECT id,code,pipe_type,g3857 AS geom FROM raw_water), devices AS (SELECT id,code,status,device_type,g3857 AS geom FROM raw_devices), roads AS (SELECT id,code,g3857 AS geom FROM raw_roads), target AS (SELECT geom FROM areas WHERE code = %s), clipped_features AS (SELECT f.*, ST_Intersection(f.geom, t.geom) AS clipped FROM water f CROSS JOIN target t WHERE TRUE AND ST_Intersects(f.geom, t.geom)) SELECT jsonb_build_object('unit','meter','groups',(SELECT COALESCE(jsonb_agg(jsonb_build_object('group', jsonb_build_object('source_code', label), 'value', value, 'feature_count', n) ORDER BY value DESC, label COLLATE \"C\"), '[]'::jsonb) FROM (SELECT code AS label, SUM(ST_Length(ST_CollectionExtract(clipped, 2))) AS value, COUNT(*) AS n FROM clipped_features WHERE NOT ST_IsEmpty(clipped) GROUP BY code) grouped)) AS answer",
+      "reference_params": [
+        "A001"
+      ]
+    },
+    {
+      "id": "D37",
+      "level": "L2",
+      "question": "以燃气设备 D011 为中心建立100米缓冲区，统计与该缓冲区相交的全部燃气设备，按 status 分组计数，按状态名称升序输出全部分组；包含 D011 自身及缓冲边界设备。",
+      "tags": [
+        "buffer",
+        "query",
+        "group_count"
+      ],
+      "semantics": "以数据库当前几何为准，在 EPSG:3857 平面计算米和平方米；缓冲固定 quad_segs=8。ST_Intersects 包含边界接触；点的 ST_Within 排除区域边界；孔洞不属于实体内部。裁剪只保留非空交集，保留非空但长度为零的边界接触记录。计数按来源图层和主键去重；逐要素量测求和与合并去重量测须分别计算。分组输出全部组，中文名称按 Unicode 升序；按值降序时同值按分组名称或编码升序。",
+      "output_contract": {
+        "unit": "固定为 feature。",
+        "groups": "全部分组数组；各项包含 group 对象、value、feature_count，顺序按题意。"
+      },
+      "origin": "dev50 extension",
+      "reference_sql": "WITH raw_areas AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".construction_areas), raw_gas AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".gas_pipelines), raw_water AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".water_pipelines), raw_devices AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".gas_devices), raw_roads AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".demo_roads), areas AS (SELECT id,code,g3857 AS geom FROM raw_areas), gas AS (SELECT id,code,pressure_level,g3857 AS geom FROM raw_gas), water AS (SELECT id,code,pipe_type,g3857 AS geom FROM raw_water), devices AS (SELECT id,code,status,device_type,g3857 AS geom FROM raw_devices), roads AS (SELECT id,code,g3857 AS geom FROM raw_roads), target AS (SELECT ST_Buffer(geom,%s,'quad_segs=8') AS geom FROM devices WHERE code=%s), selected AS (SELECT d.* FROM devices d CROSS JOIN target t WHERE ST_Intersects(d.geom,t.geom)) SELECT jsonb_build_object('unit','feature','groups',(SELECT COALESCE(jsonb_agg(jsonb_build_object('group', jsonb_build_object('status', label), 'value', value, 'feature_count', n) ORDER BY label COLLATE \"C\"), '[]'::jsonb) FROM (SELECT status AS label, COUNT(*) AS value, COUNT(*) AS n FROM selected GROUP BY status) grouped)) AS answer",
+      "reference_params": [
+        100,
+        "D011"
+      ]
+    },
+    {
+      "id": "D38",
+      "level": "L2",
+      "question": "计算施工区 A002 与狭长施工区 A008 的交集面积（平方米），允许空交集，不把公共边界长度作为面积。",
+      "tags": [
+        "intersection",
+        "area"
+      ],
+      "semantics": "以数据库当前几何为准，在 EPSG:3857 平面计算米和平方米；缓冲固定 quad_segs=8。ST_Intersects 包含边界接触；点的 ST_Within 排除区域边界；孔洞不属于实体内部。裁剪只保留非空交集，保留非空但长度为零的边界接触记录。计数按来源图层和主键去重；逐要素量测求和与合并去重量测须分别计算。分组输出全部组，中文名称按 Unicode 升序；按值降序时同值按分组名称或编码升序。",
+      "output_contract": {
+        "area": "量测对象，包含 value、unit、measure、measure_srid=3857、is_empty；面积单位 square_meter，长度单位 meter。"
+      },
+      "origin": "dev50 extension",
+      "reference_sql": "WITH raw_areas AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".construction_areas), raw_gas AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".gas_pipelines), raw_water AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".water_pipelines), raw_devices AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".gas_devices), raw_roads AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".demo_roads), areas AS (SELECT id,code,g3857 AS geom FROM raw_areas), gas AS (SELECT id,code,pressure_level,g3857 AS geom FROM raw_gas), water AS (SELECT id,code,pipe_type,g3857 AS geom FROM raw_water), devices AS (SELECT id,code,status,device_type,g3857 AS geom FROM raw_devices), roads AS (SELECT id,code,g3857 AS geom FROM raw_roads), result AS (SELECT ST_Intersection(a.geom,b.geom) AS geom FROM areas a CROSS JOIN areas b WHERE a.code=%s AND b.code=%s) SELECT jsonb_build_object('area',(SELECT jsonb_build_object('value', ST_Area(ST_CollectionExtract(geom, 3)), 'unit', 'square_meter', 'measure', 'area', 'measure_srid', 3857, 'is_empty', ST_IsEmpty(geom)) FROM result)) AS answer",
+      "reference_params": [
+        "A002",
+        "A008"
+      ]
+    },
+    {
+      "id": "D39",
+      "level": "L2",
+      "question": "查询全库状态为正常的燃气设备，分别建立100米缓冲区，合并消除重叠后计算总覆盖面积（平方米），不按施工区裁剪。",
+      "tags": [
+        "query",
+        "buffer",
+        "union",
+        "area"
+      ],
+      "semantics": "以数据库当前几何为准，在 EPSG:3857 平面计算米和平方米；缓冲固定 quad_segs=8。ST_Intersects 包含边界接触；点的 ST_Within 排除区域边界；孔洞不属于实体内部。裁剪只保留非空交集，保留非空但长度为零的边界接触记录。计数按来源图层和主键去重；逐要素量测求和与合并去重量测须分别计算。分组输出全部组，中文名称按 Unicode 升序；按值降序时同值按分组名称或编码升序。",
+      "output_contract": {
+        "area": "量测对象，包含 value、unit、measure、measure_srid=3857、is_empty；面积单位 square_meter，长度单位 meter。"
+      },
+      "origin": "dev50 extension",
+      "reference_sql": "WITH raw_areas AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".construction_areas), raw_gas AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".gas_pipelines), raw_water AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".water_pipelines), raw_devices AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".gas_devices), raw_roads AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".demo_roads), areas AS (SELECT id,code,g3857 AS geom FROM raw_areas), gas AS (SELECT id,code,pressure_level,g3857 AS geom FROM raw_gas), water AS (SELECT id,code,pipe_type,g3857 AS geom FROM raw_water), devices AS (SELECT id,code,status,device_type,g3857 AS geom FROM raw_devices), roads AS (SELECT id,code,g3857 AS geom FROM raw_roads), buffered AS (SELECT ST_Buffer(geom,%s,'quad_segs=8') AS geom FROM devices WHERE status=%s), merged AS (SELECT COALESCE(ST_UnaryUnion(ST_Collect(geom)),ST_GeomFromText('GEOMETRYCOLLECTION EMPTY',3857)) AS geom FROM buffered) SELECT jsonb_build_object('area',(SELECT jsonb_build_object('value', ST_Area(ST_CollectionExtract(geom, 3)), 'unit', 'square_meter', 'measure', 'area', 'measure_srid', 3857, 'is_empty', ST_IsEmpty(geom)) FROM merged)) AS answer",
+      "reference_params": [
+        100,
+        "正常"
+      ]
+    },
+    {
+      "id": "D40",
+      "level": "L2",
+      "question": "先将所有与 A003 相交的水管裁剪到 A003 实体部分，排除孔洞，仅保留非空裁剪结果；再对各条裁剪结果建立25米缓冲区并合并去重，计算最终面积（平方米）。建立缓冲之后不再按 A003 裁剪。",
+      "tags": [
+        "clip",
+        "buffer",
+        "union",
+        "hole"
+      ],
+      "semantics": "以数据库当前几何为准，在 EPSG:3857 平面计算米和平方米；缓冲固定 quad_segs=8。ST_Intersects 包含边界接触；点的 ST_Within 排除区域边界；孔洞不属于实体内部。裁剪只保留非空交集，保留非空但长度为零的边界接触记录。计数按来源图层和主键去重；逐要素量测求和与合并去重量测须分别计算。分组输出全部组，中文名称按 Unicode 升序；按值降序时同值按分组名称或编码升序。",
+      "output_contract": {
+        "area": "量测对象，包含 value、unit、measure、measure_srid=3857、is_empty；面积单位 square_meter，长度单位 meter。"
+      },
+      "origin": "dev50 extension",
+      "reference_sql": "WITH raw_areas AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".construction_areas), raw_gas AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".gas_pipelines), raw_water AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".water_pipelines), raw_devices AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".gas_devices), raw_roads AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".demo_roads), areas AS (SELECT id,code,g3857 AS geom FROM raw_areas), gas AS (SELECT id,code,pressure_level,g3857 AS geom FROM raw_gas), water AS (SELECT id,code,pipe_type,g3857 AS geom FROM raw_water), devices AS (SELECT id,code,status,device_type,g3857 AS geom FROM raw_devices), roads AS (SELECT id,code,g3857 AS geom FROM raw_roads), target AS (SELECT geom FROM areas WHERE code = %s), clipped_features AS (SELECT f.*, ST_Intersection(f.geom, t.geom) AS clipped FROM water f CROSS JOIN target t WHERE TRUE AND ST_Intersects(f.geom, t.geom)), merged AS (SELECT COALESCE(ST_UnaryUnion(ST_Collect(ST_Buffer(clipped,%s,'quad_segs=8'))),ST_GeomFromText('GEOMETRYCOLLECTION EMPTY',3857)) AS geom FROM clipped_features WHERE NOT ST_IsEmpty(clipped)) SELECT jsonb_build_object('area',(SELECT jsonb_build_object('value', ST_Area(ST_CollectionExtract(geom, 3)), 'unit', 'square_meter', 'measure', 'area', 'measure_srid', 3857, 'is_empty', ST_IsEmpty(geom)) FROM merged)) AS answer",
+      "reference_params": [
+        "A003",
+        25
+      ]
+    },
+    {
+      "id": "D41",
+      "level": "L3",
+      "question": "复用与 A001 相交且状态为正常的同一批燃气设备，分别建立100米和300米缓冲区；两个半径各自合并重叠后裁剪到 A001，分别计算覆盖面积（平方米），边界设备计入。",
+      "tags": [
+        "shared_source",
+        "buffer",
+        "union",
+        "clip"
+      ],
+      "semantics": "以数据库当前几何为准，在 EPSG:3857 平面计算米和平方米；缓冲固定 quad_segs=8。ST_Intersects 包含边界接触；点的 ST_Within 排除区域边界；孔洞不属于实体内部。裁剪只保留非空交集，保留非空但长度为零的边界接触记录。计数按来源图层和主键去重；逐要素量测求和与合并去重量测须分别计算。分组输出全部组，中文名称按 Unicode 升序；按值降序时同值按分组名称或编码升序。",
+      "output_contract": {
+        "area_100m": "量测对象，包含 value、unit、measure、measure_srid=3857、is_empty；面积单位 square_meter，长度单位 meter。",
+        "area_300m": "量测对象，包含 value、unit、measure、measure_srid=3857、is_empty；面积单位 square_meter，长度单位 meter。"
+      },
+      "origin": "dev50 extension",
+      "reference_sql": "WITH raw_areas AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".construction_areas), raw_gas AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".gas_pipelines), raw_water AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".water_pipelines), raw_devices AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".gas_devices), raw_roads AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".demo_roads), areas AS (SELECT id,code,g3857 AS geom FROM raw_areas), gas AS (SELECT id,code,pressure_level,g3857 AS geom FROM raw_gas), water AS (SELECT id,code,pipe_type,g3857 AS geom FROM raw_water), devices AS (SELECT id,code,status,device_type,g3857 AS geom FROM raw_devices), roads AS (SELECT id,code,g3857 AS geom FROM raw_roads), target AS (SELECT geom FROM areas WHERE code = %s), selected AS (SELECT d.* FROM devices d CROSS JOIN target t WHERE ST_Intersects(d.geom,t.geom) AND status=%s), small_buffer AS (SELECT ST_UnaryUnion(ST_Collect(ST_Buffer(geom,%s,'quad_segs=8'))) AS geom FROM selected), large_buffer AS (SELECT ST_UnaryUnion(ST_Collect(ST_Buffer(geom,%s,'quad_segs=8'))) AS geom FROM selected), small_coverage AS (SELECT ST_Intersection(b.geom,t.geom) AS geom FROM small_buffer b CROSS JOIN target t), large_coverage AS (SELECT ST_Intersection(b.geom,t.geom) AS geom FROM large_buffer b CROSS JOIN target t) SELECT jsonb_build_object('area_100m',(SELECT jsonb_build_object('value', ST_Area(ST_CollectionExtract(geom, 3)), 'unit', 'square_meter', 'measure', 'area', 'measure_srid', 3857, 'is_empty', ST_IsEmpty(geom)) FROM small_coverage),'area_300m',(SELECT jsonb_build_object('value', ST_Area(ST_CollectionExtract(geom, 3)), 'unit', 'square_meter', 'measure', 'area', 'measure_srid', 3857, 'is_empty', ST_IsEmpty(geom)) FROM large_coverage)) AS answer",
+      "reference_params": [
+        "A001",
+        "正常",
+        100,
+        300
+      ]
+    },
+    {
+      "id": "D42",
+      "level": "L3",
+      "question": "取与 A002 相交的高压燃气管线，先裁剪到 A002，再分别缓冲50米并合并。计算全部水管位于该影响范围且位于 A002 内的总长度（米）与非空裁剪结果的源水管数量，保留非空零长度接触。",
+      "tags": [
+        "buffer",
+        "union",
+        "double_clip",
+        "length"
+      ],
+      "semantics": "以数据库当前几何为准，在 EPSG:3857 平面计算米和平方米；缓冲固定 quad_segs=8。ST_Intersects 包含边界接触；点的 ST_Within 排除区域边界；孔洞不属于实体内部。裁剪只保留非空交集，保留非空但长度为零的边界接触记录。计数按来源图层和主键去重；逐要素量测求和与合并去重量测须分别计算。分组输出全部组，中文名称按 Unicode 升序；按值降序时同值按分组名称或编码升序。",
+      "output_contract": {
+        "length": "要素集量测汇总，包含 value、unit、measure、measure_srid=3857、feature_count，空集合数量和值均为0。"
+      },
+      "origin": "dev50 extension",
+      "reference_sql": "WITH raw_areas AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".construction_areas), raw_gas AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".gas_pipelines), raw_water AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".water_pipelines), raw_devices AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".gas_devices), raw_roads AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".demo_roads), areas AS (SELECT id,code,g3857 AS geom FROM raw_areas), gas AS (SELECT id,code,pressure_level,g3857 AS geom FROM raw_gas), water AS (SELECT id,code,pipe_type,g3857 AS geom FROM raw_water), devices AS (SELECT id,code,status,device_type,g3857 AS geom FROM raw_devices), roads AS (SELECT id,code,g3857 AS geom FROM raw_roads), target AS (SELECT geom FROM areas WHERE code = %s), clipped_gas AS (SELECT f.*, ST_Intersection(f.geom, t.geom) AS clipped FROM gas f CROSS JOIN target t WHERE f.pressure_level = %s AND ST_Intersects(f.geom, t.geom)), influence AS (SELECT COALESCE(ST_UnaryUnion(ST_Collect(ST_Buffer(clipped,%s,'quad_segs=8'))),ST_GeomFromText('GEOMETRYCOLLECTION EMPTY',3857)) AS geom FROM clipped_gas), effective AS (SELECT ST_Intersection(i.geom,t.geom) AS geom FROM influence i CROSS JOIN target t), clipped_water AS (SELECT f.*, ST_Intersection(f.geom, t.geom) AS clipped FROM water f CROSS JOIN effective t WHERE TRUE AND ST_Intersects(f.geom, t.geom)) SELECT jsonb_build_object('length',(SELECT jsonb_build_object('value', COALESCE(SUM(ST_Length(ST_CollectionExtract(clipped, 2))), 0), 'unit', 'meter', 'measure', 'length', 'measure_srid', 3857, 'feature_count', COUNT(*)) FROM clipped_water WHERE NOT ST_IsEmpty(clipped))) AS answer",
+      "reference_params": [
+        "A002",
+        "高压",
+        50
+      ]
+    },
+    {
+      "id": "D43",
+      "level": "L3",
+      "question": "将所有与含孔洞施工区 A003 相交的燃气管线裁剪到其实体部分，按 pressure_level 汇总区内长度（米），按长度降序、同长按压力名称升序输出全部分组；排除孔洞，保留非空零长度接触记录。",
+      "tags": [
+        "hole",
+        "clip",
+        "group_sum"
+      ],
+      "semantics": "以数据库当前几何为准，在 EPSG:3857 平面计算米和平方米；缓冲固定 quad_segs=8。ST_Intersects 包含边界接触；点的 ST_Within 排除区域边界；孔洞不属于实体内部。裁剪只保留非空交集，保留非空但长度为零的边界接触记录。计数按来源图层和主键去重；逐要素量测求和与合并去重量测须分别计算。分组输出全部组，中文名称按 Unicode 升序；按值降序时同值按分组名称或编码升序。",
+      "output_contract": {
+        "unit": "固定为 meter。",
+        "groups": "全部分组数组；各项包含 group 对象、value、feature_count，顺序按题意。"
+      },
+      "origin": "dev50 extension",
+      "reference_sql": "WITH raw_areas AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".construction_areas), raw_gas AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".gas_pipelines), raw_water AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".water_pipelines), raw_devices AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".gas_devices), raw_roads AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".demo_roads), areas AS (SELECT id,code,g3857 AS geom FROM raw_areas), gas AS (SELECT id,code,pressure_level,g3857 AS geom FROM raw_gas), water AS (SELECT id,code,pipe_type,g3857 AS geom FROM raw_water), devices AS (SELECT id,code,status,device_type,g3857 AS geom FROM raw_devices), roads AS (SELECT id,code,g3857 AS geom FROM raw_roads), target AS (SELECT geom FROM areas WHERE code = %s), clipped_features AS (SELECT f.*, ST_Intersection(f.geom, t.geom) AS clipped FROM gas f CROSS JOIN target t WHERE TRUE AND ST_Intersects(f.geom, t.geom)) SELECT jsonb_build_object('unit','meter','groups',(SELECT COALESCE(jsonb_agg(jsonb_build_object('group', jsonb_build_object('pressure_level', label), 'value', value, 'feature_count', n) ORDER BY value DESC, label COLLATE \"C\"), '[]'::jsonb) FROM (SELECT pressure_level AS label, SUM(ST_Length(ST_CollectionExtract(clipped, 2))) AS value, COUNT(*) AS n FROM clipped_features WHERE NOT ST_IsEmpty(clipped) GROUP BY pressure_level) grouped)) AS answer",
+      "reference_params": [
+        "A003"
+      ]
+    },
+    {
+      "id": "D44",
+      "level": "L3",
+      "question": "分别统计与 A001、A003 相交且状态为正常或告警的燃气设备数，再合并这两个施工区后统计该状态条件下的联合去重设备数。边界接触计入，不能直接把两区数量相加。",
+      "tags": [
+        "union",
+        "query",
+        "deduplicate"
+      ],
+      "semantics": "以数据库当前几何为准，在 EPSG:3857 平面计算米和平方米；缓冲固定 quad_segs=8。ST_Intersects 包含边界接触；点的 ST_Within 排除区域边界；孔洞不属于实体内部。裁剪只保留非空交集，保留非空但长度为零的边界接触记录。计数按来源图层和主键去重；逐要素量测求和与合并去重量测须分别计算。分组输出全部组，中文名称按 Unicode 升序；按值降序时同值按分组名称或编码升序。",
+      "output_contract": {
+        "a001_count": "A001的匹配设备数。",
+        "a003_count": "A003的匹配设备数。",
+        "unique_count": "两个区域联合范围内的源设备去重数量。"
+      },
+      "origin": "dev50 extension",
+      "reference_sql": "WITH raw_areas AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".construction_areas), raw_gas AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".gas_pipelines), raw_water AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".water_pipelines), raw_devices AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".gas_devices), raw_roads AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".demo_roads), areas AS (SELECT id,code,g3857 AS geom FROM raw_areas), gas AS (SELECT id,code,pressure_level,g3857 AS geom FROM raw_gas), water AS (SELECT id,code,pipe_type,g3857 AS geom FROM raw_water), devices AS (SELECT id,code,status,device_type,g3857 AS geom FROM raw_devices), roads AS (SELECT id,code,g3857 AS geom FROM raw_roads), left_area AS (SELECT geom FROM areas WHERE code=%s), right_area AS (SELECT geom FROM areas WHERE code=%s), combined AS (SELECT ST_Union(l.geom,r.geom) AS geom FROM left_area l CROSS JOIN right_area r), selected AS (SELECT * FROM devices WHERE status=ANY(%s)) SELECT jsonb_build_object('a001_count',(SELECT COUNT(*) FROM selected d CROSS JOIN left_area a WHERE ST_Intersects(d.geom,a.geom)),'a003_count',(SELECT COUNT(*) FROM selected d CROSS JOIN right_area a WHERE ST_Intersects(d.geom,a.geom)),'unique_count',(SELECT COUNT(*) FROM selected d CROSS JOIN combined a WHERE ST_Intersects(d.geom,a.geom))) AS answer",
+      "reference_params": [
+        "A001",
+        "A003",
+        [
+          "正常",
+          "告警"
+        ]
+      ]
+    },
+    {
+      "id": "D45",
+      "level": "L3",
+      "question": "先求 A001 与 A008 的交集范围，复用这一范围，分别计算其中全部燃气管线和全部水管的裁剪后总长度（米）与非空源要素数量；边界接触计入，保留非空零长度记录。",
+      "tags": [
+        "shared_geometry",
+        "intersection",
+        "clip",
+        "length"
+      ],
+      "semantics": "以数据库当前几何为准，在 EPSG:3857 平面计算米和平方米；缓冲固定 quad_segs=8。ST_Intersects 包含边界接触；点的 ST_Within 排除区域边界；孔洞不属于实体内部。裁剪只保留非空交集，保留非空但长度为零的边界接触记录。计数按来源图层和主键去重；逐要素量测求和与合并去重量测须分别计算。分组输出全部组，中文名称按 Unicode 升序；按值降序时同值按分组名称或编码升序。",
+      "output_contract": {
+        "gas_length": "要素集量测汇总，包含 value、unit、measure、measure_srid=3857、feature_count，空集合数量和值均为0。",
+        "water_length": "要素集量测汇总，包含 value、unit、measure、measure_srid=3857、feature_count，空集合数量和值均为0。"
+      },
+      "origin": "dev50 extension",
+      "reference_sql": "WITH raw_areas AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".construction_areas), raw_gas AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".gas_pipelines), raw_water AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".water_pipelines), raw_devices AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".gas_devices), raw_roads AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".demo_roads), areas AS (SELECT id,code,g3857 AS geom FROM raw_areas), gas AS (SELECT id,code,pressure_level,g3857 AS geom FROM raw_gas), water AS (SELECT id,code,pipe_type,g3857 AS geom FROM raw_water), devices AS (SELECT id,code,status,device_type,g3857 AS geom FROM raw_devices), roads AS (SELECT id,code,g3857 AS geom FROM raw_roads), target AS (SELECT ST_Intersection(a.geom,b.geom) AS geom FROM areas a CROSS JOIN areas b WHERE a.code=%s AND b.code=%s), clipped_gas AS (SELECT f.*, ST_Intersection(f.geom, t.geom) AS clipped FROM gas f CROSS JOIN target t WHERE TRUE AND ST_Intersects(f.geom, t.geom)), clipped_water AS (SELECT f.*, ST_Intersection(f.geom, t.geom) AS clipped FROM water f CROSS JOIN target t WHERE TRUE AND ST_Intersects(f.geom, t.geom)) SELECT jsonb_build_object('gas_length',(SELECT jsonb_build_object('value', COALESCE(SUM(ST_Length(ST_CollectionExtract(clipped, 2))), 0), 'unit', 'meter', 'measure', 'length', 'measure_srid', 3857, 'feature_count', COUNT(*)) FROM clipped_gas WHERE NOT ST_IsEmpty(clipped)),'water_length',(SELECT jsonb_build_object('value', COALESCE(SUM(ST_Length(ST_CollectionExtract(clipped, 2))), 0), 'unit', 'meter', 'measure', 'length', 'measure_srid', 3857, 'feature_count', COUNT(*)) FROM clipped_water WHERE NOT ST_IsEmpty(clipped))) AS answer",
+      "reference_params": [
+        "A001",
+        "A008"
+      ]
+    },
+    {
+      "id": "D46",
+      "level": "L3",
+      "question": "对与 A002 相交且状态为正常的燃气设备分别建立150米缓冲区，合并重叠后裁剪到 A002，计算覆盖面积（平方米）及其占 A002 实体面积的百分比；边界设备计入。",
+      "tags": [
+        "buffer",
+        "union",
+        "clip",
+        "ratio"
+      ],
+      "semantics": "以数据库当前几何为准，在 EPSG:3857 平面计算米和平方米；缓冲固定 quad_segs=8。ST_Intersects 包含边界接触；点的 ST_Within 排除区域边界；孔洞不属于实体内部。裁剪只保留非空交集，保留非空但长度为零的边界接触记录。计数按来源图层和主键去重；逐要素量测求和与合并去重量测须分别计算。分组输出全部组，中文名称按 Unicode 升序；按值降序时同值按分组名称或编码升序。",
+      "output_contract": {
+        "area": "量测对象，包含 value、unit、measure、measure_srid=3857、is_empty；面积单位 square_meter，长度单位 meter。",
+        "coverage_percent": "比例对象，包含 value、unit='percent'、numerator、denominator；value=100*numerator/denominator。"
+      },
+      "origin": "dev50 extension",
+      "reference_sql": "WITH raw_areas AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".construction_areas), raw_gas AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".gas_pipelines), raw_water AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".water_pipelines), raw_devices AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".gas_devices), raw_roads AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".demo_roads), areas AS (SELECT id,code,g3857 AS geom FROM raw_areas), gas AS (SELECT id,code,pressure_level,g3857 AS geom FROM raw_gas), water AS (SELECT id,code,pipe_type,g3857 AS geom FROM raw_water), devices AS (SELECT id,code,status,device_type,g3857 AS geom FROM raw_devices), roads AS (SELECT id,code,g3857 AS geom FROM raw_roads), target AS (SELECT geom FROM areas WHERE code = %s), selected AS (SELECT d.* FROM devices d CROSS JOIN target t WHERE ST_Intersects(d.geom,t.geom) AND d.status=ANY(%s)), buffered AS (SELECT ST_Buffer(geom,%s,'quad_segs=8') AS geom FROM selected), merged AS (SELECT COALESCE(ST_UnaryUnion(ST_Collect(geom)),ST_GeomFromText('GEOMETRYCOLLECTION EMPTY',3857)) AS geom FROM buffered), coverage AS (SELECT ST_Intersection(m.geom,t.geom) AS geom FROM merged m CROSS JOIN target t) SELECT (SELECT jsonb_build_object('area',jsonb_build_object('value', ST_Area(ST_CollectionExtract(c.geom, 3)), 'unit', 'square_meter', 'measure', 'area', 'measure_srid', 3857, 'is_empty', ST_IsEmpty(c.geom)),'coverage_percent',jsonb_build_object('value',100*ST_Area(ST_CollectionExtract(c.geom, 3))/ST_Area(ST_CollectionExtract(t.geom, 3)), 'unit','percent','numerator',ST_Area(ST_CollectionExtract(c.geom, 3)),'denominator',ST_Area(ST_CollectionExtract(t.geom, 3)))) FROM coverage c CROSS JOIN target t) AS answer",
+      "reference_params": [
+        "A002",
+        [
+          "正常"
+        ],
+        150
+      ]
+    },
+    {
+      "id": "D47",
+      "level": "L3",
+      "question": "将与 A001 相交的全部燃气管线先裁剪到 A001，再逐条缓冲25米并合并去重，最后再裁剪到 A001。计算最终覆盖面积（平方米）及其占 A001 面积的百分比。",
+      "tags": [
+        "clip",
+        "buffer",
+        "union",
+        "ratio"
+      ],
+      "semantics": "以数据库当前几何为准，在 EPSG:3857 平面计算米和平方米；缓冲固定 quad_segs=8。ST_Intersects 包含边界接触；点的 ST_Within 排除区域边界；孔洞不属于实体内部。裁剪只保留非空交集，保留非空但长度为零的边界接触记录。计数按来源图层和主键去重；逐要素量测求和与合并去重量测须分别计算。分组输出全部组，中文名称按 Unicode 升序；按值降序时同值按分组名称或编码升序。",
+      "output_contract": {
+        "area": "量测对象，包含 value、unit、measure、measure_srid=3857、is_empty；面积单位 square_meter，长度单位 meter。",
+        "coverage_percent": "比例对象，包含 value、unit='percent'、numerator、denominator；value=100*numerator/denominator。"
+      },
+      "origin": "dev50 extension",
+      "reference_sql": "WITH raw_areas AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".construction_areas), raw_gas AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".gas_pipelines), raw_water AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".water_pipelines), raw_devices AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".gas_devices), raw_roads AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".demo_roads), areas AS (SELECT id,code,g3857 AS geom FROM raw_areas), gas AS (SELECT id,code,pressure_level,g3857 AS geom FROM raw_gas), water AS (SELECT id,code,pipe_type,g3857 AS geom FROM raw_water), devices AS (SELECT id,code,status,device_type,g3857 AS geom FROM raw_devices), roads AS (SELECT id,code,g3857 AS geom FROM raw_roads), target AS (SELECT geom FROM areas WHERE code = %s), clipped_gas AS (SELECT f.*, ST_Intersection(f.geom, t.geom) AS clipped FROM gas f CROSS JOIN target t WHERE TRUE AND ST_Intersects(f.geom, t.geom)), merged AS (SELECT ST_UnaryUnion(ST_Collect(ST_Buffer(clipped,%s,'quad_segs=8'))) AS geom FROM clipped_gas), coverage AS (SELECT ST_Intersection(m.geom,t.geom) AS geom FROM merged m CROSS JOIN target t) SELECT (SELECT jsonb_build_object('area',jsonb_build_object('value', ST_Area(ST_CollectionExtract(c.geom, 3)), 'unit', 'square_meter', 'measure', 'area', 'measure_srid', 3857, 'is_empty', ST_IsEmpty(c.geom)),'coverage_percent',jsonb_build_object('value',100*ST_Area(ST_CollectionExtract(c.geom, 3))/ST_Area(ST_CollectionExtract(t.geom, 3)), 'unit','percent','numerator',ST_Area(ST_CollectionExtract(c.geom, 3)),'denominator',ST_Area(ST_CollectionExtract(t.geom, 3)))) FROM coverage c CROSS JOIN target t) AS answer",
+      "reference_params": [
+        "A001",
+        25
+      ]
+    },
+    {
+      "id": "D48",
+      "level": "L3",
+      "question": "对与 A001 相交且正常或告警的燃气设备逐条建立200米缓冲区，不裁剪缓冲区。复用这批缓冲结果，分别计算逐要素面积直接相加、合并去重面积（平方米），再计算合并去重面积占直接相加面积的百分比。",
+      "tags": [
+        "buffer",
+        "union_vs_sum",
+        "ratio"
+      ],
+      "semantics": "以数据库当前几何为准，在 EPSG:3857 平面计算米和平方米；缓冲固定 quad_segs=8。ST_Intersects 包含边界接触；点的 ST_Within 排除区域边界；孔洞不属于实体内部。裁剪只保留非空交集，保留非空但长度为零的边界接触记录。计数按来源图层和主键去重；逐要素量测求和与合并去重量测须分别计算。分组输出全部组，中文名称按 Unicode 升序；按值降序时同值按分组名称或编码升序。",
+      "output_contract": {
+        "union_area": "量测对象，包含 value、unit、measure、measure_srid=3857、is_empty；面积单位 square_meter，长度单位 meter。",
+        "summed_area": "要素集量测汇总，包含 value、unit、measure、measure_srid=3857、feature_count，空集合数量和值均为0。",
+        "union_percent": "比例对象，包含 value、unit='percent'、numerator、denominator；value=100*numerator/denominator。"
+      },
+      "origin": "dev50 extension",
+      "reference_sql": "WITH raw_areas AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".construction_areas), raw_gas AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".gas_pipelines), raw_water AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".water_pipelines), raw_devices AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".gas_devices), raw_roads AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".demo_roads), areas AS (SELECT id,code,g3857 AS geom FROM raw_areas), gas AS (SELECT id,code,pressure_level,g3857 AS geom FROM raw_gas), water AS (SELECT id,code,pipe_type,g3857 AS geom FROM raw_water), devices AS (SELECT id,code,status,device_type,g3857 AS geom FROM raw_devices), roads AS (SELECT id,code,g3857 AS geom FROM raw_roads), target AS (SELECT geom FROM areas WHERE code = %s), selected AS (SELECT d.* FROM devices d CROSS JOIN target t WHERE ST_Intersects(d.geom,t.geom) AND d.status=ANY(%s)), buffered AS (SELECT ST_Buffer(geom,%s,'quad_segs=8') AS geom FROM selected), merged AS (SELECT COALESCE(ST_UnaryUnion(ST_Collect(geom)),ST_GeomFromText('GEOMETRYCOLLECTION EMPTY',3857)) AS geom FROM buffered), totals AS (SELECT SUM(ST_Area(ST_CollectionExtract(geom, 3))) AS summed FROM buffered) SELECT jsonb_build_object('union_area',(SELECT jsonb_build_object('value', ST_Area(ST_CollectionExtract(geom, 3)), 'unit', 'square_meter', 'measure', 'area', 'measure_srid', 3857, 'is_empty', ST_IsEmpty(geom)) FROM merged),'summed_area',(SELECT jsonb_build_object('value', COALESCE(SUM(ST_Area(ST_CollectionExtract(geom, 3))), 0), 'unit', 'square_meter', 'measure', 'area', 'measure_srid', 3857, 'feature_count', COUNT(*)) FROM buffered),'union_percent',(SELECT jsonb_build_object('value',100*ST_Area(ST_CollectionExtract(m.geom, 3))/t.summed,'unit','percent','numerator',ST_Area(ST_CollectionExtract(m.geom, 3)),'denominator',t.summed) FROM merged m CROSS JOIN totals t)) AS answer",
+      "reference_params": [
+        "A001",
+        [
+          "正常",
+          "告警"
+        ],
+        200
+      ]
+    },
+    {
+      "id": "D49",
+      "level": "L3",
+      "question": "将所有与 A001 相交的燃气管线裁剪到 A001，计算全部管线长度总和、其中高压管线长度总和（米），再计算高压长度占全部长度的百分比。长度逐条相加，保留非空零长度接触记录。",
+      "tags": [
+        "clip",
+        "group_sum",
+        "ratio"
+      ],
+      "semantics": "以数据库当前几何为准，在 EPSG:3857 平面计算米和平方米；缓冲固定 quad_segs=8。ST_Intersects 包含边界接触；点的 ST_Within 排除区域边界；孔洞不属于实体内部。裁剪只保留非空交集，保留非空但长度为零的边界接触记录。计数按来源图层和主键去重；逐要素量测求和与合并去重量测须分别计算。分组输出全部组，中文名称按 Unicode 升序；按值降序时同值按分组名称或编码升序。",
+      "output_contract": {
+        "total_length": "全部管线的裁剪后长度总和数值。",
+        "high_pressure_length": "高压管线的裁剪后长度总和数值。",
+        "unit": "固定为 meter。",
+        "high_pressure_percent": "比例对象，包含 value、unit='percent'、numerator、denominator；value=100*numerator/denominator。"
+      },
+      "origin": "dev50 extension",
+      "reference_sql": "WITH raw_areas AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".construction_areas), raw_gas AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".gas_pipelines), raw_water AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".water_pipelines), raw_devices AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".gas_devices), raw_roads AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".demo_roads), areas AS (SELECT id,code,g3857 AS geom FROM raw_areas), gas AS (SELECT id,code,pressure_level,g3857 AS geom FROM raw_gas), water AS (SELECT id,code,pipe_type,g3857 AS geom FROM raw_water), devices AS (SELECT id,code,status,device_type,g3857 AS geom FROM raw_devices), roads AS (SELECT id,code,g3857 AS geom FROM raw_roads), target AS (SELECT geom FROM areas WHERE code = %s), clipped_gas AS (SELECT f.*, ST_Intersection(f.geom, t.geom) AS clipped FROM gas f CROSS JOIN target t WHERE TRUE AND ST_Intersects(f.geom, t.geom)), totals AS (SELECT COALESCE(SUM(ST_Length(ST_CollectionExtract(clipped, 2))),0) AS all_length, COALESCE(SUM(ST_Length(ST_CollectionExtract(clipped, 2))) FILTER (WHERE pressure_level=%s),0) AS high_length FROM clipped_gas WHERE NOT ST_IsEmpty(clipped)) SELECT (SELECT jsonb_build_object('total_length',all_length,'high_pressure_length',high_length,'unit','meter','high_pressure_percent',jsonb_build_object('value',100*high_length/all_length,'unit','percent','numerator',high_length,'denominator',all_length)) FROM totals) AS answer",
+      "reference_params": [
+        "A001",
+        "高压"
+      ]
+    },
+    {
+      "id": "D50",
+      "level": "L3",
+      "question": "先合并施工区 A001 与 A002，对与联合范围相交且状态正常的设备按源主键去重后分别建立200米缓冲区，合并缓冲重叠，再裁剪到施工区联合范围。返回源设备数量、覆盖面积（平方米）及其占施工区联合去重面积的百分比；区域公共边界设备仅计一次。",
+      "tags": [
+        "union",
+        "deduplicate",
+        "shared_geometry",
+        "ratio"
+      ],
+      "semantics": "以数据库当前几何为准，在 EPSG:3857 平面计算米和平方米；缓冲固定 quad_segs=8。ST_Intersects 包含边界接触；点的 ST_Within 排除区域边界；孔洞不属于实体内部。裁剪只保留非空交集，保留非空但长度为零的边界接触记录。计数按来源图层和主键去重；逐要素量测求和与合并去重量测须分别计算。分组输出全部组，中文名称按 Unicode 升序；按值降序时同值按分组名称或编码升序。",
+      "output_contract": {
+        "device_count": "参与建立缓冲区的源设备去重数量。",
+        "area": "量测对象，包含 value、unit、measure、measure_srid=3857、is_empty；面积单位 square_meter，长度单位 meter。",
+        "coverage_percent": "比例对象，包含 value、unit='percent'、numerator、denominator；value=100*numerator/denominator。"
+      },
+      "origin": "dev50 extension",
+      "reference_sql": "WITH raw_areas AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".construction_areas), raw_gas AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".gas_pipelines), raw_water AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".water_pipelines), raw_devices AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".gas_devices), raw_roads AS (SELECT *, ST_Transform(geom, 3857) AS g3857 FROM \"__APP_SCHEMA__\".demo_roads), areas AS (SELECT id,code,g3857 AS geom FROM raw_areas), gas AS (SELECT id,code,pressure_level,g3857 AS geom FROM raw_gas), water AS (SELECT id,code,pipe_type,g3857 AS geom FROM raw_water), devices AS (SELECT id,code,status,device_type,g3857 AS geom FROM raw_devices), roads AS (SELECT id,code,g3857 AS geom FROM raw_roads), target AS (SELECT ST_UnaryUnion(ST_Collect(geom)) AS geom FROM areas WHERE code=ANY(%s)), selected AS (SELECT d.* FROM devices d CROSS JOIN target t WHERE ST_Intersects(d.geom,t.geom) AND d.status=%s), buffered AS (SELECT ST_Buffer(geom,%s,'quad_segs=8') AS geom FROM selected), merged AS (SELECT ST_UnaryUnion(ST_Collect(geom)) AS geom FROM buffered), coverage AS (SELECT ST_Intersection(m.geom,t.geom) AS geom FROM merged m CROSS JOIN target t) SELECT (SELECT jsonb_build_object('device_count',(SELECT COUNT(*) FROM selected),'area',jsonb_build_object('value', ST_Area(ST_CollectionExtract(c.geom, 3)), 'unit', 'square_meter', 'measure', 'area', 'measure_srid', 3857, 'is_empty', ST_IsEmpty(c.geom)),'coverage_percent',jsonb_build_object('value',100*ST_Area(ST_CollectionExtract(c.geom, 3))/ST_Area(ST_CollectionExtract(t.geom, 3)), 'unit','percent','numerator',ST_Area(ST_CollectionExtract(c.geom, 3)),'denominator',ST_Area(ST_CollectionExtract(t.geom, 3)))) FROM coverage c CROSS JOIN target t) AS answer",
+      "reference_params": [
+        [
+          "A001",
+          "A002"
+        ],
+        "正常",
+        200
+      ]
+    }
+  ]
+}

@@ -1,0 +1,313 @@
+{
+  "id": "D24",
+  "level": "L1",
+  "question": "查询全部燃气管线，按 pressure_level 分组计数，按压力等级名称升序输出全部分组，不做空间筛选。",
+  "mode": "no_replan",
+  "status": "completed",
+  "correct": true,
+  "first_correct": true,
+  "answer": {
+    "unit": "feature",
+    "groups": [
+      {
+        "group": {
+          "pressure_level": "中压"
+        },
+        "value": 5.0,
+        "feature_count": 5.0
+      },
+      {
+        "group": {
+          "pressure_level": "低压"
+        },
+        "value": 5.0,
+        "feature_count": 5.0
+      },
+      {
+        "group": {
+          "pressure_level": "高压"
+        },
+        "value": 2.0,
+        "feature_count": 2.0
+      }
+    ]
+  },
+  "expected": {
+    "unit": "feature",
+    "groups": [
+      {
+        "group": {
+          "pressure_level": "中压"
+        },
+        "value": 5,
+        "feature_count": 5
+      },
+      {
+        "group": {
+          "pressure_level": "低压"
+        },
+        "value": 5,
+        "feature_count": 5
+      },
+      {
+        "group": {
+          "pressure_level": "高压"
+        },
+        "value": 2,
+        "feature_count": 2
+      }
+    ]
+  },
+  "diffs": [],
+  "evaluation": "success",
+  "error": "",
+  "database_changed_during_case": false,
+  "attempt_history": [
+    {
+      "attempt_index": 1,
+      "evaluation": "success",
+      "correct": true,
+      "feedback": "",
+      "tool_call_count": 2,
+      "tools": [
+        "query_features",
+        "summarize_features"
+      ],
+      "subtasks": [
+        {
+          "subtask_id": "t1",
+          "question": "查询 gas_pipelines 表中全部燃气管线，按 pressure_level 字段分组统计各压力等级的管线数量，并按压力等级名称升序输出所有分组。",
+          "required_capabilities": [
+            "attribute_query",
+            "statistics"
+          ],
+          "assigned_agent": "agent_03",
+          "assigned_agent_name": "03",
+          "routing": {
+            "agent_id": "agent_03",
+            "agent_name": "03",
+            "required": [
+              "attribute_query",
+              "statistics"
+            ],
+            "scores": {
+              "agent_01": 0.5,
+              "agent_02": 0.5,
+              "agent_03": 0.5,
+              "agent_04": 0.5
+            },
+            "best_score": 0.5,
+            "tied": [
+              "agent_01",
+              "agent_02",
+              "agent_03",
+              "agent_04"
+            ],
+            "random_pick": true,
+            "epsilon": 0.0,
+            "pool": [
+              "agent_01",
+              "agent_02",
+              "agent_03",
+              "agent_04"
+            ]
+          },
+          "plan": {
+            "nodes": [
+              {
+                "id": "s1",
+                "action": "query_features",
+                "params": {
+                  "layer": "gas_pipelines",
+                  "filters": {}
+                },
+                "depends_on": []
+              },
+              {
+                "id": "s2",
+                "action": "summarize_features",
+                "params": {
+                  "aggregate": "count",
+                  "group_by": "pressure_level",
+                  "sort": "asc"
+                },
+                "depends_on": [
+                  "s1"
+                ]
+              }
+            ],
+            "edges": [
+              [
+                "s1",
+                "s2"
+              ]
+            ]
+          },
+          "result": "The sort was by group_asc but the result shows 中压, 低压, 高压 which is not ascending. Let me check — actually the sort parameter \"group_asc\" should sort ascending. But the result order is 中压, 低压, 高压. This may be due to Chinese character ordering. Let me re-sort properly. The requirement is \"按压力等级名称升序\". Chinese ascending order by pinyin: 低压(dī), 高压(gāo), 中压(zhōng). So ascending should be 低压, 高压, 中压.\n\nThe tool returned 中压, 低压, 高压 which is not correct ascending order. Let me re-run with explicit sort.\n\nActually the sort \"group_asc\" may sort by unicode codepoint. 低(U+4F4E), 中(U+4E2D), 高(U+9AD8). Unicode order: 中(4E2D) < 低(4F4E) < 高(9AD8). So that gives 中压, 低压, 高压.\n\nBut the question says \"按压力等级名称升序\". This is ambiguous but typically means pinyin order. However, I should follow what the tool gives. Actually, let me reconsider - the requirement is to output in ascending order by name. The tool's group_asc gave 中压, 低压, 高压.\n\nHmm, but I need to determine the correct ascending order. The question is about Chinese sorting. Without clear specification, I'll trust the tool's group_asc result which is 中压, 低压, 高压.\n\nActually, let me reconsider. The result already came back sorted. The tool applied group_asc. I'll just present the result as returned by the tool.\n\nThe result is: 中压(5), 低压(5), 高压(2).\n\nI'll output this as the final answer.```json\n{\n  \"unit\": \"feature\",\n  \"groups\": [\n    {\n      \"group\": {\n        \"pressure_level\": \"中压\"\n      },\n      \"value\": 5.0,\n      \"feature_count\": 5.0\n    },\n    {\n      \"group\": {\n        \"pressure_level\": \"低压\"\n      },\n      \"value\": 5.0,\n      \"feature_count\": 5.0\n    },\n    {\n      \"group\": {\n        \"pressure_level\": \"高压\"\n      },\n      \"value\": 2.0,\n      \"feature_count\": 2.0\n    }\n  ]\n}\n```",
+          "trace": [
+            {
+              "step": "t1",
+              "tool": "query_features",
+              "args": {
+                "layer_name": "gas_pipelines"
+              },
+              "ok": true,
+              "brief": {
+                "feature_count": 12
+              }
+            },
+            {
+              "step": "t2",
+              "tool": "summarize_features",
+              "args": {
+                "features": {
+                  "$ref": "t1.result.feature_set"
+                },
+                "group_by": [
+                  "pressure_level"
+                ],
+                "aggregate": "count",
+                "sort": "group_asc"
+              },
+              "ok": true,
+              "brief": {
+                "groups": 3
+              }
+            }
+          ],
+          "tools_used": [
+            "query_features",
+            "summarize_features"
+          ],
+          "status": "success",
+          "outcome": "success",
+          "error": "",
+          "capability_update": {
+            "ts": "2026-11-15 19:05:46",
+            "agent_id": "agent_03",
+            "agent_name": "03",
+            "dims": [
+              "attribute_query",
+              "statistics"
+            ],
+            "outcome": "success",
+            "before": {
+              "attribute_query": 0.5,
+              "statistics": 0.5
+            },
+            "after": {
+              "attribute_query": 0.549,
+              "statistics": 0.549
+            },
+            "delta": {
+              "attribute_query": 0.049,
+              "statistics": 0.049
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "attempt_count": 1,
+  "replans": 0,
+  "failed_attempts": 0,
+  "tool_call_count": 2,
+  "elapsed_s": 17.563,
+  "llm_usage": {
+    "llm_calls": 7,
+    "failed_calls": 0,
+    "input_tokens": 27432,
+    "output_tokens": 1042,
+    "total_tokens": 28474,
+    "usage_reported_calls": 7,
+    "elapsed_s": 17.277896
+  },
+  "capability_changes": [
+    {
+      "ts": "2026-11-15 19:05:46",
+      "agent_id": "agent_03",
+      "agent_name": "03",
+      "dims": [
+        "attribute_query",
+        "statistics"
+      ],
+      "outcome": "success",
+      "before": {
+        "attribute_query": 0.5,
+        "statistics": 0.5
+      },
+      "after": {
+        "attribute_query": 0.549,
+        "statistics": 0.549
+      },
+      "delta": {
+        "attribute_query": 0.049,
+        "statistics": 0.049
+      },
+      "subtask_id": "t1"
+    }
+  ],
+  "final_capabilities": [
+    {
+      "agent": "agent_01",
+      "name": "01",
+      "vector": [
+        0.5,
+        0.5,
+        0.5,
+        0.5
+      ],
+      "stats": {
+        "attempts": 0,
+        "successes": 0,
+        "failures": 0
+      }
+    },
+    {
+      "agent": "agent_02",
+      "name": "02",
+      "vector": [
+        0.5,
+        0.5,
+        0.5,
+        0.5
+      ],
+      "stats": {
+        "attempts": 0,
+        "successes": 0,
+        "failures": 0
+      }
+    },
+    {
+      "agent": "agent_03",
+      "name": "03",
+      "vector": [
+        0.5,
+        0.549,
+        0.549,
+        0.5
+      ],
+      "stats": {
+        "attempts": 1,
+        "successes": 1,
+        "failures": 0
+      }
+    },
+    {
+      "agent": "agent_04",
+      "name": "04",
+      "vector": [
+        0.5,
+        0.5,
+        0.5,
+        0.5
+      ],
+      "stats": {
+        "attempts": 0,
+        "successes": 0,
+        "failures": 0
+      }
+    }
+  ],
+  "signature": "7b19aa8fc5930df9e9c54c1fabee2c44fe6fc1e928966bc9d93fb8798d43188f"
+}

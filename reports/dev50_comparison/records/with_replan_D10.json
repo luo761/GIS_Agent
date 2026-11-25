@@ -1,0 +1,275 @@
+{
+  "id": "D10",
+  "level": "L2",
+  "question": "计算施工区 A001 与 A002 交集的长度（米）；两区仅共边时，返回公共边界长度而不是面积。",
+  "mode": "with_replan",
+  "status": "completed",
+  "correct": true,
+  "first_correct": true,
+  "answer": {
+    "length": {
+      "unit": "meter",
+      "value": 1000.0,
+      "measure": "length",
+      "is_empty": false,
+      "measure_srid": 3857
+    }
+  },
+  "expected": {
+    "length": {
+      "unit": "meter",
+      "value": 1000,
+      "measure": "length",
+      "is_empty": false,
+      "measure_srid": 3857
+    }
+  },
+  "diffs": [],
+  "evaluation": "success",
+  "error": "",
+  "database_changed_during_case": false,
+  "attempt_history": [
+    {
+      "attempt_index": 1,
+      "evaluation": "success",
+      "correct": true,
+      "feedback": "",
+      "tool_call_count": 2,
+      "tools": [
+        "intersection_geometry",
+        "measure_geometry"
+      ],
+      "subtasks": [
+        {
+          "subtask_id": "t1",
+          "question": "计算施工区表 construction_areas 中 code='A001' 与 code='A002' 两个面要素的交集几何，若交集为线（仅共边）则返回其长度（米），若交集为面则返回其面积（平方米），单位基于 EPSG:3857。",
+          "required_capabilities": [
+            "spatial_compute"
+          ],
+          "assigned_agent": "agent_03",
+          "assigned_agent_name": "03",
+          "routing": {
+            "agent_id": "agent_03",
+            "agent_name": "03",
+            "required": [
+              "spatial_compute"
+            ],
+            "scores": {
+              "agent_01": 0.5,
+              "agent_02": 0.5,
+              "agent_03": 0.5,
+              "agent_04": 0.5
+            },
+            "best_score": 0.5,
+            "tied": [
+              "agent_01",
+              "agent_02",
+              "agent_03",
+              "agent_04"
+            ],
+            "random_pick": true,
+            "epsilon": 0.0,
+            "pool": [
+              "agent_01",
+              "agent_02",
+              "agent_03",
+              "agent_04"
+            ]
+          },
+          "plan": {
+            "nodes": [
+              {
+                "id": "s1",
+                "action": "intersection_geometry",
+                "params": {
+                  "table": "construction_areas",
+                  "code1": "A001",
+                  "code2": "A002",
+                  "srid": 3857
+                },
+                "depends_on": []
+              },
+              {
+                "id": "s2",
+                "action": "measure_geometry",
+                "params": {
+                  "geometry": "{{s1.result}}",
+                  "srid": 3857,
+                  "unit": "auto"
+                },
+                "depends_on": [
+                  "s1"
+                ]
+              }
+            ],
+            "edges": [
+              [
+                "s1",
+                "s2"
+              ]
+            ]
+          },
+          "result": "{\"length\": {\"unit\": \"meter\", \"value\": 1000.0, \"measure\": \"length\", \"is_empty\": false, \"measure_srid\": 3857}}",
+          "trace": [
+            {
+              "step": "t1",
+              "tool": "intersection_geometry",
+              "args": {
+                "left": {
+                  "layer_name": "construction_areas",
+                  "feature_code": "A001"
+                },
+                "right": {
+                  "layer_name": "construction_areas",
+                  "feature_code": "A002"
+                },
+                "target_srid": 3857
+              },
+              "ok": true,
+              "brief": {
+                "geometry_type": null
+              }
+            },
+            {
+              "step": "t2",
+              "tool": "measure_geometry",
+              "args": {
+                "target": {
+                  "$ref": "t1.result.geometry"
+                },
+                "measure": "length"
+              },
+              "ok": true,
+              "brief": {
+                "value": 1000.0
+              }
+            }
+          ],
+          "tools_used": [
+            "intersection_geometry",
+            "measure_geometry"
+          ],
+          "status": "success",
+          "outcome": "success",
+          "error": "",
+          "capability_update": {
+            "ts": "2026-11-15 19:01:11",
+            "agent_id": "agent_03",
+            "agent_name": "03",
+            "dims": [
+              "spatial_compute"
+            ],
+            "outcome": "success",
+            "before": {
+              "spatial_compute": 0.5
+            },
+            "after": {
+              "spatial_compute": 0.549
+            },
+            "delta": {
+              "spatial_compute": 0.049
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "attempt_count": 1,
+  "replans": 0,
+  "failed_attempts": 0,
+  "tool_call_count": 2,
+  "elapsed_s": 20.5,
+  "llm_usage": {
+    "llm_calls": 7,
+    "failed_calls": 0,
+    "input_tokens": 26424,
+    "output_tokens": 729,
+    "total_tokens": 27153,
+    "usage_reported_calls": 7,
+    "elapsed_s": 19.836294
+  },
+  "capability_changes": [
+    {
+      "ts": "2026-11-15 19:01:11",
+      "agent_id": "agent_03",
+      "agent_name": "03",
+      "dims": [
+        "spatial_compute"
+      ],
+      "outcome": "success",
+      "before": {
+        "spatial_compute": 0.5
+      },
+      "after": {
+        "spatial_compute": 0.549
+      },
+      "delta": {
+        "spatial_compute": 0.049
+      },
+      "subtask_id": "t1"
+    }
+  ],
+  "final_capabilities": [
+    {
+      "agent": "agent_01",
+      "name": "01",
+      "vector": [
+        0.5,
+        0.5,
+        0.5,
+        0.5
+      ],
+      "stats": {
+        "attempts": 0,
+        "successes": 0,
+        "failures": 0
+      }
+    },
+    {
+      "agent": "agent_02",
+      "name": "02",
+      "vector": [
+        0.5,
+        0.5,
+        0.5,
+        0.5
+      ],
+      "stats": {
+        "attempts": 0,
+        "successes": 0,
+        "failures": 0
+      }
+    },
+    {
+      "agent": "agent_03",
+      "name": "03",
+      "vector": [
+        0.549,
+        0.5,
+        0.5,
+        0.5
+      ],
+      "stats": {
+        "attempts": 1,
+        "successes": 1,
+        "failures": 0
+      }
+    },
+    {
+      "agent": "agent_04",
+      "name": "04",
+      "vector": [
+        0.5,
+        0.5,
+        0.5,
+        0.5
+      ],
+      "stats": {
+        "attempts": 0,
+        "successes": 0,
+        "failures": 0
+      }
+    }
+  ],
+  "signature": "7b19aa8fc5930df9e9c54c1fabee2c44fe6fc1e928966bc9d93fb8798d43188f"
+}

@@ -1,0 +1,46 @@
+[
+  {
+    "question": "计算施工区表 construction_areas 中 code 为 A001 与 A002 的两个面要素的交集几何，若交集为线（仅共边）则返回其长度（米），若交集为面则返回其面积（平方米），单位基于 EPSG:3857。",
+    "plan": {
+      "nodes": [
+        {
+          "id": "s1",
+          "action": "intersection_geometry",
+          "params": {
+            "table": "construction_areas",
+            "code1": "A001",
+            "code2": "A002",
+            "srid": 3857
+          },
+          "depends_on": []
+        },
+        {
+          "id": "s2",
+          "action": "measure_geometry",
+          "params": {
+            "geometry": "intersection_result",
+            "unit": "auto",
+            "srid": 3857
+          },
+          "depends_on": [
+            "s1"
+          ]
+        }
+      ],
+      "edges": [
+        [
+          "s1",
+          "s2"
+        ]
+      ]
+    },
+    "note": "planned",
+    "ts": "2026-11-15 19:01:23"
+  },
+  {
+    "question": "计算施工区表 construction_areas 中 code 为 A001 与 A002 的两个面要素的交集几何，若交集为线（仅共边）则返回其长度（米），若交集为面则返回其面积（平方米），单位基于 EPSG:3857。",
+    "outcome": "success",
+    "note": "executed",
+    "ts": "2026-11-15 19:01:30"
+  }
+]

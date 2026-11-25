@@ -1,0 +1,74 @@
+{
+  "id": "36de58e7",
+  "agent_id": "agent_03",
+  "question_feat": "在 demo_roads 表中，逐条计算所有道路的几何长度（geom，EPSG:3857，单位米），求和得到总长度，并返回参与量测的源道路数量（即 demo_roads 的记录数）。",
+  "plan": {
+    "nodes": [
+      {
+        "id": "s1",
+        "action": "query_features",
+        "params": {
+          "layer_name": "demo_roads",
+          "filters": {},
+          "target": "all"
+        },
+        "depends_on": []
+      },
+      {
+        "id": "s2",
+        "action": "measure_features",
+        "params": {
+          "layer_name": "demo_roads",
+          "geometry_field": "geom",
+          "measure_type": "length",
+          "unit": "meter",
+          "srid": 3857
+        },
+        "depends_on": [
+          "s1"
+        ]
+      },
+      {
+        "id": "s3",
+        "action": "summarize_features",
+        "params": {
+          "aggregate": "sum",
+          "field": "length",
+          "group_by": null
+        },
+        "depends_on": [
+          "s2"
+        ]
+      },
+      {
+        "id": "s4",
+        "action": "count_features",
+        "params": {
+          "layer_name": "demo_roads",
+          "filters": {}
+        },
+        "depends_on": [
+          "s1"
+        ]
+      }
+    ],
+    "edges": [
+      [
+        "s1",
+        "s2"
+      ],
+      [
+        "s2",
+        "s3"
+      ],
+      [
+        "s1",
+        "s4"
+      ]
+    ]
+  },
+  "result_summary": "{\"length\": {\"unit\": \"meter\", \"value\": 3000.0, \"measure\": \"length\", \"measure_srid\": 3857, \"feature_count\": 3}}",
+  "outcome": "success",
+  "error": "",
+  "ts": "2026-11-15 19:06:14"
+}

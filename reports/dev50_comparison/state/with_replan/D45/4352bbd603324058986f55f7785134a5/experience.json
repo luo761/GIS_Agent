@@ -1,0 +1,183 @@
+[
+  {
+    "task_signature": "general/空间计算",
+    "question_feat": "先求 gas_pipelines 中 code='A001' 与 code='A008' 的几何交集范围，再分别计算该交集范围内 gas_pipelines 和 water_pipelines 的裁剪后总长度（米）及非空源要素数量；边界接触计入，保留非空零长度记录。",
+    "plan": {
+      "t1": {
+        "nodes": [
+          {
+            "id": "s1",
+            "action": "query_features",
+            "params": {
+              "layer_name": "gas_pipelines",
+              "filters": {
+                "code": [
+                  "A001",
+                  "A008"
+                ]
+              },
+              "target": "geom"
+            },
+            "depends_on": []
+          },
+          {
+            "id": "s2",
+            "action": "intersection_geometry",
+            "params": {
+              "geometries": [
+                "s1.geom[0]",
+                "s1.geom[1]"
+              ],
+              "relation": "ST_Intersects"
+            },
+            "depends_on": [
+              "s1"
+            ]
+          },
+          {
+            "id": "s3",
+            "action": "query_features",
+            "params": {
+              "layer_name": "gas_pipelines",
+              "filters": {},
+              "target": "geom"
+            },
+            "depends_on": []
+          },
+          {
+            "id": "s4",
+            "action": "clip_features",
+            "params": {
+              "source": "s3",
+              "clip_geometry": "s2.intersection_geom",
+              "relation": "ST_Intersects"
+            },
+            "depends_on": [
+              "s2",
+              "s3"
+            ]
+          },
+          {
+            "id": "s5",
+            "action": "measure_features",
+            "params": {
+              "source": "s4.clipped_features",
+              "measure": "length",
+              "unit": "meter"
+            },
+            "depends_on": [
+              "s4"
+            ]
+          },
+          {
+            "id": "s6",
+            "action": "summarize_features",
+            "params": {
+              "source": "s5",
+              "metrics": [
+                "total_length",
+                "non_empty_count"
+              ]
+            },
+            "depends_on": [
+              "s5"
+            ]
+          },
+          {
+            "id": "s7",
+            "action": "query_features",
+            "params": {
+              "layer_name": "water_pipelines",
+              "filters": {},
+              "target": "geom"
+            },
+            "depends_on": []
+          },
+          {
+            "id": "s8",
+            "action": "clip_features",
+            "params": {
+              "source": "s7",
+              "clip_geometry": "s2.intersection_geom",
+              "relation": "ST_Intersects"
+            },
+            "depends_on": [
+              "s2",
+              "s7"
+            ]
+          },
+          {
+            "id": "s9",
+            "action": "measure_features",
+            "params": {
+              "source": "s8.clipped_features",
+              "measure": "length",
+              "unit": "meter"
+            },
+            "depends_on": [
+              "s8"
+            ]
+          },
+          {
+            "id": "s10",
+            "action": "summarize_features",
+            "params": {
+              "source": "s9",
+              "metrics": [
+                "total_length",
+                "non_empty_count"
+              ]
+            },
+            "depends_on": [
+              "s9"
+            ]
+          }
+        ],
+        "edges": [
+          [
+            "s1",
+            "s2"
+          ],
+          [
+            "s2",
+            "s4"
+          ],
+          [
+            "s3",
+            "s4"
+          ],
+          [
+            "s4",
+            "s5"
+          ],
+          [
+            "s5",
+            "s6"
+          ],
+          [
+            "s2",
+            "s8"
+          ],
+          [
+            "s7",
+            "s8"
+          ],
+          [
+            "s8",
+            "s9"
+          ],
+          [
+            "s9",
+            "s10"
+          ]
+        ]
+      }
+    },
+    "trace": "经验：目标为求 construction_areas 中 A001 与 A008 交集范围，并统计该范围内 gas/water_pipelines 裁剪后总长及非空源要素数。关键顺序：query_features 过滤 gas_pipelines 无结果，改查全量得12条；查 construction_areas 过滤得2条；intersection_geometry 返回空几何；用该几何 ST_Intersects 查询 gas 得4条、water 得2条；clip_features 分别裁剪得4条、2条；measure_features 长度汇总：gas 1282.84m（4条）、water 900m（2条）；summarize_features 聚合各得1组。结果形式：长度值+单位+要素数。",
+    "outcome": "success",
+    "error_lesson": "",
+    "id": "f068c695",
+    "hits": 0,
+    "updated_at": "2026-11-15 19:10:13"
+  }
+]

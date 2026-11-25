@@ -1,0 +1,45 @@
+[
+  {
+    "task_signature": "water/属性查询",
+    "question_feat": "查询 water_pipelines 表中全部水管，按 pipe_type 分组计数，并按 pipe_type 名称升序输出全部分组。",
+    "plan": {
+      "t1": {
+        "nodes": [
+          {
+            "id": "s1",
+            "action": "query_features",
+            "params": {
+              "layer_name": "water_pipelines",
+              "filters": {}
+            },
+            "depends_on": []
+          },
+          {
+            "id": "s2",
+            "action": "summarize_features",
+            "params": {
+              "aggregate": "count",
+              "group_by": "pipe_type",
+              "sort": "asc"
+            },
+            "depends_on": [
+              "s1"
+            ]
+          }
+        ],
+        "edges": [
+          [
+            "s1",
+            "s2"
+          ]
+        ]
+      }
+    },
+    "trace": "执行轨迹：先 query_features 查 water_pipelines 全表，得 feature_count=10；再 summarize_features 按 pipe_type 分组计数，group_by=['pipe_type']，sort='group_asc'，结果 groups=2。",
+    "outcome": "success",
+    "error_lesson": "",
+    "id": "f0a15736",
+    "hits": 0,
+    "updated_at": "2026-11-15 19:05:09"
+  }
+]

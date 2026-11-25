@@ -1,0 +1,118 @@
+[
+  {
+    "question": "在 gas_devices 表中筛选与 construction_areas 表中 code='A001' 的几何相交且 status='正常' 的设备，对每个设备几何做 200 米缓冲区，不裁剪缓冲区。分别计算：1）所有缓冲区面积直接相加的总面积（平方米）；2）将所有缓冲区合并去重后的面积（平方米）。复用同一批缓冲结果。",
+    "plan": {
+      "nodes": [
+        {
+          "id": "s1",
+          "action": "query_features",
+          "params": {
+            "table": "construction_areas",
+            "where": "code='A001'"
+          },
+          "depends_on": []
+        },
+        {
+          "id": "s2",
+          "action": "query_features",
+          "params": {
+            "table": "gas_devices",
+            "where": "status='正常'"
+          },
+          "depends_on": []
+        },
+        {
+          "id": "s3",
+          "action": "spatial_filter",
+          "params": {
+            "source": "s2",
+            "filter": "s1",
+            "predicate": "ST_Intersects"
+          },
+          "depends_on": [
+            "s1",
+            "s2"
+          ]
+        },
+        {
+          "id": "s4",
+          "action": "buffer_features",
+          "params": {
+            "source": "s3",
+            "distance": 200,
+            "unit": "meter"
+          },
+          "depends_on": [
+            "s3"
+          ]
+        },
+        {
+          "id": "s5",
+          "action": "measure_geometry",
+          "params": {
+            "source": "s4",
+            "mode": "sum_area"
+          },
+          "depends_on": [
+            "s4"
+          ]
+        },
+        {
+          "id": "s6",
+          "action": "union_features",
+          "params": {
+            "source": "s4"
+          },
+          "depends_on": [
+            "s4"
+          ]
+        },
+        {
+          "id": "s7",
+          "action": "measure_geometry",
+          "params": {
+            "source": "s6",
+            "mode": "area"
+          },
+          "depends_on": [
+            "s6"
+          ]
+        }
+      ],
+      "edges": [
+        [
+          "s1",
+          "s3"
+        ],
+        [
+          "s2",
+          "s3"
+        ],
+        [
+          "s3",
+          "s4"
+        ],
+        [
+          "s4",
+          "s5"
+        ],
+        [
+          "s4",
+          "s6"
+        ],
+        [
+          "s6",
+          "s7"
+        ]
+      ]
+    },
+    "note": "planned",
+    "ts": "2026-11-15 19:02:34"
+  },
+  {
+    "question": "在 gas_devices 表中筛选与 construction_areas 表中 code='A001' 的几何相交且 status='正常' 的设备，对每个设备几何做 200 米缓冲区，不裁剪缓冲区。分别计算：1）所有缓冲区面积直接相加的总面积（平方米）；2）将所有缓冲区合并去重后的面积（平方米）。复用同一批缓冲结果。",
+    "outcome": "success",
+    "note": "executed",
+    "ts": "2026-11-15 19:02:47"
+  }
+]

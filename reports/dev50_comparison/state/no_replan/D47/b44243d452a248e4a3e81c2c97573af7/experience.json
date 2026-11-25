@@ -1,0 +1,137 @@
+[
+  {
+    "task_signature": "gas/空间计算",
+    "question_feat": "在gas_pipelines表中，筛选与A001相交的全部燃气管线，先裁剪到A001，再逐条缓冲25米并合并去重，最后再裁剪到A001，计算最终覆盖面积（平方米）及其占A001面积的百分比。",
+    "plan": {
+      "t1": {
+        "nodes": [
+          {
+            "id": "s1",
+            "action": "query_features",
+            "params": {
+              "table": "gas_pipelines",
+              "relation": "ST_Intersects",
+              "target": "A001"
+            },
+            "depends_on": []
+          },
+          {
+            "id": "s2",
+            "action": "clip_features",
+            "params": {
+              "input": "s1",
+              "clip_geometry": "A001"
+            },
+            "depends_on": [
+              "s1"
+            ]
+          },
+          {
+            "id": "s3",
+            "action": "buffer_features",
+            "params": {
+              "input": "s2",
+              "distance": 25,
+              "unit": "meter"
+            },
+            "depends_on": [
+              "s2"
+            ]
+          },
+          {
+            "id": "s4",
+            "action": "union_features",
+            "params": {
+              "input": "s3"
+            },
+            "depends_on": [
+              "s3"
+            ]
+          },
+          {
+            "id": "s5",
+            "action": "clip_features",
+            "params": {
+              "input": "s4",
+              "clip_geometry": "A001"
+            },
+            "depends_on": [
+              "s4"
+            ]
+          },
+          {
+            "id": "s6",
+            "action": "measure_features",
+            "params": {
+              "input": "s5",
+              "measure": "area",
+              "unit": "square_meter"
+            },
+            "depends_on": [
+              "s5"
+            ]
+          },
+          {
+            "id": "s7",
+            "action": "measure_geometry",
+            "params": {
+              "geometry": "A001",
+              "measure": "area",
+              "unit": "square_meter"
+            },
+            "depends_on": []
+          },
+          {
+            "id": "s8",
+            "action": "calculate_ratio",
+            "params": {
+              "numerator": "s6",
+              "denominator": "s7",
+              "output": "percentage"
+            },
+            "depends_on": [
+              "s6",
+              "s7"
+            ]
+          }
+        ],
+        "edges": [
+          [
+            "s1",
+            "s2"
+          ],
+          [
+            "s2",
+            "s3"
+          ],
+          [
+            "s3",
+            "s4"
+          ],
+          [
+            "s4",
+            "s5"
+          ],
+          [
+            "s5",
+            "s6"
+          ],
+          [
+            "s6",
+            "s8"
+          ],
+          [
+            "s7",
+            "s8"
+          ]
+        ]
+      }
+    },
+    "trace": "在gas_pipelines表中筛选与A001相交管线（6条），先裁剪到A001，再逐条缓冲25米并合并去重，最后与A001求交，计算覆盖面积及占比。调用顺序：query_features→measure_geometry(A001面积=1000000㎡)→clip_features→buffer_features(25m)→union_features→intersection_geometry→measure_geometry(覆盖面积=245339.54㎡)→calculate_ratio(占比24.53%)。注意union结果需用intersection_geometry而非clip_features。",
+    "outcome": "success",
+    "error_lesson": "",
+    "id": "b34ee254",
+    "hits": 0,
+    "updated_at": "2026-11-15 19:10:48"
+  }
+]

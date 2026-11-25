@@ -1,0 +1,104 @@
+{
+  "id": "fd5ce050",
+  "agent_id": "agent_03",
+  "question_feat": "在施工区 A001 内，将所有与 A001 相交的水管（water_pipelines）裁剪到 A001，逐条量测区内长度（米），按源水管编码 source_code 分组，按长度降序、同长按编码升序输出全部分组，保留非空零长度边界接触记录。",
+  "plan": {
+    "nodes": [
+      {
+        "id": "s1",
+        "action": "query_features",
+        "params": {
+          "table": "construction_areas",
+          "where": "code = 'A001'"
+        },
+        "depends_on": []
+      },
+      {
+        "id": "s2",
+        "action": "query_features",
+        "params": {
+          "table": "water_pipelines",
+          "where": "ST_Intersects(geom, (SELECT geom FROM construction_areas WHERE code = 'A001'))"
+        },
+        "depends_on": [
+          "s1"
+        ]
+      },
+      {
+        "id": "s3",
+        "action": "clip_features",
+        "params": {
+          "input": "s2",
+          "clip_polygon": "s1",
+          "keep_boundary": true
+        },
+        "depends_on": [
+          "s1",
+          "s2"
+        ]
+      },
+      {
+        "id": "s4",
+        "action": "measure_features",
+        "params": {
+          "input": "s3",
+          "unit": "meter",
+          "length_field": "length_m"
+        },
+        "depends_on": [
+          "s3"
+        ]
+      },
+      {
+        "id": "s5",
+        "action": "summarize_features",
+        "params": {
+          "input": "s4",
+          "group_by": "source_code",
+          "aggregate": "sum",
+          "value_field": "length_m",
+          "sort": [
+            {
+              "field": "sum_length_m",
+              "order": "desc"
+            },
+            {
+              "field": "source_code",
+              "order": "asc"
+            }
+          ],
+          "include_zero": true
+        },
+        "depends_on": [
+          "s4"
+        ]
+      }
+    ],
+    "edges": [
+      [
+        "s1",
+        "s2"
+      ],
+      [
+        "s1",
+        "s3"
+      ],
+      [
+        "s2",
+        "s3"
+      ],
+      [
+        "s3",
+        "s4"
+      ],
+      [
+        "s4",
+        "s5"
+      ]
+    ]
+  },
+  "result_summary": "{\"unit\": \"meter\", \"groups\": [{\"group\": {\"source_code\": \"W001\"}, \"value\": 1000.0, \"feature_count\": 1}, {\"group\": {\"source_code\": \"W008\"}, \"value\": 700.0, \"feature_count\": 1}, {\"group\": {\"source_code\": ",
+  "outcome": "success",
+  "error": "",
+  "ts": "2026-11-15 19:07:46"
+}

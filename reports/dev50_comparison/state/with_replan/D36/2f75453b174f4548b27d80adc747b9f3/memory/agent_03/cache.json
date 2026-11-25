@@ -1,0 +1,108 @@
+[
+  {
+    "question": "在 water_pipelines 中筛选与 construction_areas 中 code='A001' 的面要素相交（ST_Intersects）的水管，裁剪至 A001 面内，逐条量测裁剪后长度（米），按 source_code 分组，输出全部分组，组内按长度降序、同长按 source_code 升序排列，保留非空零长度边界接触记录。",
+    "plan": {
+      "nodes": [
+        {
+          "id": "s1",
+          "action": "query_features",
+          "params": {
+            "table": "construction_areas",
+            "where": "code='A001'"
+          },
+          "depends_on": []
+        },
+        {
+          "id": "s2",
+          "action": "query_features",
+          "params": {
+            "table": "water_pipelines",
+            "where": "ST_Intersects(geom, (SELECT geom FROM construction_areas WHERE code='A001'))"
+          },
+          "depends_on": [
+            "s1"
+          ]
+        },
+        {
+          "id": "s3",
+          "action": "clip_features",
+          "params": {
+            "input": "s2",
+            "clip_polygon": "s1",
+            "method": "ST_Intersection"
+          },
+          "depends_on": [
+            "s1",
+            "s2"
+          ]
+        },
+        {
+          "id": "s4",
+          "action": "measure_features",
+          "params": {
+            "input": "s3",
+            "measure": "ST_Length(geom)",
+            "unit": "meter"
+          },
+          "depends_on": [
+            "s3"
+          ]
+        },
+        {
+          "id": "s5",
+          "action": "summarize_features",
+          "params": {
+            "input": "s4",
+            "group_by": "source_code",
+            "aggregate": "sum",
+            "value_field": "length",
+            "sort": [
+              {
+                "field": "length",
+                "order": "desc"
+              },
+              {
+                "field": "source_code",
+                "order": "asc"
+              }
+            ],
+            "include_zero": true
+          },
+          "depends_on": [
+            "s4"
+          ]
+        }
+      ],
+      "edges": [
+        [
+          "s1",
+          "s2"
+        ],
+        [
+          "s1",
+          "s3"
+        ],
+        [
+          "s2",
+          "s3"
+        ],
+        [
+          "s3",
+          "s4"
+        ],
+        [
+          "s4",
+          "s5"
+        ]
+      ]
+    },
+    "note": "planned",
+    "ts": "2026-11-15 19:07:11"
+  },
+  {
+    "question": "在 water_pipelines 中筛选与 construction_areas 中 code='A001' 的面要素相交（ST_Intersects）的水管，裁剪至 A001 面内，逐条量测裁剪后长度（米），按 source_code 分组，输出全部分组，组内按长度降序、同长按 source_code 升序排列，保留非空零长度边界接触记录。",
+    "outcome": "success",
+    "note": "executed",
+    "ts": "2026-11-15 19:07:22"
+  }
+]

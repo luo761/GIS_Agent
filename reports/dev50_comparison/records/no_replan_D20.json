@@ -1,0 +1,759 @@
+{
+  "id": "D20",
+  "level": "L3",
+  "question": "取与 A001 相交的高压燃气管线，先裁剪到 A001，再分别缓冲 50 米合并为同一影响范围。复用该范围：（1）统计 A001 内正常或告警设备，按状态升序分组计数；（2）计算 A001 内各水管受影响长度（米），按长度降序、同长按编码升序，并给出总长度。边界计入，水管非空零长度接触记录保留。",
+  "mode": "no_replan",
+  "status": "completed",
+  "correct": false,
+  "first_correct": false,
+  "answer": {
+    "water_unit": "meter",
+    "device_unit": "feature",
+    "total_length": {
+      "unit": "meter",
+      "value": 1370.7106781186549,
+      "measure": "length",
+      "measure_srid": 3857,
+      "feature_count": 3
+    },
+    "water_groups": [
+      {
+        "group": {
+          "code": "W001"
+        },
+        "value": 1100.0,
+        "feature_count": 1
+      },
+      {
+        "group": {
+          "code": "W008"
+        },
+        "value": 220.71067811865476,
+        "feature_count": 1
+      },
+      {
+        "group": {
+          "code": "W009"
+        },
+        "value": 50.0,
+        "feature_count": 1
+      }
+    ],
+    "device_groups": [
+      {
+        "group": {
+          "status": "告警"
+        },
+        "value": 1.0,
+        "feature_count": 1
+      },
+      {
+        "group": {
+          "status": "正常"
+        },
+        "value": 2.0,
+        "feature_count": 2
+      }
+    ]
+  },
+  "expected": {
+    "water_unit": "meter",
+    "device_unit": "feature",
+    "total_length": {
+      "unit": "meter",
+      "value": 1220.7106781186549,
+      "measure": "length",
+      "measure_srid": 3857,
+      "feature_count": 3
+    },
+    "water_groups": [
+      {
+        "group": {
+          "source_code": "W001"
+        },
+        "value": 1000,
+        "feature_count": 1
+      },
+      {
+        "group": {
+          "source_code": "W008"
+        },
+        "value": 220.71067811865476,
+        "feature_count": 1
+      },
+      {
+        "group": {
+          "source_code": "W009"
+        },
+        "value": 0,
+        "feature_count": 1
+      }
+    ],
+    "device_groups": [
+      {
+        "group": {
+          "status": "告警"
+        },
+        "value": 1,
+        "feature_count": 1
+      },
+      {
+        "group": {
+          "status": "正常"
+        },
+        "value": 2,
+        "feature_count": 2
+      }
+    ]
+  },
+  "diffs": [
+    "$.total_length.value: 1370.71，期望 1220.71",
+    "$.water_groups[0].group.source_code: 缺失",
+    "$.water_groups[0].value: 1100，期望 1000",
+    "$.water_groups[1].group.source_code: 缺失",
+    "$.water_groups[2].group.source_code: 缺失",
+    "$.water_groups[2].value: 50，期望 0"
+  ],
+  "evaluation": "failed",
+  "error": "",
+  "database_changed_during_case": false,
+  "attempt_history": [
+    {
+      "attempt_index": 1,
+      "evaluation": "failed",
+      "correct": false,
+      "feedback": "结果校验未通过；以下字段存在类型、数量或取值问题，请重新计算：$.total_length.value、$.water_groups[0].group.source_code、$.water_groups[0].value、$.water_groups[1].group.source_code、$.water_groups[2].group.source_code、$.water_groups[2].value",
+      "tool_call_count": 13,
+      "tools": [
+        "query_features",
+        "clip_features",
+        "buffer_features",
+        "union_features",
+        "summarize_features",
+        "measure_features"
+      ],
+      "subtasks": [
+        {
+          "subtask_id": "t1",
+          "question": "取与施工区A001相交的高压燃气管线（gas_pipelines.pressure_level='高压'），先裁剪到A001，再分别缓冲50米并合并为同一影响范围。复用该范围：（1）统计A001内gas_devices中status为正常或告警的设备，按status升序分组计数；（2）计算A001内water_pipelines受影响长度（米），按长度降序、同长按code升序，并给出总长度。边界计入，水管非空零长度接触记录保留。",
+          "required_capabilities": [
+            "spatial_compute",
+            "attribute_query",
+            "statistics"
+          ],
+          "assigned_agent": "agent_03",
+          "assigned_agent_name": "03",
+          "routing": {
+            "agent_id": "agent_03",
+            "agent_name": "03",
+            "required": [
+              "spatial_compute",
+              "attribute_query",
+              "statistics"
+            ],
+            "scores": {
+              "agent_01": 0.5,
+              "agent_02": 0.5,
+              "agent_03": 0.5,
+              "agent_04": 0.5
+            },
+            "best_score": 0.5,
+            "tied": [
+              "agent_01",
+              "agent_02",
+              "agent_03",
+              "agent_04"
+            ],
+            "random_pick": true,
+            "epsilon": 0.0,
+            "pool": [
+              "agent_01",
+              "agent_02",
+              "agent_03",
+              "agent_04"
+            ]
+          },
+          "plan": {
+            "nodes": [
+              {
+                "id": "s1",
+                "action": "query_features",
+                "params": {
+                  "table": "gas_pipelines",
+                  "filters": {
+                    "pressure_level": "高压"
+                  }
+                },
+                "depends_on": []
+              },
+              {
+                "id": "s2",
+                "action": "query_features",
+                "params": {
+                  "table": "construction_areas",
+                  "filters": {
+                    "code": "A001"
+                  }
+                },
+                "depends_on": []
+              },
+              {
+                "id": "s3",
+                "action": "clip_features",
+                "params": {
+                  "input": "s1",
+                  "clipper": "s2"
+                },
+                "depends_on": [
+                  "s1",
+                  "s2"
+                ]
+              },
+              {
+                "id": "s4",
+                "action": "buffer_features",
+                "params": {
+                  "input": "s3",
+                  "distance": 50,
+                  "unit": "meter"
+                },
+                "depends_on": [
+                  "s3"
+                ]
+              },
+              {
+                "id": "s5",
+                "action": "union_features",
+                "params": {
+                  "input": "s4"
+                },
+                "depends_on": [
+                  "s4"
+                ]
+              },
+              {
+                "id": "s6",
+                "action": "query_features",
+                "params": {
+                  "table": "gas_devices",
+                  "filters": {
+                    "status": [
+                      "正常",
+                      "告警"
+                    ]
+                  }
+                },
+                "depends_on": []
+              },
+              {
+                "id": "s7",
+                "action": "clip_features",
+                "params": {
+                  "input": "s6",
+                  "clipper": "s5"
+                },
+                "depends_on": [
+                  "s5",
+                  "s6"
+                ]
+              },
+              {
+                "id": "s8",
+                "action": "summarize_features",
+                "params": {
+                  "input": "s7",
+                  "aggregate": "count",
+                  "group_by": "status",
+                  "sort": {
+                    "field": "status",
+                    "order": "asc"
+                  }
+                },
+                "depends_on": [
+                  "s7"
+                ]
+              },
+              {
+                "id": "s9",
+                "action": "query_features",
+                "params": {
+                  "table": "water_pipelines"
+                },
+                "depends_on": []
+              },
+              {
+                "id": "s10",
+                "action": "clip_features",
+                "params": {
+                  "input": "s9",
+                  "clipper": "s5"
+                },
+                "depends_on": [
+                  "s5",
+                  "s9"
+                ]
+              },
+              {
+                "id": "s11",
+                "action": "measure_features",
+                "params": {
+                  "input": "s10",
+                  "measurement": "length",
+                  "unit": "meter"
+                },
+                "depends_on": [
+                  "s10"
+                ]
+              },
+              {
+                "id": "s12",
+                "action": "summarize_features",
+                "params": {
+                  "input": "s11",
+                  "aggregate": "sum",
+                  "group_by": "code",
+                  "sort": [
+                    {
+                      "field": "length",
+                      "order": "desc"
+                    },
+                    {
+                      "field": "code",
+                      "order": "asc"
+                    }
+                  ]
+                },
+                "depends_on": [
+                  "s11"
+                ]
+              },
+              {
+                "id": "s13",
+                "action": "summarize_features",
+                "params": {
+                  "input": "s11",
+                  "aggregate": "sum",
+                  "field": "length"
+                },
+                "depends_on": [
+                  "s11"
+                ]
+              }
+            ],
+            "edges": [
+              [
+                "s1",
+                "s3"
+              ],
+              [
+                "s2",
+                "s3"
+              ],
+              [
+                "s3",
+                "s4"
+              ],
+              [
+                "s4",
+                "s5"
+              ],
+              [
+                "s5",
+                "s7"
+              ],
+              [
+                "s6",
+                "s7"
+              ],
+              [
+                "s7",
+                "s8"
+              ],
+              [
+                "s5",
+                "s10"
+              ],
+              [
+                "s9",
+                "s10"
+              ],
+              [
+                "s10",
+                "s11"
+              ],
+              [
+                "s11",
+                "s12"
+              ],
+              [
+                "s11",
+                "s13"
+              ]
+            ]
+          },
+          "result": "{\"water_unit\": \"meter\", \"device_unit\": \"feature\", \"total_length\": {\"unit\": \"meter\", \"value\": 1370.7106781186549, \"measure\": \"length\", \"measure_srid\": 3857, \"feature_count\": 3}, \"water_groups\": [{\"group\": {\"code\": \"W001\"}, \"value\": 1100.0, \"feature_count\": 1}, {\"group\": {\"code\": \"W008\"}, \"value\": 220.71067811865476, \"feature_count\": 1}, {\"group\": {\"code\": \"W009\"}, \"value\": 50.0, \"feature_count\": 1}], \"device_groups\": [{\"group\": {\"status\": \"告警\"}, \"value\": 1.0, \"feature_count\": 1}, {\"group\": {\"status\": \"正常\"}, \"value\": 2.0, \"feature_count\": 2}]}",
+          "trace": [
+            {
+              "step": "t1",
+              "tool": "query_features",
+              "args": {
+                "layer_name": "gas_pipelines",
+                "filters": [
+                  {
+                    "field": "pressure_level",
+                    "operator": "eq",
+                    "value": "高压"
+                  }
+                ]
+              },
+              "ok": true,
+              "brief": {
+                "feature_count": 2
+              }
+            },
+            {
+              "step": "t2",
+              "tool": "query_features",
+              "args": {
+                "layer_name": "construction_areas",
+                "filters": [
+                  {
+                    "field": "code",
+                    "operator": "eq",
+                    "value": "A001"
+                  }
+                ]
+              },
+              "ok": true,
+              "brief": {
+                "feature_count": 1
+              }
+            },
+            {
+              "step": "t3",
+              "tool": "query_features",
+              "args": {
+                "layer_name": "gas_devices",
+                "filters": [
+                  {
+                    "field": "status",
+                    "operator": "in",
+                    "value": [
+                      "正常",
+                      "告警"
+                    ]
+                  }
+                ]
+              },
+              "ok": true,
+              "brief": {
+                "feature_count": 11
+              }
+            },
+            {
+              "step": "t4",
+              "tool": "query_features",
+              "args": {
+                "layer_name": "water_pipelines"
+              },
+              "ok": true,
+              "brief": {
+                "feature_count": 10
+              }
+            },
+            {
+              "step": "t5",
+              "tool": "clip_features",
+              "args": {
+                "features": {
+                  "$ref": "t1.result.feature_set"
+                },
+                "clip_target": {
+                  "layer_name": "construction_areas",
+                  "feature_code": "A001"
+                }
+              },
+              "ok": true,
+              "brief": {
+                "feature_count": 2
+              }
+            },
+            {
+              "step": "t6",
+              "tool": "buffer_features",
+              "args": {
+                "features": {
+                  "$ref": "t5.result.feature_set"
+                },
+                "distance_m": 50
+              },
+              "ok": true,
+              "brief": {
+                "feature_count": 2
+              }
+            },
+            {
+              "step": "t7",
+              "tool": "union_features",
+              "args": {
+                "features": {
+                  "$ref": "t6.result.feature_set"
+                }
+              },
+              "ok": true,
+              "brief": {
+                "geometry_type": null
+              }
+            },
+            {
+              "step": "t8",
+              "tool": "clip_features",
+              "args": {
+                "clip_target": {
+                  "$ref": "t7.result.geometry"
+                },
+                "features": {
+                  "$ref": "t3.result.feature_set"
+                }
+              },
+              "ok": true,
+              "brief": {
+                "feature_count": 3
+              }
+            },
+            {
+              "step": "t9",
+              "tool": "clip_features",
+              "args": {
+                "clip_target": {
+                  "$ref": "t7.result.geometry"
+                },
+                "features": {
+                  "$ref": "t4.result.feature_set"
+                }
+              },
+              "ok": true,
+              "brief": {
+                "feature_count": 3
+              }
+            },
+            {
+              "step": "t10",
+              "tool": "summarize_features",
+              "args": {
+                "features": {
+                  "$ref": "t8.result.feature_set"
+                },
+                "aggregate": "count",
+                "group_by": [
+                  "status"
+                ],
+                "sort": "group_asc"
+              },
+              "ok": true,
+              "brief": {
+                "groups": 2
+              }
+            },
+            {
+              "step": "t11",
+              "tool": "measure_features",
+              "args": {
+                "features": {
+                  "$ref": "t9.result.feature_set"
+                },
+                "measure": "length"
+              },
+              "ok": true,
+              "brief": {
+                "feature_count": 3,
+                "summary": {
+                  "value": 1370.7106781186549,
+                  "unit": "meter",
+                  "measure": "length",
+                  "measure_srid": 3857,
+                  "feature_count": 3
+                }
+              }
+            },
+            {
+              "step": "t12",
+              "tool": "summarize_features",
+              "args": {
+                "aggregate": "sum",
+                "features": {
+                  "$ref": "t11.result.feature_set"
+                },
+                "group_by": [
+                  "code"
+                ],
+                "sort": "value_desc"
+              },
+              "ok": true,
+              "brief": {
+                "groups": 3
+              }
+            },
+            {
+              "step": "t13",
+              "tool": "summarize_features",
+              "args": {
+                "aggregate": "sum",
+                "features": {
+                  "$ref": "t11.result.feature_set"
+                }
+              },
+              "ok": true,
+              "brief": {
+                "groups": 1
+              }
+            }
+          ],
+          "tools_used": [
+            "query_features",
+            "clip_features",
+            "buffer_features",
+            "union_features",
+            "summarize_features",
+            "measure_features"
+          ],
+          "status": "success",
+          "outcome": "failure",
+          "error": "",
+          "capability_update": {
+            "ts": "2026-11-15 19:06:13",
+            "agent_id": "agent_03",
+            "agent_name": "03",
+            "dims": [
+              "spatial_compute",
+              "attribute_query",
+              "statistics"
+            ],
+            "outcome": "failure",
+            "before": {
+              "spatial_compute": 0.5,
+              "attribute_query": 0.5,
+              "statistics": 0.5
+            },
+            "after": {
+              "spatial_compute": 0.464,
+              "attribute_query": 0.464,
+              "statistics": 0.464
+            },
+            "delta": {
+              "spatial_compute": -0.036,
+              "attribute_query": -0.036,
+              "statistics": -0.036
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "attempt_count": 1,
+  "replans": 0,
+  "failed_attempts": 1,
+  "tool_call_count": 13,
+  "elapsed_s": 36.938,
+  "llm_usage": {
+    "llm_calls": 13,
+    "failed_calls": 0,
+    "input_tokens": 115275,
+    "output_tokens": 2701,
+    "total_tokens": 117976,
+    "usage_reported_calls": 13,
+    "elapsed_s": 34.166815
+  },
+  "capability_changes": [
+    {
+      "ts": "2026-11-15 19:06:13",
+      "agent_id": "agent_03",
+      "agent_name": "03",
+      "dims": [
+        "spatial_compute",
+        "attribute_query",
+        "statistics"
+      ],
+      "outcome": "failure",
+      "before": {
+        "spatial_compute": 0.5,
+        "attribute_query": 0.5,
+        "statistics": 0.5
+      },
+      "after": {
+        "spatial_compute": 0.464,
+        "attribute_query": 0.464,
+        "statistics": 0.464
+      },
+      "delta": {
+        "spatial_compute": -0.036,
+        "attribute_query": -0.036,
+        "statistics": -0.036
+      },
+      "subtask_id": "t1"
+    }
+  ],
+  "final_capabilities": [
+    {
+      "agent": "agent_01",
+      "name": "01",
+      "vector": [
+        0.5,
+        0.5,
+        0.5,
+        0.5
+      ],
+      "stats": {
+        "attempts": 0,
+        "successes": 0,
+        "failures": 0
+      }
+    },
+    {
+      "agent": "agent_02",
+      "name": "02",
+      "vector": [
+        0.5,
+        0.5,
+        0.5,
+        0.5
+      ],
+      "stats": {
+        "attempts": 0,
+        "successes": 0,
+        "failures": 0
+      }
+    },
+    {
+      "agent": "agent_03",
+      "name": "03",
+      "vector": [
+        0.464,
+        0.464,
+        0.464,
+        0.5
+      ],
+      "stats": {
+        "attempts": 1,
+        "successes": 0,
+        "failures": 1
+      }
+    },
+    {
+      "agent": "agent_04",
+      "name": "04",
+      "vector": [
+        0.5,
+        0.5,
+        0.5,
+        0.5
+      ],
+      "stats": {
+        "attempts": 0,
+        "successes": 0,
+        "failures": 0
+      }
+    }
+  ],
+  "signature": "7b19aa8fc5930df9e9c54c1fabee2c44fe6fc1e928966bc9d93fb8798d43188f"
+}

@@ -1,0 +1,130 @@
+{
+  "id": "216d1266",
+  "agent_id": "agent_03",
+  "question_feat": "在 gas_pipelines 表中，筛选与施工区 A001 相交（ST_Intersects）的全部燃气管线，先裁剪（ST_Intersection）到 A001，再逐条缓冲 25 米（ST_Buffer），合并去重（ST_Union），最后裁剪到 A001，计算最终覆盖面积（平方米）及其占 A001 面积的百分比。",
+  "plan": {
+    "nodes": [
+      {
+        "id": "s1",
+        "action": "query_features",
+        "params": {
+          "table": "gas_pipelines",
+          "relation": "ST_Intersects",
+          "target": "A001"
+        },
+        "depends_on": []
+      },
+      {
+        "id": "s2",
+        "action": "clip_features",
+        "params": {
+          "input": "s1",
+          "clip_geometry": "A001"
+        },
+        "depends_on": [
+          "s1"
+        ]
+      },
+      {
+        "id": "s3",
+        "action": "buffer_features",
+        "params": {
+          "input": "s2",
+          "distance": 25,
+          "unit": "meter"
+        },
+        "depends_on": [
+          "s2"
+        ]
+      },
+      {
+        "id": "s4",
+        "action": "union_features",
+        "params": {
+          "input": "s3"
+        },
+        "depends_on": [
+          "s3"
+        ]
+      },
+      {
+        "id": "s5",
+        "action": "clip_features",
+        "params": {
+          "input": "s4",
+          "clip_geometry": "A001"
+        },
+        "depends_on": [
+          "s4"
+        ]
+      },
+      {
+        "id": "s6",
+        "action": "measure_geometry",
+        "params": {
+          "input": "s5",
+          "measure": "area"
+        },
+        "depends_on": [
+          "s5"
+        ]
+      },
+      {
+        "id": "s7",
+        "action": "measure_geometry",
+        "params": {
+          "input": "A001",
+          "measure": "area"
+        },
+        "depends_on": []
+      },
+      {
+        "id": "s8",
+        "action": "calculate_ratio",
+        "params": {
+          "numerator": "s6",
+          "denominator": "s7",
+          "output": "percentage"
+        },
+        "depends_on": [
+          "s6",
+          "s7"
+        ]
+      }
+    ],
+    "edges": [
+      [
+        "s1",
+        "s2"
+      ],
+      [
+        "s2",
+        "s3"
+      ],
+      [
+        "s3",
+        "s4"
+      ],
+      [
+        "s4",
+        "s5"
+      ],
+      [
+        "s5",
+        "s6"
+      ],
+      [
+        "s6",
+        "s8"
+      ],
+      [
+        "s7",
+        "s8"
+      ]
+    ]
+  },
+  "result_summary": "```json\n{\n  \"area\": {\n    \"unit\": \"square_meter\",\n    \"value\": 245339.54051262196,\n    \"measure\": \"area\",\n    \"is_empty\": false,\n    \"measure_srid\": 3857\n  },\n  \"coverage_percent\": {\n    \"unit\": \"perc",
+  "outcome": "success",
+  "error": "",
+  "ts": "2026-11-15 19:11:23"
+}

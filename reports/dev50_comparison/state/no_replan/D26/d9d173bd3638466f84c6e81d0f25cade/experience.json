@@ -1,0 +1,47 @@
+[
+  {
+    "task_signature": "general/空间计算",
+    "question_feat": "计算 construction_areas 表中 code='A001' 的施工区实体面积（平方米），不计算周长。",
+    "plan": {
+      "t1": {
+        "nodes": [
+          {
+            "id": "s1",
+            "action": "query_geometry",
+            "params": {
+              "table": "construction_areas",
+              "code": "A001",
+              "geom_field": "geom"
+            },
+            "depends_on": []
+          },
+          {
+            "id": "s2",
+            "action": "measure_geometry",
+            "params": {
+              "geometry": "$s1.geom",
+              "measure_type": "area",
+              "unit": "square_meter",
+              "srid": 3857
+            },
+            "depends_on": [
+              "s1"
+            ]
+          }
+        ],
+        "edges": [
+          [
+            "s1",
+            "s2"
+          ]
+        ]
+      }
+    },
+    "trace": "执行轨迹摘要：对construction_areas表按code='A001'过滤，query_features返回1个要素；随后measure_features以area度量计算，返回summary含value=1000000.0、unit=square_meter、measure_srid=3857，结果形式为面积值及单位，未计算周长。",
+    "outcome": "success",
+    "error_lesson": "",
+    "id": "fe6de901",
+    "hits": 0,
+    "updated_at": "2026-11-15 19:05:41"
+  }
+]

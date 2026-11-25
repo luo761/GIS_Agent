@@ -1,0 +1,97 @@
+{
+  "id": "1ebda080",
+  "agent_id": "agent_03",
+  "question_feat": "计算施工区表 construction_areas 中 code='A001' 与 code='A009' 两个面要素的交集面积（平方米），若交集为空则面积为0且 is_empty 为true。",
+  "plan": {
+    "nodes": [
+      {
+        "id": "s1",
+        "action": "query_features",
+        "params": {
+          "table": "construction_areas",
+          "filters": {
+            "code": [
+              "A001",
+              "A009"
+            ]
+          },
+          "geometry_field": "geom"
+        },
+        "depends_on": []
+      },
+      {
+        "id": "s2",
+        "action": "intersection_geometry",
+        "params": {
+          "geometries": [
+            "$s1.geom[0]",
+            "$s1.geom[1]"
+          ]
+        },
+        "depends_on": [
+          "s1"
+        ]
+      },
+      {
+        "id": "s3",
+        "action": "measure_geometry",
+        "params": {
+          "geometry": "$s2.intersection",
+          "measure_type": "area",
+          "unit": "square_meter"
+        },
+        "depends_on": [
+          "s2"
+        ]
+      },
+      {
+        "id": "s4",
+        "action": "check_empty",
+        "params": {
+          "geometry": "$s2.intersection"
+        },
+        "depends_on": [
+          "s2"
+        ]
+      },
+      {
+        "id": "s5",
+        "action": "format_result",
+        "params": {
+          "area": "$s3.area",
+          "is_empty": "$s4.is_empty"
+        },
+        "depends_on": [
+          "s3",
+          "s4"
+        ]
+      }
+    ],
+    "edges": [
+      [
+        "s1",
+        "s2"
+      ],
+      [
+        "s2",
+        "s3"
+      ],
+      [
+        "s2",
+        "s4"
+      ],
+      [
+        "s3",
+        "s5"
+      ],
+      [
+        "s4",
+        "s5"
+      ]
+    ]
+  },
+  "result_summary": "```json\n{\n  \"area\": {\n    \"unit\": \"square_meter\",\n    \"value\": 0.0,\n    \"measure\": \"area\",\n    \"is_empty\": true,\n    \"measure_srid\": 3857\n  }\n}\n```",
+  "outcome": "success",
+  "error": "",
+  "ts": "2026-11-15 19:06:56"
+}

@@ -1,0 +1,60 @@
+[
+  {
+    "question": "对 gas_pipelines 表中 code='G001' 的燃气管线 geom 建立 20 米缓冲区（quad_segs=8），计算该缓冲区面积（平方米），不按 construction_areas 裁剪。",
+    "plan": {
+      "nodes": [
+        {
+          "id": "s1",
+          "action": "query_features",
+          "params": {
+            "table": "gas_pipelines",
+            "where": "code='G001'",
+            "geom_field": "geom"
+          },
+          "depends_on": []
+        },
+        {
+          "id": "s2",
+          "action": "buffer_geometry",
+          "params": {
+            "distance": 20,
+            "quad_segs": 8,
+            "input_geom": "$s1.geom"
+          },
+          "depends_on": [
+            "s1"
+          ]
+        },
+        {
+          "id": "s3",
+          "action": "measure_geometry",
+          "params": {
+            "input_geom": "$s2.buffer_geom",
+            "unit": "square_meters"
+          },
+          "depends_on": [
+            "s2"
+          ]
+        }
+      ],
+      "edges": [
+        [
+          "s1",
+          "s2"
+        ],
+        [
+          "s2",
+          "s3"
+        ]
+      ]
+    },
+    "note": "planned",
+    "ts": "2026-11-15 19:06:29"
+  },
+  {
+    "question": "对 gas_pipelines 表中 code='G001' 的燃气管线 geom 建立 20 米缓冲区（quad_segs=8），计算该缓冲区面积（平方米），不按 construction_areas 裁剪。",
+    "outcome": "success",
+    "note": "executed",
+    "ts": "2026-11-15 19:06:36"
+  }
+]

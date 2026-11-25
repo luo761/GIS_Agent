@@ -1,0 +1,64 @@
+[
+  {
+    "task_signature": "water/空间计算",
+    "question_feat": "统计 water_pipelines 表中满足 ST_Within(geom, (SELECT geom FROM construction_areas WHERE code='A001')) 的水管数量，不做裁剪。",
+    "plan": {
+      "t1": {
+        "nodes": [
+          {
+            "id": "s1",
+            "action": "query_features",
+            "params": {
+              "layer_name": "construction_areas",
+              "filters": {
+                "code": "A001"
+              },
+              "target": "geom"
+            },
+            "depends_on": []
+          },
+          {
+            "id": "s2",
+            "action": "query_features",
+            "params": {
+              "layer_name": "water_pipelines",
+              "filters": {},
+              "target": "geom",
+              "relation": "ST_Within",
+              "reference_geom": "$s1.geom"
+            },
+            "depends_on": [
+              "s1"
+            ]
+          },
+          {
+            "id": "s3",
+            "action": "count_features",
+            "params": {
+              "features": "$s2.features"
+            },
+            "depends_on": [
+              "s2"
+            ]
+          }
+        ],
+        "edges": [
+          [
+            "s1",
+            "s2"
+          ],
+          [
+            "s2",
+            "s3"
+          ]
+        ]
+      }
+    },
+    "trace": "经验：先 query_features 查 construction_areas（filters: code eq A001）得 feature_count=1；再 query_features 查 water_pipelines，target 指向 construction_areas 的 A001，relation 用 ST_Within，返回 feature_count=0。结果形式为 {'feature_count': N}，无需裁剪。",
+    "outcome": "success",
+    "error_lesson": "",
+    "id": "170b1344",
+    "hits": 0,
+    "updated_at": "2026-11-15 19:06:51"
+  }
+]

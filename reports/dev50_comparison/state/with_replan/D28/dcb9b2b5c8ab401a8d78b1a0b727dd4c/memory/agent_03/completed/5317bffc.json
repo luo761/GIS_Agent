@@ -1,0 +1,56 @@
+{
+  "id": "5317bffc",
+  "agent_id": "agent_03",
+  "question_feat": "在表 demo_roads 中，逐条计算所有道路要素的几何长度（单位：米，SRID=3857），求和得到总长度，并返回参与量测的源道路数量（即 demo_roads 中参与计算的要素总数），不做空间合并去重。",
+  "plan": {
+    "nodes": [
+      {
+        "id": "s1",
+        "action": "query_features",
+        "params": {
+          "layer_name": "demo_roads",
+          "filters": {}
+        },
+        "depends_on": []
+      },
+      {
+        "id": "s2",
+        "action": "measure_features",
+        "params": {
+          "measure_type": "length",
+          "unit": "meter",
+          "srid": 3857
+        },
+        "depends_on": [
+          "s1"
+        ]
+      },
+      {
+        "id": "s3",
+        "action": "summarize_features",
+        "params": {
+          "aggregate": "sum",
+          "field": "length",
+          "include_count": true
+        },
+        "depends_on": [
+          "s2"
+        ]
+      }
+    ],
+    "edges": [
+      [
+        "s1",
+        "s2"
+      ],
+      [
+        "s2",
+        "s3"
+      ]
+    ]
+  },
+  "result_summary": "```json\n{\n  \"length\": {\n    \"unit\": \"meter\",\n    \"value\": 3000.0,\n    \"measure\": \"length\",\n    \"measure_srid\": 3857,\n    \"feature_count\": 3\n  }\n}\n```",
+  "outcome": "success",
+  "error": "",
+  "ts": "2026-11-15 19:05:57"
+}

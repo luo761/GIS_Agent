@@ -1,0 +1,40 @@
+{
+  "id": "fb424584",
+  "agent_id": "agent_03",
+  "question_feat": "查询 gas_pipelines 表中全部燃气管线，按 pressure_level 字段分组统计各压力等级的管线数量，并按压力等级名称升序输出所有分组。",
+  "plan": {
+    "nodes": [
+      {
+        "id": "s1",
+        "action": "query_features",
+        "params": {
+          "layer_name": "gas_pipelines",
+          "filters": {}
+        },
+        "depends_on": []
+      },
+      {
+        "id": "s2",
+        "action": "summarize_features",
+        "params": {
+          "aggregate": "count",
+          "group_by": "pressure_level",
+          "sort": "group_name_asc"
+        },
+        "depends_on": [
+          "s1"
+        ]
+      }
+    ],
+    "edges": [
+      [
+        "s1",
+        "s2"
+      ]
+    ]
+  },
+  "result_summary": "按压力等级名称升序（中文拼音/字典序）：低压、中压、高压。\n\n```json\n{\n  \"unit\": \"feature\",\n  \"groups\": [\n    {\n      \"group\": {\n        \"pressure_level\": \"低压\"\n      },\n      \"value\": 5.0,\n      \"feature_count\": 5.0\n    },\n    {\n ",
+  "outcome": "success",
+  "error": "",
+  "ts": "2026-11-15 19:05:05"
+}

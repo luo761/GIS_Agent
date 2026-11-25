@@ -1,0 +1,105 @@
+[
+  {
+    "task_signature": "gas/空间计算",
+    "question_feat": "在EPSG:3857坐标系下，从gas_pipelines表中筛选出与construction_areas中code='A003'的施工区（含孔洞，需排除孔洞区域）相交的燃气管线，将其裁剪到该施工区的实体部分，按pressure_level分组汇总裁剪后线段的长度（单位：米），按长度降序、长度相同时按pressure_level升序输出全部分组，保留非空零长度接触记录。",
+    "plan": {
+      "t1": {
+        "nodes": [
+          {
+            "id": "s1",
+            "action": "query_features",
+            "params": {
+              "table": "construction_areas",
+              "where": "code = 'A003'",
+              "geom_field": "geom"
+            },
+            "depends_on": []
+          },
+          {
+            "id": "s2",
+            "action": "query_features",
+            "params": {
+              "table": "gas_pipelines",
+              "where": "pipe_type = '燃气管线'",
+              "geom_field": "geom"
+            },
+            "depends_on": []
+          },
+          {
+            "id": "s3",
+            "action": "clip_features",
+            "params": {
+              "line_layer": "s2",
+              "polygon_layer": "s1",
+              "exclude_holes": true,
+              "keep_boundary_contact": true
+            },
+            "depends_on": [
+              "s1",
+              "s2"
+            ]
+          },
+          {
+            "id": "s4",
+            "action": "measure_features",
+            "params": {
+              "layer": "s3",
+              "unit": "meter",
+              "srid": 3857
+            },
+            "depends_on": [
+              "s3"
+            ]
+          },
+          {
+            "id": "s5",
+            "action": "summarize_features",
+            "params": {
+              "layer": "s4",
+              "aggregate": "sum",
+              "group_by": "pressure_level",
+              "sort": [
+                {
+                  "field": "sum_length",
+                  "order": "desc"
+                },
+                {
+                  "field": "pressure_level",
+                  "order": "asc"
+                }
+              ],
+              "include_zero_length": true
+            },
+            "depends_on": [
+              "s4"
+            ]
+          }
+        ],
+        "edges": [
+          [
+            "s1",
+            "s3"
+          ],
+          [
+            "s2",
+            "s3"
+          ],
+          [
+            "s3",
+            "s4"
+          ],
+          [
+            "s4",
+            "s5"
+          ]
+        ]
+      }
+    },
+    "trace": "在EPSG:3857下，从gas_pipelines筛选与construction_areas中code='A003'施工区（含孔洞，需排除）相交的燃气管线。流程：query_features查施工区(1条)→查燃气管线(12条)→ST_Intersects空间查询(4条)→clip_features裁剪至施工区实体(4条)→measure_features计算长度(总长1800米)→summarize_features按pressure_level分组求和，按长度降序输出(3组)。另查G003/G004/G006管线(3条)。保留非空零长度接触记录。",
+    "outcome": "success",
+    "error_lesson": "",
+    "id": "f0160d56",
+    "hits": 0,
+    "updated_at": "2026-11-15 19:09:01"
+  }
+]

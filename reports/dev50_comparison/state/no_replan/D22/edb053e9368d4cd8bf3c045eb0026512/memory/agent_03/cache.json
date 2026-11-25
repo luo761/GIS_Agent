@@ -1,0 +1,70 @@
+[
+  {
+    "question": "统计与施工区 A002 相交（含边界接触）且状态为正常或告警的燃气设备数量，同一设备只计一次。",
+    "plan": {
+      "nodes": [
+        {
+          "id": "s1",
+          "action": "query_features",
+          "params": {
+            "layer_name": "construction_areas",
+            "filters": {
+              "code": "A002"
+            },
+            "target": null,
+            "relation": null
+          },
+          "depends_on": []
+        },
+        {
+          "id": "s2",
+          "action": "query_features",
+          "params": {
+            "layer_name": "gas_devices",
+            "filters": {
+              "status": [
+                "正常",
+                "告警"
+              ]
+            },
+            "target": "s1.geom",
+            "relation": "ST_Intersects"
+          },
+          "depends_on": [
+            "s1"
+          ]
+        },
+        {
+          "id": "s3",
+          "action": "summarize_features",
+          "params": {
+            "aggregate": "count",
+            "group_by": null,
+            "sort": null
+          },
+          "depends_on": [
+            "s2"
+          ]
+        }
+      ],
+      "edges": [
+        [
+          "s1",
+          "s2"
+        ],
+        [
+          "s2",
+          "s3"
+        ]
+      ]
+    },
+    "note": "planned",
+    "ts": "2026-11-15 19:04:42"
+  },
+  {
+    "question": "统计与施工区 A002 相交（含边界接触）且状态为正常或告警的燃气设备数量，同一设备只计一次。",
+    "outcome": "success",
+    "note": "executed",
+    "ts": "2026-11-15 19:04:50"
+  }
+]

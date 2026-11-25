@@ -1,0 +1,48 @@
+[
+  {
+    "task_signature": "gas/统计分析",
+    "question_feat": "查询 gas_pipelines 表中全部燃气管线，按 pressure_level 字段分组统计各压力等级的管线数量，并按压力等级名称升序输出所有分组。",
+    "plan": {
+      "t1": {
+        "nodes": [
+          {
+            "id": "s1",
+            "action": "query_features",
+            "params": {
+              "layer_name": "gas_pipelines",
+              "filters": {}
+            },
+            "depends_on": []
+          },
+          {
+            "id": "s2",
+            "action": "summarize_features",
+            "params": {
+              "aggregate": "count",
+              "group_by": "pressure_level",
+              "sort": "group_name_asc",
+              "output_format": "groups_with_name_and_count",
+              "group_field_type": "text",
+              "group_value_format": "string"
+            },
+            "depends_on": [
+              "s1"
+            ]
+          }
+        ],
+        "edges": [
+          [
+            "s1",
+            "s2"
+          ]
+        ]
+      }
+    },
+    "trace": "查询 gas_pipelines 全部12条管线，按 pressure_level 分组统计数量，升序输出。  \n调用顺序：query_features → summarize_features(group_by=['pressure_level'], aggregate='count', sort='group_asc')，结果3组。",
+    "outcome": "error",
+    "error_lesson": "结果校验未通过；以下字段存在类型、数量或取值问题，请重新计算：$.groups[0].group.pressure_level、$.groups[1].group.pressure_level",
+    "id": "b95b3bda",
+    "hits": 4,
+    "updated_at": "2026-11-15 19:05:28"
+  }
+]

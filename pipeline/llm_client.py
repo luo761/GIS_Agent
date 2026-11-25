@@ -8,6 +8,7 @@ from __future__ import annotations
 import json
 import os
 import re
+import time
 from pathlib import Path
 from typing import Any
 
@@ -20,6 +21,51 @@ DEFAULT_MODEL = os.getenv("LLM_MODEL", "deepseek-v4-flash")
 DEFAULT_TEMPERATURE = float(os.getenv("LLM_TEMPERATURE", "0.1"))
 
 _model = None
+_usage: dict[str, int | float] = {}
+
+
+def reset_usage_metrics() -> None:
+    """重置本进程的模型调用计数；不保存提示词、回复或凭据。"""
+    _usage.clear()
+    _usage.update(llm_calls=0, failed_calls=0, input_tokens=0, output_tokens=0,
+                  total_tokens=0, usage_reported_calls=0, elapsed_s=0.0)
+
+
+def usage_metrics() -> dict[str, int | float]:
+    """返回逻辑 invoke 次数和服务端报告的 token 用量快照。"""
+    return {**_usage, "elapsed_s": round(float(_usage["elapsed_s"]), 6)}
+
+
+def _invoke_with_metrics(model_factory, messages):
+    started = time.perf_counter()
+    _usage["llm_calls"] += 1
+    try:
+        response = model_factory().invoke(messages)
+    except Exception:
+        _usage["failed_calls"] += 1
+        raise
+    finally:
+        _usage["elapsed_s"] += time.perf_counter() - started
+
+    usage = getattr(response, "usage_metadata", None)
+    if not isinstance(usage, dict) or not usage:
+        metadata = getattr(response, "response_metadata", None)
+        usage = metadata.get("token_usage") if isinstance(metadata, dict) else None
+    if isinstance(usage, dict) and usage:
+        aliases = {"input_tokens": "prompt_tokens", "output_tokens": "completion_tokens"}
+        counts = {}
+        for key, alias in aliases.items():
+            value = usage.get(key, usage.get(alias, 0))
+            counts[key] = value if isinstance(value, int) and not isinstance(value, bool) and value >= 0 else 0
+        total = usage.get("total_tokens", sum(counts.values()))
+        counts["total_tokens"] = total if isinstance(total, int) and not isinstance(total, bool) and total >= 0 else sum(counts.values())
+        for key, value in counts.items():
+            _usage[key] += value
+        _usage["usage_reported_calls"] += 1
+    return response
+
+
+reset_usage_metrics()
 
 
 def get_model():
@@ -43,7 +89,7 @@ def chat(prompt: str, system: str = "") -> str:
         messages.append(("system", system))
     messages.append(("human", prompt))
     try:
-        resp = get_model().invoke(messages)
+        resp = _invoke_with_metrics(get_model, messages)
     except Exception as e:  # pragma: no cover - 依赖外部服务
         raise RuntimeError(f"LLM 调用失败: {e}") from e
     content = resp.content
@@ -74,7 +120,7 @@ def chat_json(prompt: str, system: str = "") -> dict:
 
 
 # ---------------------------------------------------------------- 工具绑定
-# 算子在启动时通过 bind_tools 与模型绑定，模型可直接发起函数调用，
+# 首次使用工具模型时通过 bind_tools 绑定，模型可直接发起函数调用，
 # 因此各阶段提示词里不需要再罗列算子名与参数。
 _tool_model = None
 _tool_names: tuple[str, ...] = ()
@@ -96,6 +142,6 @@ def get_tool_model():
 def chat_with_tools(messages):
     """一次 ReAct 轮次：返回 AIMessage（可能带 tool_calls）。"""
     try:
-        return get_tool_model().invoke(messages)
+        return _invoke_with_metrics(get_tool_model, messages)
     except Exception as e:  # pragma: no cover - 依赖外部服务
         raise RuntimeError(f"LLM 工具调用失败: {e}") from e
