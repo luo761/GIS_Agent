@@ -27,8 +27,20 @@ class SubTask:
 class PipelineState:
     """LangGraph 主图状态"""
     raw_question: str = ""               # 用户原始口语化问题
-    domain: str = ""                     # 领域（阶段①）
+    domain: str = ""                     # 领域（阶段①，问题不合法时为 invalid）
     task_type: str = ""                  # 基础分类
+    # ---- 问题合法性（阶段①判定，不新增阶段；不合法时直接结束并追问） ----
+    is_valid: bool = True                # 问题是否合法可执行
+    invalid_reasons: list[str] = field(default_factory=list)   # 不合法原因
+    missing_info: list[dict] = field(default_factory=list)     # 缺失信息槽位
+    clarification: str = ""              # 给用户的澄清/追问文本（即最终答复）
+    clarification_rounds: int = 0         # 已追问轮数（交互模式累加）
+    validity_source: str = ""             # rule / llm / rule+llm / pass
+    # ---- 用户与权限（阶段①注入、阶段④执行前校验） ----
+    user_id: str = ""                    # 用户标识（CLI --user / Web 任务台）
+    user_role: str = "analyst"           # 用户类别（角色 key）
+    permission_context: str = ""         # 注入提示词的表级权限说明
+    permission_denials: list[dict] = field(default_factory=list)  # 本次运行被拒绝的操作
     refined_question: str = ""           # 专业形式精炼后的问题
     injected_context: str = ""           # 注入的表结构上下文
     loaded_knowledge: str = ""           # 加载的算子 skill 知识

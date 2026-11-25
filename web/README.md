@@ -50,12 +50,12 @@ python web\server\app.py --port 8766 --open
 | 路由 | 页面 | 主要交互 |
 | --- | --- | --- |
 | `#/overview` | 总览 | 能力雷达、KPIs、智能体分化、最近进化、最新评测、最近运行 |
-| `#/workbench` | 任务台 | 提问、参考答案、判定方式、五阶段播放/单步/全部展开、复制答案、导出运行 |
+| `#/workbench` | 任务台 | 提问、参考答案、判定方式、记忆写入位置（演示/真实）、五阶段播放/单步/全部展开、复制答案、导出运行 |
 | `#/history` | 执行流 | 运行列表、搜索、详情回放、清空记录 |
 | `#/capability` | 能力进化 | 时间轴回放、智能体聚焦、维度趋势、能力矩阵、同步真实快照 / 重置所有智能体 |
 | `#/skills` | 技能库 | 分组筛选、搜索、skill 详情、余弦检索演示、算子目录 |
 | `#/knowledge` | 知识库 | 表结构折叠、字段搜索、检索演示、上下文预览/复制、领域知识 |
-| `#/memory` | 记忆库 | 智能体切换、记录详情与单条删除、缓存步骤单条删除、记忆检索、共享经验池 |
+| `#/memory` | 记忆库 | 真实/演示记忆切换、智能体切换、记录详情与单条删除、缓存步骤单条删除、记忆检索、共享经验池 |
 | `#/benchmark` | 评测报告 | 报告切换、难度/结果筛选、逐题详情、执行流回放 |
 | `#/admin` | 系统管理 | 真实能力向量重置、`tie_epsilon` 管理、智能体长期记录/短期缓存清空与删除 |
 
@@ -121,8 +121,9 @@ python web\server\app.py --port 8766 --open
   同时清空进化历史、执行统计与工具偏好；
 - 路由参数：修改 `config/agents_capability.yaml` 的 `routing.tie_epsilon`，写回时保留原文件注释，
   保存后服务端立即重新读取配置；
-- 记忆空间：对每个智能体的长期记录（`record/`）和短期缓存（`cache.json`）
-  分别执行「清空」（保留目录/文件容器）或「删除」（移除目录/文件本身），也可以重置该智能体全部记忆；
+- 记忆空间：可在「真实记忆 `data/memory`」与「演示记忆 `web/data/memory`」之间切换，
+  对每个智能体的长期记录（`record/`）和短期缓存（`cache.json`）分别执行「清空」（保留目录/文件容器）
+  或「删除」（移除目录/文件本身），也可以重置该智能体全部记忆；
   展开「单条长期记录 / 单条短期缓存」后，还可以逐条删除指定记录或缓存步骤。
 
 **关于执行流**：真实链路需要 LLM、LangGraph、PostGIS 与外部工具集。为了让界面在任何
@@ -136,6 +137,10 @@ python web\server\app.py --port 8766 --open
 因此它适合演示架构与交互，不应被当作真实空间计算结果。接入真实流水线时，只需在
 `server/app.py` 中把 `/api/run` 转发给 `pipeline.pipeline_graph.ask`（需在具备项目依赖的
 Python 环境运行），前端渲染的数据结构可保持不变。
+
+任务台的「记忆写入」可选演示记忆或真实记忆：演示记忆落到 `web/data/memory`，真实记忆落到
+`data/memory`。每次运行都会写短期缓存；只有判定明确（成功/失败）时才写长期记录，自动模式
+未填参考答案的「未知」结果不会归档长期记录。
 
 ---
 
@@ -165,14 +170,14 @@ Python 环境运行），前端渲染的数据结构可保持不变。
 | GET | `/api/admin` | 系统管理页数据：真实能力、`tie_epsilon`、记忆空间 |
 | POST | `/api/admin/capability/reset` | `{confirm:true}`，真实能力全部重置为 0.5 |
 | POST | `/api/admin/routing` | `{confirm:true, tie_epsilon}`，写回 `agents_capability.yaml` |
-| POST | `/api/admin/memory` | `{confirm:true, agent_id, scope:"records"\|"cache"\|"all", mode:"clear"\|"delete"}` |
-| POST | `/api/admin/memory/record` | `{confirm:true, agent_id, record_id}`，删除单条长期记录 |
-| POST | `/api/admin/memory/cache` | `{confirm:true, agent_id, index}`，删除单条短期缓存 |
-| POST | `/api/run` | `{question, truth, verdict:"auto"\|"success"\|"failure"}` |
+| POST | `/api/admin/memory` | `{confirm:true, agent_id, scope:"records"\|"cache"\|"all", mode:"clear"\|"delete", source:"real"\|"demo"}` |
+| POST | `/api/admin/memory/record` | `{confirm:true, agent_id, record_id, source:"real"\|"demo"}`，删除单条长期记录 |
+| POST | `/api/admin/memory/cache` | `{confirm:true, agent_id, index, source:"real"\|"demo"}`，删除单条短期缓存 |
+| POST | `/api/run` | `{question, truth, verdict:"auto"\|"success"\|"failure", memory_target:"demo"\|"real"}` |
 | GET / DELETE | `/api/runs` | 运行列表 / 清空 |
 | GET | `/api/runs/<id>` | 单次运行完整数据 |
-| POST | `/api/retrieve` | `{query, kind:"skills"\|"tables"\|"experience"\|"memory", agent}` |
-| GET | `/api/memory` | 记忆与共享经验 |
+| POST | `/api/retrieve` | `{query, kind:"skills"\|"tables"\|"experience"\|"memory", agent, source:"real"\|"demo"}` |
+| GET | `/api/memory?source=real\|demo` | 指定来源的记忆与共享经验 |
 | GET | `/api/skills` | skill 与算子目录 |
 | GET | `/api/reports` | 评测报告索引 |
 | GET | `/api/reports/<name>` | 单份报告完整结果 |

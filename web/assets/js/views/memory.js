@@ -8,6 +8,7 @@
   const esc = U.esc;
 
   const S = {
+    source: "real",
     tab: "agent_02",
     search: "",
     retrieval: null,
@@ -17,7 +18,10 @@
     showAllCache: false,
   };
 
-  function memory() { return (GIS.state.data || {}).memory || {}; }
+  function memory() {
+    const d = GIS.state.data || {};
+    return (S.source === "demo" ? d.demo_memory : d.memory) || {};
+  }
   function agents() { return GIS.meta.agents(); }
   function memoryMeta(agentId) { return memory()[agentId] || {}; }
   function recordMax(agentId) { return Number(memoryMeta(agentId).record_max != null ? memoryMeta(agentId).record_max : 10); }
@@ -118,9 +122,19 @@
     return groups;
   }
 
+  function outcomeInfo(outcome) {
+    if (outcome === "success") return { label: "成功", cls: "ok" };
+    if (outcome === "failed") return { label: "失败", cls: "err" };
+    if (outcome === "uncertain") return { label: "存疑", cls: "warn" };
+    return { label: "未判定", cls: "warn" };
+  }
+
   function noteInfo(item) {
     const note = String(item.note || "");
     const lower = note.toLowerCase();
+    if (lower.includes("unjudged") || lower.includes("unknown") || note.includes("未判定")) {
+      return { label: "未判定", kind: "unjudged" };
+    }
     if (lower.includes("planned") || note.includes("计划")) {
       return { label: "规划", kind: "plan" };
     }
@@ -161,9 +175,9 @@
     }).join("<span class='cache-arrow'>→</span>");
     const planText = planItem ? planSummary(planItem.plan) : "—";
     const nodes = planItem ? planNodeCount(planItem.plan) : null;
-    const outcomeChip = execItem && execItem.outcome
-      ? "<span class='chip " + (execItem.outcome === "success" ? "ok" : "err") + "'>" +
-        (execItem.outcome === "success" ? "成功" : "失败") + "</span>"
+    const outcome = execItem && execItem.outcome ? outcomeInfo(execItem.outcome) : null;
+    const outcomeChip = outcome
+      ? "<span class='chip " + outcome.cls + "'>" + outcome.label + "</span>"
       : "";
     return "<div class='cache-item'><span class='cache-idx'>" + (i + 1) + "</span><div style='min-width:0;flex:1'>" +
       "<div class='cache-q'>" + esc(U.truncate(group.question || "（无问题文本）", 130)) + "</div>" +
@@ -270,8 +284,11 @@
     return "<div class='stack-lg'>" +
       "<div class='card' style='padding:14px 18px'><div class='row between wrap'>" +
       "<div class='memory-agent-tabs' style='margin:0'>" + tabs + "</div>" +
-      "<div class='row' style='gap:6px'>" +
-      "<span class='chip muted'>数据来自 data/memory 与 data/experience.json</span>" +
+      "<div class='row wrap' style='gap:6px'>" +
+      "<div class='segmented' id='memSource'>" +
+      "<button data-mem-source='real' class='" + (S.source === "real" ? "active" : "") + "'>真实记忆</button>" +
+      "<button data-mem-source='demo' class='" + (S.source === "demo" ? "active" : "") + "'>演示记忆</button></div>" +
+      "<span class='chip mono'>" + (S.source === "real" ? "data/memory" : "web/data/memory") + "</span>" +
       "<button class='btn sm ghost' id='memRefresh'>" + GIS.ui.icon("refresh") + "刷新</button></div>" +
       "</div></div>" +
       "<div id='memBody'>" + (S.tab === "experience" ? experienceHTML() : agentBody(S.tab)) + "</div>" +
@@ -308,7 +325,7 @@
     );
     if (!ok) return;
     try {
-      const payload = await GIS.api.deleteMemoryRecord(agentId, recordId);
+      const payload = await GIS.api.deleteMemoryRecord(agentId, recordId, S.source);
       GIS.toast("已删除记录 " + recordId + "，释放 " + (payload.freed_bytes || 0) + " B", "ok");
       await reloadMemory();
     } catch (err) {
@@ -325,7 +342,7 @@
     );
     if (!ok) return;
     try {
-      const payload = await GIS.api.deleteMemoryCache(agentId, index);
+      const payload = await GIS.api.deleteMemoryCache(agentId, index, S.source);
       GIS.toast("已删除缓存条目 [" + index + "]，剩余 " + (payload.cache_total || 0) + " 条", "ok");
       await reloadMemory();
     } catch (err) {
@@ -376,7 +393,7 @@
       const box = document.getElementById("memRetrieval");
       if (box) box.innerHTML = "<div class='skeleton' style='height:54px'></div>";
       try {
-        const payload = await GIS.api.retrieve(q, "memory", S.tab);
+        const payload = await GIS.api.retrieve(q, "memory", S.tab, S.source);
         S.retrieval = payload;
         S.query = q;
         S.retrievalLoading = false;
@@ -391,6 +408,26 @@
   }
 
   function mount() {
+    document.querySelectorAll("[data-mem-source]").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        const next = btn.dataset.memSource === "demo" ? "demo" : "real";
+        if (next === S.source) return;
+        if (GIS.state.mode === "static") { GIS.toast("静态预览模式无法切换记忆来源", "warn"); return; }
+        try {
+          const payload = await GIS.api.memory(next);
+          S.source = next;
+          if (next === "demo") GIS.state.data.demo_memory = payload.memory;
+          else GIS.state.data.memory = payload.memory;
+          S.showAllRecords = false;
+          S.showAllCache = false;
+          S.retrieval = null;
+          GIS.toast(next === "demo" ? "已切换到演示记忆 web/data/memory" : "已切换到真实记忆 data/memory", "ok");
+          GIS.refreshView();
+        } catch (err) {
+          GIS.toast(err.message || "切换记忆来源失败", "err");
+        }
+      });
+    });
     document.querySelectorAll("[data-mem-tab]").forEach((btn) => {
       btn.addEventListener("click", () => {
         S.tab = btn.dataset.memTab;
@@ -413,11 +450,13 @@
         if (GIS.state.mode === "static") { GIS.toast("静态预览模式无法刷新", "warn"); return; }
         refresh.disabled = true;
         try {
-          const payload = await GIS.api.memory();
-          GIS.state.data.memory = payload.memory;
+          const payload = await GIS.api.memory(S.source);
+          if (S.source === "demo") GIS.state.data.demo_memory = payload.memory;
+          else GIS.state.data.memory = payload.memory;
           GIS.state.data.experience = payload.experience;
-          GIS.state.data.counts.memory_records = Object.keys(payload.memory).reduce((s, k) => s + (payload.memory[k].records || []).length, 0);
-          GIS.toast("记忆与经验已刷新", "ok");
+          const recordsTotal = Object.keys(payload.memory).reduce((s, k) => s + (payload.memory[k].records || []).length, 0);
+          GIS.state.data.counts[S.source === "demo" ? "demo_memory_records" : "memory_records"] = recordsTotal;
+          GIS.toast((S.source === "demo" ? "演示记忆" : "真实记忆") + "与经验已刷新", "ok");
           if (window.GIS.refreshView) window.GIS.refreshView();
         } catch (err) {
           GIS.toast(err.message || "刷新失败", "err");

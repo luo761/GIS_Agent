@@ -17,7 +17,8 @@ from langchain_core.messages import HumanMessage, SystemMessage, ToolMessage
 
 from pipeline.pipeline_state import PipelineState, SubTask
 from pipeline import llm_client as llm
-from tools import tool_registry
+from tools import tool_registry, permission_guard
+from security.permissions import PermissionDenied
 from pipeline.stage3_plan import _agent_memory
 
 MAX_TOOL_ROUNDS = 20  # 单个子任务最大工具调用轮数（防死循环）
@@ -134,15 +135,22 @@ def _payload(step_id: str, tool: str, ok: bool, result: Any = None,
 
 # ---------------------------------------------------------------- 工具执行
 def _run_tool_calls(tool_calls: list[dict], trace: list[dict], tools_used: list[str],
-                    results: dict[str, dict]) -> list[ToolMessage]:
-    """执行模型发起的工具调用，返回要回填给模型的 ToolMessage 列表。"""
+                    results: dict[str, dict], role: str = "", user_id: str = "",
+                    denials: list[dict] | None = None) -> list[ToolMessage]:
+    """执行模型发起的工具调用，返回要回填给模型的 ToolMessage 列表。
+
+    每个调用都会先过 `tools/permission_guard.py`：越权时不执行算子，
+    直接把拒绝原因回填给模型，同时记录到 `state.permission_denials` 与审计日志。
+    """
     messages: list[ToolMessage] = []
+    denials = denials if denials is not None else []
     for tc in tool_calls:
         name = tc.get("name") or ""
         raw_args = tc.get("args") or {}
         step_id = f"t{len(trace) + 1}"
         try:
             args = _resolve_refs(raw_args, results)
+            permission_guard.guard_call(role, name, args, principal=user_id)
             result = tool_registry.call(name, **args)
             if not isinstance(result, dict) or result.get("status") != "ok":
                 raise ValueError(str(result.get("error") or "工具未返回成功结果"))
@@ -157,10 +165,17 @@ def _run_tool_calls(tool_calls: list[dict], trace: list[dict], tools_used: list[
             if name and name not in tools_used:
                 tools_used.append(name)
             content = _payload(step_id, name, True, result.get("result"))
-        except Exception as e:  # 工具报错回填给模型，让它自行纠正
+        except Exception as e:  # 工具报错/越权都回填给模型，让它自行纠正
+            denied = isinstance(e, PermissionDenied)
             error = f"{type(e).__name__}: {e}"
-            trace.append({"step": step_id, "tool": name, "args": raw_args,
-                          "ok": False, "error": error})
+            entry = {"step": step_id, "tool": name, "args": raw_args,
+                     "ok": False, "error": error, "denied": denied}
+            if denied:
+                entry["permission"] = {"role": getattr(e, "role", role),
+                                       "table": getattr(e, "table", ""),
+                                       "action": getattr(e, "action", "")}
+                denials.append(entry["permission"])
+            trace.append(entry)
             content = _payload(step_id, name, False, error=error)
         messages.append(ToolMessage(content=content, tool_call_id=str(tc.get("id") or name)))
     return messages
@@ -196,6 +211,7 @@ def run_subtask(state: PipelineState, sub: SubTask) -> SubTask:
         f"执行者：智能体 {sub.assigned_agent_name}（编号）\n"
         f"子问题：{sub.question}\n"
         f"所需能力维度：{sub.required_capabilities}\n"
+        f"{state.permission_context}\n"
         f"{state.injected_context}\n"
         f"执行计划(DAG)：{plan_json}\n"
     )
@@ -204,6 +220,7 @@ def run_subtask(state: PipelineState, sub: SubTask) -> SubTask:
     prompt += "\n请开始执行；全部步骤完成后直接给出最终结果。"
 
     messages = [SystemMessage(SYSTEM_PROMPT), HumanMessage(prompt)]
+    denials: list[dict] = state.permission_denials  # 直接挂到状态上，供报表与文档引用
 
     for round_index in range(MAX_TOOL_ROUNDS):
         if round_index == MAX_TOOL_ROUNDS - 3:
@@ -235,7 +252,9 @@ def run_subtask(state: PipelineState, sub: SubTask) -> SubTask:
             mem.push_cache({"question": sub.question, "outcome": "success", "note": "executed"})
             return sub
 
-        messages.extend(_run_tool_calls(tool_calls, trace, tools_used, results))
+        messages.extend(_run_tool_calls(tool_calls, trace, tools_used, results,
+                                        role=state.user_role, user_id=state.user_id,
+                                        denials=denials))
 
     sub.error = f"超过最大工具调用轮数 {MAX_TOOL_ROUNDS}"
     sub.trace = trace

@@ -67,6 +67,16 @@ def _after_evaluate(state: PipelineState) -> str:
     return END
 
 
+def _after_understand(state: PipelineState) -> str:
+    """问题不合法 → 直接结束（返回追问文本）；合法 → 继续拆解。
+
+    这里不新增节点：合法性判定在阶段①内部完成，仅用条件边做短路。
+    """
+    if not state.is_valid:
+        return "clarify"
+    return "decompose"
+
+
 def build_graph():
     g = StateGraph(PipelineState)
     g.add_node("understand", _node(stage1_understand.run))
@@ -76,7 +86,10 @@ def build_graph():
     g.add_node("evaluate", _node(stage5_evaluate.run))
 
     g.set_entry_point("understand")
-    g.add_edge("understand", "decompose")
+    # 问题不合法时短路到 END：不拆解、不规划、不执行、不进化
+    g.add_conditional_edges(
+        "understand", _after_understand, {"clarify": END, "decompose": "decompose"}
+    )
     g.add_edge("decompose", "plan")
     g.add_edge("plan", "execute")
     g.add_edge("execute", "evaluate")
@@ -84,17 +97,23 @@ def build_graph():
     return g.compile()
 
 
-def ask(question: str, ground_truth=None, answer_format: str = "") -> PipelineState:
+def ask(question: str, ground_truth=None, answer_format: str = "",
+        user: str = "", rounds: int = 0) -> PipelineState:
     """端到端入口。
 
     ground_truth 非空时进入"测试模式"，由阶段⑤判定对错并据此进化能力；
-    answer_format 用于把题目要求的输出契约传入执行器（基准评测使用）。
+    answer_format 用于把题目要求的输出契约传入执行器（基准评测使用）；
+    user 是用户标识或角色 key（如 ``viewer`` / ``li.analyst``），决定表级权限；
+    rounds 是已追问轮数，用于交互式澄清时累计统计。
     """
     graph = build_graph()
     init = PipelineState(
         raw_question=question,
         ground_truth=ground_truth,
         answer_format=answer_format,
+        user_id=user,
+        user_role=user or "analyst",
+        clarification_rounds=rounds,
     )
     final = graph.invoke(init)
     return _coerce_state(final)

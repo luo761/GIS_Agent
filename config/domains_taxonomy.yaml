@@ -22,6 +22,27 @@ domains:
     keywords: ["行政区", "人口", "道路", "土地利用", " DEM ", "高程"]
     typical_tables: [region_stat, road_network, land_use_2023]
 
+  # 特殊领域：问题不合法
+  # 由 LLM 在阶段①“领域识别”时一并判定，不新增流水线阶段。
+  # 一旦命中：立即结束本次执行，向用户复述问题并追问缺失信息，
+  # 直到用户把问题补充完整才重新进入 ①→②→③→④→⑤。
+  invalid:
+    name: "问题不合法"
+    special: true            # 不是业务行业，检索/分类时需排除
+    reason: "问题缺少可执行要素，或超出 GIS 业务范围、数据权限与安全边界"
+    keywords:
+      - "缺少对象"
+      - "缺少范围"
+      - "缺少时间"
+      - "表述空泛"
+      - "与GIS无关"
+      - "越权访问"
+      - "删除数据"
+      - "导出全部"
+      - "忽略上述"
+      - "system prompt"
+    typical_tables: []
+
 # 基础任务分类（跨领域）
 task_types:
   - 空间计算     # 缓冲、求交、裁剪、量测等
@@ -37,3 +58,64 @@ task_type_capabilities:
   统计分析: [statistics]
   制图可视化: [mapping]
   综合: [spatial_compute, attribute_query, statistics, mapping]
+
+# ---------------------------------------------------------------------------
+# 问题合法性判定（阶段①使用：规则兜底 + LLM 判定，二者取"更严格"）
+# ---------------------------------------------------------------------------
+invalid_question:
+  # 规则层：即使 LLM 判为合法，命中以下规则也会被拦下（系统安全兜底）
+  enabled: true
+  min_length: 6                 # 少于 6 个字符直接判为不合法
+  max_length: 2000              # 超过后拒绝执行，要求拆分成多个问题
+  require_gis_anchor: true      # 必须出现至少一个 GIS 业务锚点（图层/要素/位置/量测）
+  # 明显越权、破坏性、注入类意图：命中即拦截，不进入拆解
+  blocked_patterns:
+    - "(删除|清空|移除|drop|truncate)\\s*(全部|所有|整个|整张)?[^\\n]{0,10}?(表|库|数据库|记录)"
+    - "删除(全部|所有|整个)"
+    - "(清空|覆盖)(整个|全部)(数据库|表|数据)"
+    - "drop\\s+(table|database|schema)"
+    - "truncate\\s+table"
+    - "delete\\s+from"
+    - "update\\s+\\w+\\s+set"
+    - "忽略(之前|以上|上述|前面).{0,8}(指令|提示|规则)"
+    - "ignore\\s+(all\\s+)?(previous|above)\\s+instructions"
+    - "(system|developer)\\s*prompt"
+    - "导出(全部|所有)(用户|数据|表)"
+    - "绕过(权限|鉴权|审核|校验)"
+  # 空泛词：整句只有这些词时说明没有可执行对象
+  vague_only_patterns:
+    - "^(帮我|请|麻烦)?(查一下|看一下|看看|分析一下|分析下|统计一下|处理一下|弄一下|搞一下)[。.!！?？]*$"
+    - "^(你好|在吗|测试|test)[。.!！?？]*$"
+
+  # 缺失信息清单：LLM 命中哪一类，就用对应追问模板让用户补充
+  required_slots:
+    - key: object
+      name: "分析对象"
+      required: true
+      prompt: "要分析的是哪类要素（燃气设备/管线/施工区/水表/行政区……）？请给出图层名或业务编号。"
+      anchor_keywords: ["设备", "管线", "管道", "阀门", "水表", "施工区", "道路", "行政区", "地块", "耕地", "用地", "人口", "河流", "流域", "管网", "图层", "要素", "gas_", "water_", "construction_", "region_", "demo_"]
+    - key: extent
+      name: "空间范围"
+      required: true
+      prompt: "范围是哪里（施工区编号 A001、行政区、缓冲区半径……）？"
+      anchor_keywords: ["施工区", "范围内", "缓冲区", "半径", "A0", "内部", "相交", "覆盖", "行政区", "全区", "地块", "流域", "省", "市", "县"]
+    - key: condition
+      name: "筛选条件"
+      required: false
+      prompt: "需要哪些筛选条件（状态=正常/告警、压力等级、管材……）？没有条件也请明确说明“不限”。"
+      anchor_keywords: ["状态", "正常", "告警", "停用", "压力", "等级", "管材", "类型", "条件", "不限", "所有", "全部"]
+    - key: metric
+      name: "输出指标"
+      required: true
+      prompt: "要输出什么结果（数量、长度、面积、占比、排序列表……）？"
+      anchor_keywords: ["数量", "个数", "计数", "长度", "面积", "占比", "百分比", "排序", "列表", "汇总", "统计", "多少", "几个", "密度", "距离"]
+    - key: time
+      name: "时间口径"
+      required: false
+      prompt: "统计的时间范围是哪一年/哪一版数据？"
+      anchor_keywords: ["20", "年", "最新", "当期", "历史", "时间", "日期"]
+
+  # 澄清回复模板：{question} 原问题，{reasons} 不合法原因，{slots} 缺失信息，{questions} 逐条追问
+  clarification_template: "【问题不合法 · 需要您补充信息】\n您的问题：{question}\n判定原因：{reasons}\n本次执行已中止，未进行任何拆分、规划或数据库操作。\n请补充以下信息后重新提交：\n{questions}\n补充方式：可直接在原问题后追加说明（例如“分析对象=燃气设备；范围=A001；条件=状态正常；指标=数量”）。"
+
+  max_clarify_rounds: 3         # 交互模式下最多追问轮数

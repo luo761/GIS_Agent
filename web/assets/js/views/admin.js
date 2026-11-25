@@ -7,9 +7,13 @@
   const U = GIS.util;
   const esc = U.esc;
 
+  let memorySource = "real";
+
   function data() { return GIS.state.data || {}; }
   function realCap() { return data().real_capability || {}; }
-  function memory() { return data().memory || {}; }
+  function memory() {
+    return (memorySource === "demo" ? data().demo_memory : data().memory) || {};
+  }
   function isStatic() { return GIS.state.mode === "static"; }
 
   function bytes(n) {
@@ -121,7 +125,8 @@
     if (!cache.length) return "<div class='tiny muted' style='padding:7px 0'>暂无短期缓存。</div>";
     return cache.map((entry, index) => {
       const question = entry.question || entry.step_question || "（无步骤文本）";
-      const note = entry.note || entry.lesson || "";
+      const rawNote = entry.note || entry.lesson || "";
+      const note = rawNote === "unjudged" ? "未判定" : rawNote;
       return "<div class='admin-item'>" +
         "<span class='cache-idx'>" + (index + 1) + "</span>" +
         "<div class='admin-item-main'>" +
@@ -182,7 +187,12 @@
 
     return "<div class='card'><div class='card-head'><span class='card-title-icon'>" + GIS.ui.icon("memory") + "</span>" +
       "<div><h2>智能体记忆空间</h2><p class='sub'>长期记录与短期缓存分别管理；清空保留容器，删除会移除目录/文件本身</p></div>" +
-      "<div class='right'><span class='chip mono'>data/memory</span></div></div>" +
+      "<div class='right wrap' style='justify-content:flex-end'>" +
+      "<div class='segmented' id='adminMemSource'>" +
+      "<button data-admin-mem-source='real' class='" + (memorySource === "real" ? "active" : "") + "'>真实记忆</button>" +
+      "<button data-admin-mem-source='demo' class='" + (memorySource === "demo" ? "active" : "") + "'>演示记忆</button></div>" +
+      "<span class='chip mono'>" + (memorySource === "real" ? "data/memory" : "web/data/memory") + "</span>" +
+      "</div></div>" +
       "<div class='stack-lg'>" + (cards || GIS.ui.empty("没有可管理的智能体", "请检查 config/agents_capability.yaml。", "memory")) + "</div>" +
       "</div>";
   }
@@ -206,12 +216,16 @@
       GIS.state.data.real_capability = admin.capability;
       GIS.state.data.routing = admin.routing;
       GIS.state.data.memory = admin.memory;
+      GIS.state.data.demo_memory = admin.demo_memory || admin.memory;
       GIS.state.data.admin = admin;
     } catch (e) { /* 管理页仍可使用已刷新的 bootstrap 数据 */ }
     const mem = GIS.state.data.memory || {};
+    const demoMem = GIS.state.data.demo_memory || {};
     GIS.state.data.counts = GIS.state.data.counts || {};
     GIS.state.data.counts.memory_records = Object.keys(mem).reduce((s, k) => s + ((mem[k].records || []).length), 0);
     GIS.state.data.counts.memory_cache = Object.keys(mem).reduce((s, k) => s + ((mem[k].cache || []).length), 0);
+    GIS.state.data.counts.demo_memory_records = Object.keys(demoMem).reduce((s, k) => s + ((demoMem[k].records || []).length), 0);
+    GIS.state.data.counts.demo_memory_cache = Object.keys(demoMem).reduce((s, k) => s + ((demoMem[k].cache || []).length), 0);
     if (GIS.refreshNav) GIS.refreshNav();
     GIS.refreshView();
   }
@@ -289,7 +303,7 @@
     const buttons = document.querySelectorAll("[data-mem-action]");
     buttons.forEach((b) => { b.disabled = true; });
     try {
-      const payload = await GIS.api.memoryAction(agentId, scope, mode);
+      const payload = await GIS.api.memoryAction(agentId, scope, mode, memorySource);
       const parts = [];
       if (scope === "records" || scope === "all") parts.push((payload.removed_records || 0) + " 条记录");
       if (scope === "cache" || scope === "all") parts.push((payload.removed_cache_entries || 0) + " 条缓存");
@@ -315,7 +329,7 @@
     if (!ok) return;
     btn.disabled = true;
     try {
-      const payload = await GIS.api.deleteMemoryRecord(agentId, recordId);
+      const payload = await GIS.api.deleteMemoryRecord(agentId, recordId, memorySource);
       GIS.toast("已删除记录 " + recordId + "，释放 " + bytes(payload.freed_bytes), "ok", "单条记录已删除");
       await reloadAll();
     } catch (err) {
@@ -337,7 +351,7 @@
     if (!ok) return;
     btn.disabled = true;
     try {
-      const payload = await GIS.api.deleteMemoryCache(agentId, index);
+      const payload = await GIS.api.deleteMemoryCache(agentId, index, memorySource);
       GIS.toast("已删除缓存条目 [" + index + "]，剩余 " + (payload.cache_total || 0) + " 条", "ok", "单条缓存已删除");
       await reloadAll();
     } catch (err) {
@@ -371,6 +385,15 @@
     document.querySelectorAll("[data-del-cache]").forEach((btn) => {
       btn.addEventListener("click", () => deleteCache(btn));
     });
+    document.querySelectorAll("[data-admin-mem-source]").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        const next = btn.dataset.adminMemSource === "demo" ? "demo" : "real";
+        if (next === memorySource) return;
+        memorySource = next;
+        GIS.toast(next === "demo" ? "已切换到演示记忆 web/data/memory" : "已切换到真实记忆 data/memory", "ok");
+        await reloadAll();
+      });
+    });
 
     const refresh = document.getElementById("adminRefresh");
     if (refresh) refresh.addEventListener("click", async () => {
@@ -400,6 +423,7 @@
         GIS.state.data.real_capability = admin.capability;
         GIS.state.data.routing = admin.routing;
         GIS.state.data.memory = admin.memory;
+        GIS.state.data.demo_memory = admin.demo_memory || admin.memory;
       } catch (e) { /* 回退到 bootstrap 数据 */ }
     },
   };

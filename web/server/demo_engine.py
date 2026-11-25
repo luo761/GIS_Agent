@@ -10,8 +10,9 @@
 - 路由、能力进化：**严格按 config/agents_capability.yaml 的公式与参数**
 - 计划 DAG 与工具调用轨迹：按检索到的 skill 算子链生成（数值为模拟值）
 
-模拟只读写 `web/data/`，不会修改项目的 `data/agent_capabilities.json`、
-经验池或记忆目录。页面上会明确标注"演示会话"。
+执行流和能力状态仍写 `web/data/`；记忆写入位置可选：默认写演示记忆
+`web/data/memory`，也可由用户显式选择写入项目真实记忆 `data/memory`。
+不会修改 `data/agent_capabilities.json` 或经验池。页面上会明确标注"演示会话"。
 """
 from __future__ import annotations
 
@@ -97,6 +98,14 @@ class DemoEngine:
         self.experience_hits: list[dict] = []
         self.subtasks: list[dict] = []
         self.timeline: list[dict] = []
+        self.memory_target = "demo"
+        self.memory_writes: list[dict] = []
+        self.memory_errors: list[str] = []
+        self.user_id = ""
+        self.role = "analyst"
+        self.role_name = "业务分析员"
+        self.permission_denials: list[dict] = []
+        self.validity: dict[str, Any] = {}
         self.t0 = _now_ms()
 
     # ------------------------------------------------------------------ 工具
@@ -119,11 +128,134 @@ class DemoEngine:
         caps = self._caps(agent_id)
         return [caps[d] for d in self.config.dimensions]
 
+    # ------------------------------------------------------------------ 权限
+    def _allowed_tables(self) -> set[str]:
+        return set(ds.PERMISSIONS.allowed_tables(self.role, "select"))
+
+    def _check_node(self, node: dict) -> str:
+        """返回空串=允许；否则返回拒绝原因。与工具执行器的表级校验同源。"""
+        table = str((node.get("params") or {}).get("layer_name") or "")
+        if not table:
+            return ""
+        result = ds.PERMISSIONS.check(self.role, table, "select")
+        if result.allowed:
+            return ""
+        self.permission_denials.append(result.to_dict())
+        return f"权限拒绝：{result.reason}"
+
+    # ------------------------------------------------------------------ 问题不合法
+    def _invalid_run(self, verdict: dict[str, Any], capability_before: dict[str, Any]) -> dict[str, Any]:
+        """问题不合法：不拆解、不规划、不执行、不进化，只返回澄清追问。"""
+        elapsed = _now_ms() - self.started
+        reasons = list(verdict.get("reasons") or [])
+        missing = list(verdict.get("missing_info") or [])
+        clarification = str(verdict.get("clarification") or "")
+        self.validity = verdict
+        self._beat("understand", "问题不合法", "；".join(reasons) or "信息不足", "error")
+        self._beat("understand", "本次执行已中止", "未拆分、未规划、未访问任何数据表", "warn")
+        for slot in missing:
+            self._beat("understand", "缺少信息 · " + str(slot.get("name")), str(slot.get("prompt") or ""), "warn")
+
+        understand = {
+            "stage": "understand",
+            "status": "blocked",
+            "elapsed_ms": 260,
+            "domain": "invalid",
+            "domain_label": "问题不合法",
+            "task_type": "问题不合法",
+            "refined_question": "",
+            "tables": [],
+            "skills": [],
+            "knowledge": "",
+            "context": "",
+            "validity": verdict,
+            "is_valid": False,
+            "permission": {
+                "role": self.role,
+                "role_name": self.role_name,
+                "allowed_tables": sorted(self._allowed_tables()),
+            },
+            "summary": "问题不合法：已中止执行并要求补充信息",
+        }
+        skipped = {
+            "status": "skipped",
+            "elapsed_ms": 0,
+            "subtasks": [],
+            "summary": "问题不合法，本阶段未执行",
+        }
+        decompose = {**skipped, "stage": "decompose", "refined_question": ""}
+        plan_stage = {**skipped, "stage": "plan"}
+        execute = {**skipped, "stage": "execute"}
+        evaluate = {
+            "stage": "evaluate",
+            "status": "blocked",
+            "elapsed_ms": 120,
+            "evaluation": "clarification",
+            "correct": None,
+            "reason": "；".join(reasons) or "问题信息不足，需要用户补充",
+            "final_answer": clarification,
+            "answer": None,
+            "answer_kind": "澄清追问",
+            "changes": [],
+            "missing_info": missing,
+            "summary": "未执行任何算子，能力向量保持不变",
+        }
+        run = {
+            "run_id": self.run_id,
+            "created_at": time.strftime("%Y-%m-%d %H:%M:%S"),
+            "mode": "demo",
+            "question": self.question,
+            "truth": self.truth,
+            "verdict_mode": self.verdict_mode,
+            "memory_target": self.memory_target,
+            "memory_writes": [],
+            "memory_errors": [],
+            "domain": "invalid",
+            "domain_label": "问题不合法",
+            "task_type": "问题不合法",
+            "is_valid": False,
+            "validity": verdict,
+            "role": self.role,
+            "role_name": self.role_name,
+            "permission_denials": [],
+            "dimensions": self.config.dimensions,
+            "labels": self.config.labels,
+            "flow": {
+                "understand": understand,
+                "decompose": decompose,
+                "plan": plan_stage,
+                "execute": execute,
+                "evaluate": evaluate,
+            },
+            "subtasks": [],
+            "capability_before": capability_before,
+            "capability_after": capability_before,
+            "timeline": self.timeline,
+            "metrics": {
+                "elapsed_ms": elapsed,
+                "tool_calls": 0,
+                "tool_errors": 0,
+                "retrieval_hits": 0,
+                "subtasks": 0,
+                "agents_used": [],
+            },
+            "notes": [
+                "演示会话：问题合法性规则与阶段① 共用 security/question_guard.py。",
+                "问题不合法时不会进入拆解/规划/执行，也不会修改能力向量。",
+                "请按追问补充分析对象、空间范围、筛选条件与输出指标后重新提交。",
+            ],
+        }
+        ds.save_run(run)
+        return run
+
+
     # ------------------------------------------------------------------ ① 理解
     def _classify_domain(self) -> str:
         text = self.question.lower()
         best, best_score = "general", 0
         for key, domain in self.config.domains.items():
+            if (domain or {}).get("special"):
+                continue  # invalid 是安全判定结果，不是业务行业
             score = 0
             for word in domain.get("keywords") or []:
                 token = str(word).strip().lower()
@@ -734,11 +866,61 @@ class DemoEngine:
         self.state.setdefault("history", []).append(event)
         return event
 
+    def _write_memory(self, subtask: dict, outcome: str, answer: Any) -> None:
+        """把本次子任务写入所选记忆空间：短期缓存必写，长期记录只收明确结局。"""
+        agent_id = subtask["agent_id"]
+        target = self.memory_target
+        note = "executed" if outcome in ("success", "failed") else "unjudged"
+        error = str(subtask.get("error") or "")
+        if outcome == "failed":
+            error = error or str(subtask.get("note") or "")
+        try:
+            ds.append_memory_step(
+                target,
+                agent_id,
+                question=subtask["question"],
+                plan=subtask.get("plan"),
+                outcome=outcome,
+                note=note,
+                error=error,
+            )
+            self.memory_writes.append(
+                {"type": "cache", "agent_id": agent_id, "target": target}
+            )
+            if outcome in ("success", "failed"):
+                if outcome == "success" and answer is not None:
+                    summary = json.dumps(answer, ensure_ascii=False)[:200]
+                else:
+                    summary = error or "执行失败"
+                rid = ds.add_memory_record(
+                    target,
+                    agent_id,
+                    question=subtask["question"],
+                    plan=subtask.get("plan"),
+                    result_summary=summary,
+                    outcome=outcome,
+                    error=error,
+                )
+                if rid:
+                    self.memory_writes.append(
+                        {"type": "record", "agent_id": agent_id, "target": target, "record_id": rid}
+                    )
+        except Exception as exc:  # 记忆写入失败不应中断主流程
+            message = f"{type(exc).__name__}: {exc}"
+            self.memory_errors.append(message)
+            self._beat("evaluate", "记忆写入失败", message, "error")
+
     # ------------------------------------------------------------------ 主流程
-    def run(self, question: str, truth: str = "", verdict: str = "auto") -> dict[str, Any]:
+    def run(self, question: str, truth: str = "", verdict: str = "auto",
+            memory_target: str = "demo", role: str = "analyst",
+            user_id: str = "") -> dict[str, Any]:
         self.question = (question or "").strip()
         self.truth = truth or ""
         self.verdict_mode = verdict if verdict in ("auto", "success", "failure") else "auto"
+        self.memory_target = memory_target if memory_target in ds.MEMORY_SOURCES else "demo"
+        self.user_id = user_id or ""
+        self.role = ds.PERMISSIONS.resolve_role(self.user_id or role)
+        self.role_name = ds.PERMISSIONS.role_name(self.role)
         if not self.question:
             raise ValueError("问题不能为空")
         capability_before = {
@@ -746,17 +928,28 @@ class DemoEngine:
             "history_len": len(self.state.get("history") or []),
         }
 
+        # ⓪ 问题合法性（阶段①内的判定，不新增流程步骤）
+        validity = ds.validate_question(self.question)
+        self.validity = validity
+        if not validity.get("is_valid"):
+            return self._invalid_run(validity, capability_before)
+
         # ① 理解 ---------------------------------------------------------
         stage_start = _now_ms()
         self.domain = self._classify_domain()
         self.task_type = self._classify_task()
         self.dims = self._detect_dims()
         self.refined_question = self._formalize()
-        self.tables = ds.retrieve_tables(self.question, top_k=5)
+        self.tables = ds.retrieve_tables(self.question, top_k=5, role=self.role)
         self.skills = ds.retrieve_skills(self.question, top_k=4)
         knowledge_key = self.domain if self.domain in ds.DOMAIN_KNOWLEDGE else "general"
         domain_knowledge = ds.DOMAIN_KNOWLEDGE.get(knowledge_key, "")
         self._beat("understand", "领域识别", f"{self.domain} / {self.task_type}", "ok")
+        self._beat(
+            "understand", "权限校验",
+            f"{self.role_name}（{self.role}）可查询 {len(self._allowed_tables())} 张表",
+            "info",
+        )
         self._beat("understand", "检索相关表结构", "、".join(t["name"] for t in self.tables) or "未命中", "info")
         self._beat(
             "understand", "检索任务级 skill",
@@ -775,6 +968,13 @@ class DemoEngine:
             "skills": self.skills,
             "knowledge": domain_knowledge,
             "context": self._render_context(self.tables),
+            "is_valid": True,
+            "validity": validity,
+            "permission": {
+                "role": self.role,
+                "role_name": self.role_name,
+                "allowed_tables": sorted(self._allowed_tables()),
+            },
             "summary": f"识别为「{self.config.domain_names.get(self.domain, self.domain)} / {self.task_type}」，"
                        f"命中 {len(self.tables)} 张表、{len(self.skills)} 个 skill",
         }
@@ -823,7 +1023,9 @@ class DemoEngine:
                 "id": skill.get("id"), "name": skill.get("name"),
                 "score": skill.get("score"), "operators": skill.get("operators"),
             } if skill else None
-            sub["memory_hits"] = ds.retrieve_memory(sub["agent_id"], sub["question"], top_k=2)
+            sub["memory_hits"] = ds.retrieve_memory(
+                sub["agent_id"], sub["question"], top_k=2, source=self.memory_target
+            )
             sub["experience_hits"] = ds.retrieve_experience(sub["question"], top_k=2)
             sub["preferred_tools"] = list(
                 (self.state["agents"][sub["agent_id"]] or {}).get("preferred_tools") or []
@@ -871,6 +1073,30 @@ class DemoEngine:
             tools_used: list[str] = []
             error = ""
             for idx, node in enumerate(nodes):
+                denied = self._check_node(node)
+                if denied:
+                    traces.append(
+                        {
+                            "step": node["id"],
+                            "tool": node["action"],
+                            "label": node.get("label", node["action"]),
+                            "args": node.get("params") or {},
+                            "refs": [],
+                            "ok": False,
+                            "denied": True,
+                            "error": denied,
+                            "brief": {},
+                            "elapsed_ms": 0,
+                        }
+                    )
+                    error = denied
+                    self._beat(
+                        "execute",
+                        f"{sub['subtask_id']} · {node['action']} 越权拦截",
+                        denied,
+                        "error",
+                    )
+                    break
                 trace = self._simulate_tool(node, idx, sub["subtask_id"])
                 if idx == fail_at:
                     trace["ok"] = False
@@ -943,11 +1169,13 @@ class DemoEngine:
                     "未知结果 · 跳过能力进化",
                     "warn",
                 )
+                self._write_memory(sub, "unknown", answer)
                 continue
             outcome = "success" if (sub["status"] == "success" and correct) else "failure"
             sub["outcome"] = outcome
             sub["note"] = "" if outcome == "success" else (sub["error"] or reason)
             event = self._evolve(sub, outcome)
+            self._write_memory(sub, outcome, answer)
             change = {
                 "subtask_id": sub["subtask_id"],
                 "agent_id": event["agent_id"],
@@ -1013,9 +1241,17 @@ class DemoEngine:
             "question": self.question,
             "truth": self.truth,
             "verdict_mode": self.verdict_mode,
+            "memory_target": self.memory_target,
+            "memory_writes": list(self.memory_writes),
+            "memory_errors": list(self.memory_errors),
             "domain": self.domain,
             "domain_label": self.config.domain_names.get(self.domain, self.domain),
             "task_type": self.task_type,
+            "is_valid": True,
+            "validity": self.validity,
+            "role": self.role,
+            "role_name": self.role_name,
+            "permission_denials": list(self.permission_denials),
             "dimensions": self.config.dimensions,
             "labels": self.config.labels,
             "flow": {
@@ -1057,7 +1293,12 @@ class DemoEngine:
             "notes": [
                 "演示会话：执行流与工具返回值为本地模拟，不调用 LLM、数据库或外部工具集。",
                 "表结构 / skill / 经验 / 记忆检索、路由与能力进化公式均取自项目真实实现。",
-                "本运行只写入 web/data/，不会修改项目 data/ 下的能力、经验与记忆文件。",
+                "问题合法性规则与用户权限表分别复用 security/question_guard.py 与 security/permissions.py。",
+                (
+                    "本次记忆写入：web/data/memory（演示记忆），不修改项目 data/memory。"
+                    if self.memory_target == "demo"
+                    else "本次记忆写入：data/memory（项目真实记忆）。"
+                ),
             ],
         }
         ds.save_run(run)
@@ -1088,5 +1329,10 @@ class DemoEngine:
         return "\n".join(parts)
 
 
-def run_demo(question: str, truth: str = "", verdict: str = "auto") -> dict[str, Any]:
-    return DemoEngine().run(question, truth=truth, verdict=verdict)
+def run_demo(question: str, truth: str = "", verdict: str = "auto",
+             memory_target: str = "demo", role: str = "analyst",
+             user_id: str = "") -> dict[str, Any]:
+    return DemoEngine().run(
+        question, truth=truth, verdict=verdict, memory_target=memory_target,
+        role=role, user_id=user_id,
+    )

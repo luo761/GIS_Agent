@@ -13,6 +13,7 @@
     question: "",
     truth: "",
     verdict: "auto",
+    memoryTarget: "demo",
     running: false,
     lastRun: null,
     player: null,
@@ -56,8 +57,15 @@
       "<button data-verdict='failure' class='" + (VIEW.verdict === "failure" ? "active" : "") + "'>判失败</button>" +
       "</div>" +
       "<div class='tiny faint' style='margin-top:5px'>自动模式未填参考答案时按「未知」处理，不更新能力；判成功/判失败会直接驱动进化。</div></div>" +
+      "<div class='field memory-field'><label>记忆写入</label>" +
+      "<div class='segmented' id='memoryTargetGroup'>" +
+      "<button data-memory-target='demo' class='" + (VIEW.memoryTarget === "demo" ? "active" : "") + "'>演示记忆</button>" +
+      "<button data-memory-target='real' class='" + (VIEW.memoryTarget === "real" ? "active" : "") + "'>真实记忆</button>" +
       "</div>" +
-      "<div class='notice-line'>" + GIS.ui.chip("不调用 LLM", "muted") + GIS.ui.chip("不写项目数据", "muted") +
+      "<div class='tiny faint' style='margin-top:5px'>演示记忆写 <span class='mono'>web/data/memory</span>；真实记忆写 <span class='mono'>data/memory</span>。运行后可在记忆库切换来源查看。</div></div>" +
+      "</div>" +
+      "<div class='notice-line'>" + GIS.ui.chip("不调用 LLM", "muted") +
+      GIS.ui.chip("记忆写入可选", "muted") +
       GIS.ui.chip("检索与进化公式来自项目真实实现", "muted") + "</div>" +
       "</section>" +
       "<section id='runOutput'>" + emptyOutput() + "</section>" +
@@ -87,7 +95,7 @@
       "· 表结构 / skill / 经验 / 记忆的 TF-IDF 余弦检索<br>" +
       "· 能力路由得分与并列随机抽取<br>" +
       "· 能力进化公式与边界值（来自 agents_capability.yaml）<br><br>" +
-      "运行结果只写入 <span class='mono'>web/data/</span>，可用于安全演示。" +
+      "执行流与能力状态默认写入 <span class='mono'>web/data/</span>；记忆位置由上方「记忆写入」选项决定。" +
       "</div></section>" +
       "</aside></div>";
   }
@@ -128,6 +136,8 @@
       "<span class='chip'>" + esc(run.domain_label || run.domain) + " / " + esc(run.task_type) + "</span>" +
       "<span class='chip'>" + (meta.tool_calls || 0) + " 次工具调用</span>" +
       "<span class='chip'>" + (meta.subtasks || 1) + " 个子任务</span>" +
+      "<span class='chip " + (run.memory_target === "real" ? "warn" : "") + "'>记忆：" +
+      (run.memory_target === "real" ? "真实" : "演示") + "</span>" +
       "<span class='chip mono'>" + (meta.elapsed_ms || 0) + " ms</span>" +
       "</div>" +
       "<div class='row' style='gap:6px'>" +
@@ -175,6 +185,19 @@
     }).catch(() => { /* 静默 */ });
   }
 
+  function refreshMemory(source) {
+    if (GIS.state.mode === "static") return Promise.resolve();
+    return GIS.api.memory(source).then((payload) => {
+      if (!payload) return;
+      if (source === "demo") GIS.state.data.demo_memory = payload.memory;
+      else GIS.state.data.memory = payload.memory;
+      const total = Object.keys(payload.memory).reduce((s, k) => s + ((payload.memory[k].records || []).length), 0);
+      GIS.state.data.counts = GIS.state.data.counts || {};
+      GIS.state.data.counts[source === "demo" ? "demo_memory_records" : "memory_records"] = total;
+      if (window.GIS.refreshNav) window.GIS.refreshNav();
+    }).catch(() => { /* 静默 */ });
+  }
+
   function setRunningUI(on) {
     const btn = document.getElementById("runBtn");
     if (btn) {
@@ -212,7 +235,7 @@
       if (progEl) progEl.style.width = Math.min(94, 8 + step * 22) + "%";
     }, 760)];
     try {
-      const result = await GIS.api.run(question, VIEW.truth, VIEW.verdict);
+      const result = await GIS.api.run(question, VIEW.truth, VIEW.verdict, VIEW.memoryTarget);
       VIEW.lastRun = result;
       GIS.state.lastRun = result;
       VIEW.timers.forEach(clearInterval);
@@ -222,6 +245,7 @@
       VIEW.player = player;
       bindOutput(result);
       refreshCapability();
+      refreshMemory(result.memory_target === "real" ? "real" : "demo");
       const verdict = GIS.flow.verdict(result.flow.evaluate);
       if (verdict.key === "unknown") {
         GIS.toast("执行完成 · 未提供参考答案，按未知处理，能力向量保持不变", "warn", "结果未判定");
@@ -229,6 +253,14 @@
         GIS.toast("执行完成 · 能力向量已更新", "ok", "任务完成");
       } else {
         GIS.toast("执行完成 · 判定失败，能力向量按失败经验回落", "err", "任务完成");
+      }
+      const writes = (result.memory_writes || []).length;
+      if (writes) {
+        GIS.toast("已写入" + (result.memory_target === "real" ? "真实记忆" : "演示记忆") +
+          " " + writes + " 条", "ok", "记忆已更新");
+      }
+      if ((result.memory_errors || []).length) {
+        GIS.toast(result.memory_errors[0], "warn", "部分记忆写入失败");
       }
       out.scrollIntoView({ behavior: "smooth", block: "start" });
     } catch (err) {
@@ -302,6 +334,20 @@
       btn.addEventListener("click", () => {
         VIEW.verdict = btn.dataset.verdict;
         document.querySelectorAll("#verdictGroup [data-verdict]").forEach((b) => b.classList.toggle("active", b === btn));
+      });
+    });
+    document.querySelectorAll("#memoryTargetGroup [data-memory-target]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        VIEW.memoryTarget = btn.dataset.memoryTarget === "real" ? "real" : "demo";
+        document.querySelectorAll("#memoryTargetGroup [data-memory-target]").forEach((b) =>
+          b.classList.toggle("active", b === btn));
+        GIS.toast(
+          VIEW.memoryTarget === "real"
+            ? "后续运行会写入项目真实记忆 data/memory"
+            : "后续运行会写入演示记忆 web/data/memory",
+          VIEW.memoryTarget === "real" ? "warn" : "ok",
+          "记忆写入位置"
+        );
       });
     });
     document.querySelectorAll("[data-fill]").forEach((btn) => {

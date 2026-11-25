@@ -191,30 +191,54 @@ def _table_document(table: str) -> str:
 
 
 def filter_relevant_tables(question: str, domain: str = "",
-                           top_k: int | None = None) -> list[str]:
-    """按余弦相似度筛选与问题最相关的表。"""
+                           top_k: int | None = None,
+                           role: str | None = None) -> list[str]:
+    """按余弦相似度筛选与问题最相关的表。
+
+    `role` 非空时只保留该用户类别有查询权限的表：权限过滤在检索**之前**，
+    未授权表既不会被检索命中，也不会出现在注入提示词里。
+    """
     _schema()
     top_k = top_k or settings.SCHEMA_TOP_K
-    assert _INDEX is not None
-    hits = _INDEX.search(question, top_k=top_k, min_score=settings.RETRIEVAL_MIN_SCORE)
+    candidates = _TABLES
+    if role:
+        from security import permissions
+
+        allowed = permissions.filter_tables(role, _TABLES, "select")
+        candidates = [t for t in _TABLES if t in allowed]
+    if not candidates:
+        logger.warning("角色 %s 没有任何可查询的表，上下文注入为空", role or "(未指定)")
+        return []
+
+    index = _INDEX if candidates is _TABLES else TfidfIndex([_table_document(t) for t in candidates])
+    assert index is not None
+    hits = index.search(question, top_k=top_k, min_score=settings.RETRIEVAL_MIN_SCORE)
     hits = cut_relative(hits, settings.RETRIEVAL_RELATIVE_CUTOFF)
     if hits:
-        return [_TABLES[pos] for _, pos in hits]
-    return _TABLES[:top_k]
+        return [candidates[pos] for _, pos in hits]
+    return candidates[:top_k]
 
 
-def render_schema_context(tables: list[str]) -> str:
+def render_schema_context(tables: list[str], role: str | None = None) -> str:
     """把相关表结构渲染为注入 prompt 的文本。"""
+    from security import permissions
+
     schema = _schema()
+    table_obj = permissions.get_table()
     parts = ["【数据库相关表结构（按余弦相似度检索）】"]
+    if role:
+        parts[0] += f"\n当前用户类别：{table_obj.role_name(role)}；仅列出该角色可查询的表。"
     for table in tables:
         note = TABLE_NOTES.get(table, "")
         parts.append(f"\n表 {table}" + (f"（{note}）" if note else "") + ":")
         for field, meaning in schema.get(table, {}).items():
             parts.append(f"  - {field}: {meaning}")
+        if role:
+            actions = table_obj.allowed_actions(role, table)
+            parts.append("  - 权限: " + ("、".join(permissions.ACTION_LABELS[a] for a in actions) or "无"))
     return "\n".join(parts)
 
 
-def get_context(question: str, domain: str = "") -> str:
-    tables = filter_relevant_tables(question, domain)
-    return render_schema_context(tables)
+def get_context(question: str, domain: str = "", role: str | None = None) -> str:
+    tables = filter_relevant_tables(question, domain, role=role)
+    return render_schema_context(tables, role=role)

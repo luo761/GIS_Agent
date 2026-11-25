@@ -164,10 +164,10 @@
         throw err;
       }
     },
-    run(question, truth, verdict) {
+    run(question, truth, verdict, memoryTarget) {
       return request("/api/run", {
         method: "POST",
-        body: { question, truth, verdict },
+        body: { question, truth, verdict, memory_target: memoryTarget || "demo" },
         timeout: 45000,
       });
     },
@@ -180,10 +180,10 @@
         body: { confirm: true, seed: seed || "initial", clear_runs: !!clearRuns },
       });
     },
-    retrieve(query, kind, agent) {
+    retrieve(query, kind, agent, source) {
       return request("/api/retrieve", {
         method: "POST",
-        body: { query, kind, agent },
+        body: { query, kind, agent, source: source || "real" },
         timeout: 15000,
       });
     },
@@ -202,24 +202,24 @@
         timeout: 15000,
       });
     },
-    memoryAction(agentId, scope, mode) {
+    memoryAction(agentId, scope, mode, source) {
       return request("/api/admin/memory", {
         method: "POST",
-        body: { confirm: true, agent_id: agentId, scope, mode },
+        body: { confirm: true, agent_id: agentId, scope, mode, source: source || "real" },
         timeout: 20000,
       });
     },
-    deleteMemoryRecord(agentId, recordId) {
+    deleteMemoryRecord(agentId, recordId, source) {
       return request("/api/admin/memory/record", {
         method: "POST",
-        body: { confirm: true, agent_id: agentId, record_id: recordId },
+        body: { confirm: true, agent_id: agentId, record_id: recordId, source: source || "real" },
         timeout: 20000,
       });
     },
-    deleteMemoryCache(agentId, index) {
+    deleteMemoryCache(agentId, index, source) {
       return request("/api/admin/memory/cache", {
         method: "POST",
-        body: { confirm: true, agent_id: agentId, index },
+        body: { confirm: true, agent_id: agentId, index, source: source || "real" },
         timeout: 20000,
       });
     },
@@ -228,7 +228,9 @@
     runs() { return request("/api/runs"); },
     runById(id) { return request("/api/runs/" + encodeURIComponent(id)); },
     clearRuns() { return request("/api/runs", { method: "DELETE" }); },
-    memory() { return request("/api/memory"); },
+    memory(source) {
+      return request("/api/memory?source=" + encodeURIComponent(source || "real"));
+    },
   };
 
   /* ---------------------------------------------------------- 主题 / 导航 */

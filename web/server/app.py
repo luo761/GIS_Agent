@@ -184,10 +184,13 @@ class Handler(BaseHTTPRequestHandler):
                 _json_response(self, run)
             return
         if path == "/api/memory":
+            source = (query.get("source") or ["real"])[0]
+            memory_source = source if source in ds.MEMORY_SOURCES else "real"
             _json_response(
                 self,
                 {
-                    "memory": ds.load_memory(),
+                    "source": memory_source,
+                    "memory": ds.load_memory(memory_source),
                     "experience": ds.load_experience(),
                     "agents": ds.demo_capability()["agents"],
                 },
@@ -195,6 +198,14 @@ class Handler(BaseHTTPRequestHandler):
             return
         if path == "/api/admin":
             _json_response(self, ds.admin_payload())
+            return
+        if path == "/api/permissions":
+            role = (query.get("role") or [""])[0]
+            _json_response(self, ds.permission_payload(role or None))
+            return
+        if path == "/api/validity":
+            rules = ds.invalid_domain_payload()
+            _json_response(self, {"invalid_domain": rules, "rules": ds.question_guard.load_rules()})
             return
         if path == "/api/skills":
             _json_response(self, {"skills": ds.SKILLS, "tools": ds.TOOL_CATALOG})
@@ -227,9 +238,28 @@ class Handler(BaseHTTPRequestHandler):
             if len(question) > 2000:
                 _error(self, 400, "问题过长（最多 2000 字）")
                 return
+            memory_target = str(payload.get("memory_target") or "demo")
+            if memory_target not in ds.MEMORY_SOURCES:
+                _error(self, 400, "memory_target 只能是 demo / real")
+                return
+            role = str(payload.get("role") or "analyst")
+            user_id = str(payload.get("user") or "")
+            if role and role not in ds.PERMISSIONS.roles and role not in ds.PERMISSIONS.principals:
+                _error(self, 400, "未知用户类别，请使用权限表中的角色 key")
+                return
             with _LOCK:
-                run = demo_engine.run_demo(question, truth=truth, verdict=verdict)
+                run = demo_engine.run_demo(
+                    question, truth=truth, verdict=verdict, memory_target=memory_target,
+                    role=role, user_id=user_id,
+                )
             _json_response(self, run)
+            return
+        if path == "/api/validate":
+            question = str(payload.get("question") or "").strip()
+            if not question:
+                _json_response(self, {"is_valid": False, "reason": "问题为空"})
+                return
+            _json_response(self, {"question": question, **ds.validate_question(question)})
             return
         if path == "/api/admin/capability/reset":
             if payload.get("confirm") is not True:
@@ -276,8 +306,9 @@ class Handler(BaseHTTPRequestHandler):
                 return
             scope = str(payload.get("scope") or "all").strip()
             mode = str(payload.get("mode") or "clear").strip()
+            source = str(payload.get("source") or "real").strip()
             with _LOCK:
-                result = ds.mutate_agent_memory(agent_id, scope=scope, mode=mode)
+                result = ds.mutate_agent_memory(agent_id, scope=scope, mode=mode, source=source)
             _json_response(self, result)
             return
         if path == "/api/admin/memory/record":
@@ -289,8 +320,9 @@ class Handler(BaseHTTPRequestHandler):
             if not agent_id or not record_id:
                 _error(self, 400, "缺少 agent_id 或 record_id")
                 return
+            source = str(payload.get("source") or "real").strip()
             with _LOCK:
-                result = ds.delete_memory_record(agent_id, record_id)
+                result = ds.delete_memory_record(agent_id, record_id, source=source)
             _json_response(self, result)
             return
         if path == "/api/admin/memory/cache":
@@ -301,18 +333,22 @@ class Handler(BaseHTTPRequestHandler):
             if not agent_id or "index" not in payload:
                 _error(self, 400, "缺少 agent_id 或 index")
                 return
+            source = str(payload.get("source") or "real").strip()
             with _LOCK:
-                result = ds.delete_memory_cache_entry(agent_id, payload.get("index"))
+                result = ds.delete_memory_cache_entry(agent_id, payload.get("index"), source=source)
             _json_response(self, result)
             return
         if path == "/api/retrieve":
             query = str(payload.get("query") or "").strip()
             kind = str(payload.get("kind") or "skills")
             agent = str(payload.get("agent") or "agent_02")
+            memory_source = str(payload.get("source") or "real")
             if not query:
                 _error(self, 400, "请输入检索文本")
                 return
-            _json_response(self, ds.retrieval_playground(query, kind, agent=agent))
+            _json_response(self, ds.retrieval_playground(
+                query, kind, agent=agent, source=memory_source
+            ))
             return
         if path == "/api/capability/reset":
             seed = str(payload.get("seed") or "initial")

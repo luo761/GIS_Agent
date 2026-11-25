@@ -25,6 +25,7 @@ import re
 import shutil
 import socket
 import time
+import uuid
 from pathlib import Path
 from typing import Any
 
@@ -46,22 +47,52 @@ DEMO_RUN_LIMIT = 40
 CAPABILITY_PATH = DATA_DIR / "agent_capabilities.json"
 AGENTS_CONFIG_PATH = CONFIG_DIR / "agents_capability.yaml"
 MEMORY_ROOT = DATA_DIR / "memory"
+DEMO_MEMORY_ROOT = WEB_DATA_DIR / "memory"
 # 记忆长期记录目录（唯一规范目录）
 RECORD_DIR_NAMES = ("record",)
+MEMORY_SOURCES = ("real", "demo")
 
 # ---------------------------------------------------------------------------
-# 项目检索模块（stdlib only）——与项目内所有检索点共用同一实现
+# 项目检索与安全模块（stdlib only）——与项目内实现共用同一份代码
 # ---------------------------------------------------------------------------
-def _load_cosine_module():
-    path = PROJECT_ROOT / "retrieval" / "cosine_similarity.py"
-    spec = importlib.util.spec_from_file_location("gis_web_cosine", path)
+def _load_project_module(relative_path: str, name: str):
+    path = PROJECT_ROOT / relative_path
+    spec = importlib.util.spec_from_file_location(name, path)
     module = importlib.util.module_from_spec(spec)
     assert spec and spec.loader
     spec.loader.exec_module(module)
     return module
 
 
-cosine = _load_cosine_module()
+cosine = _load_project_module("retrieval/cosine_similarity.py", "gis_web_cosine")
+# 问题合法性判定：与阶段① 共用同一套规则与模板
+question_guard = _load_project_module("security/question_guard.py", "gis_web_question_guard")
+# 用户权限表逻辑：与流水线/工具执行器共用同一套校验实现
+permissions_lib = _load_project_module("security/permissions.py", "gis_web_permissions")
+
+PERMISSIONS_PATH = PROJECT_ROOT / "config" / "user_permissions.yaml"
+
+
+def _load_permission_table():
+    """用 yaml_lite 解析权限表，保证 Web 端零第三方依赖也能做权限校验。"""
+    try:
+        raw = parse_yaml(PERMISSIONS_PATH.read_text(encoding="utf-8")) or {}
+    except OSError:
+        raw = {}
+    if not isinstance(raw, dict) or not raw.get("roles"):
+        raw = copy.deepcopy(permissions_lib.DEFAULT_CONFIG)
+    merged = copy.deepcopy(permissions_lib.DEFAULT_CONFIG)
+    merged.update(raw)
+    for key in ("actions", "roles", "principals", "tables", "tool_actions", "audit"):
+        if isinstance(raw.get(key), dict):
+            base = dict(merged.get(key) or {})
+            base.update(raw[key])
+            merged[key] = base
+    return permissions_lib.PermissionTable(config=merged, path=PERMISSIONS_PATH)
+
+
+PERMISSIONS = _load_permission_table()
+
 
 
 def _read_json(path: Path, default: Any = None) -> Any:
@@ -579,18 +610,21 @@ def _remove_memory_path(path: Path) -> None:
         shutil.rmtree(path)
 
 
-def mutate_agent_memory(agent_id: str, *, scope: str = "all", mode: str = "clear") -> dict[str, Any]:
+def mutate_agent_memory(agent_id: str, *, scope: str = "all", mode: str = "clear",
+                        source: str = "real") -> dict[str, Any]:
     """清空或删除某个智能体的长期记录 / 短期缓存。
 
     scope: records | cache | all
     mode:  clear  = 保留目录/文件容器，只清内容（cache.json 写成 []）
            delete = 删除记录目录 / 缓存文件本身
+    source: real = data/memory；demo = web/data/memory
     """
     if scope not in ("records", "cache", "all"):
         raise ValueError("scope 只能是 records / cache / all")
     if mode not in ("clear", "delete"):
         raise ValueError("mode 只能是 clear / delete")
-    root = _agent_memory_root(agent_id)
+    source = _normalize_memory_source(source)
+    root = _agent_memory_root(agent_id, source)
     removed_files = 0
     freed_bytes = 0
     removed_records = 0
@@ -628,23 +662,25 @@ def mutate_agent_memory(agent_id: str, *, scope: str = "all", mode: str = "clear
         "agent_id": agent_id,
         "scope": scope,
         "mode": mode,
+        "source": source,
         "root": _path_label(root),
         "removed_records": removed_records,
         "removed_cache_entries": removed_cache_entries,
         "removed_files": removed_files,
         "freed_bytes": freed_bytes,
-        "memory": load_memory().get(agent_id) or {},
+        "memory": load_memory(source).get(agent_id) or {},
     }
 
 
-def delete_memory_record(agent_id: str, record_id: str) -> dict[str, Any]:
+def delete_memory_record(agent_id: str, record_id: str, source: str = "real") -> dict[str, Any]:
     """删除单条长期任务记录（record/<id>.json）。"""
     rid = str(record_id or "").strip()
     if rid.lower().endswith(".json"):
         rid = rid[:-5]
     if not re.fullmatch(r"[A-Za-z0-9_-]{1,80}", rid):
         raise ValueError("记录 id 非法")
-    root = _agent_memory_root(agent_id)
+    source = _normalize_memory_source(source)
+    root = _agent_memory_root(agent_id, source)
     removed_files = 0
     freed_bytes = 0
     for record_dir in _record_dirs(root):
@@ -659,15 +695,17 @@ def delete_memory_record(agent_id: str, record_id: str) -> dict[str, Any]:
         "ok": True,
         "agent_id": agent_id,
         "record_id": rid,
+        "source": source,
         "removed_files": removed_files,
         "freed_bytes": freed_bytes,
-        "memory": load_memory().get(agent_id) or {},
+        "memory": load_memory(source).get(agent_id) or {},
     }
 
 
-def delete_memory_cache_entry(agent_id: str, index: int) -> dict[str, Any]:
+def delete_memory_cache_entry(agent_id: str, index: int, source: str = "real") -> dict[str, Any]:
     """按数组下标删除单条短期步骤缓存。"""
-    root = _agent_memory_root(agent_id)
+    source = _normalize_memory_source(source)
+    root = _agent_memory_root(agent_id, source)
     cache_file = root / "cache.json"
     if not cache_file.exists():
         raise ValueError("缓存文件不存在")
@@ -685,10 +723,150 @@ def delete_memory_cache_entry(agent_id: str, index: int) -> dict[str, Any]:
     return {
         "ok": True,
         "agent_id": agent_id,
+        "source": source,
         "index": pos,
         "cache_total": len(cache),
         "removed": removed,
-        "memory": load_memory().get(agent_id) or {},
+        "memory": load_memory(source).get(agent_id) or {},
+    }
+
+
+def append_memory_step(source: str, agent_id: str, *, question: str,
+                       plan: dict[str, Any] | None = None, outcome: str = "unknown",
+                       note: str = "", error: str = "", lesson: str = "") -> dict[str, Any]:
+    """向指定记忆空间追加一条短期步骤缓存（按容量 FIFO 裁剪）。"""
+    source = _normalize_memory_source(source)
+    root = _agent_memory_root(agent_id, source)
+    cache_file = root / "cache.json"
+    cache = _read_json(cache_file, [])
+    if not isinstance(cache, list):
+        cache = []
+    entry = {
+        "question": question,
+        "plan": plan,
+        "outcome": outcome,
+        "note": note,
+        "error": error,
+        "lesson": lesson,
+        "ts": _now(),
+    }
+    cache.append(entry)
+    max_entries = int(MEMORY_LIMITS["AGENT_MEMORY_CACHE_MAX"])
+    if max_entries > 0:
+        cache = cache[-max_entries:]
+    else:
+        cache = []
+    _write_json(cache_file, cache)
+    return entry
+
+
+def add_memory_record(source: str, agent_id: str, *, question: str,
+                      plan: dict[str, Any] | None, result_summary: str,
+                      outcome: str, error: str = "") -> str | None:
+    """向指定记忆空间追加一条长期任务记录；只接受明确结局。"""
+    source = _normalize_memory_source(source)
+    if outcome not in ("success", "failed", "uncertain"):
+        return None
+    root = _agent_memory_root(agent_id, source)
+    record_dir = root / "record"
+    record_dir.mkdir(parents=True, exist_ok=True)
+    rid = uuid.uuid4().hex[:8]
+    record = {
+        "id": rid,
+        "agent_id": agent_id,
+        "question_feat": question,
+        "plan": plan,
+        "result_summary": result_summary,
+        "outcome": outcome,
+        "error": error,
+        "ts": _now(),
+    }
+    _write_json(record_dir / f"{rid}.json", record)
+    max_records = int(MEMORY_LIMITS["AGENT_MEMORY_RECORD_MAX"])
+    files = sorted(record_dir.glob("*.json"), key=lambda p: p.stat().st_mtime)
+    for old in files[: max(0, len(files) - max_records)]:
+        old.unlink(missing_ok=True)
+    return rid
+
+
+def role_options() -> list[dict[str, Any]]:
+    """任务台“用户类别”下拉选项。"""
+    summary = PERMISSIONS.summary()
+    return [
+        {
+            "key": item["key"],
+            "name": item["name"],
+            "description": item["description"],
+            "rank": item["rank"],
+            "tables": item["tables"],
+        }
+        for item in summary["roles"]
+    ]
+
+
+def permission_payload(role: str | None = None, limit: int = 20) -> dict[str, Any]:
+    """用户权限表：角色、操作、表级矩阵与最近审计事件。"""
+    table = PERMISSIONS
+    selected = table.resolve_role(role) if role else table.default_role
+    return {
+        "generated_at": _now(),
+        "enforce": table.enforce,
+        "default_role": table.default_role,
+        "selected_role": selected,
+        "selected_role_name": table.role_name(selected),
+        "path": _path_label(PERMISSIONS_PATH),
+        "actions": [
+            {"key": key, "name": label} for key, label in permissions_lib.ACTION_LABELS.items()
+        ],
+        "roles": [
+            {
+                "key": key,
+                "name": table.role_name(key),
+                "description": str((meta or {}).get("description") or ""),
+                "rank": int((meta or {}).get("rank") or 0),
+                "allowed_tables": table.allowed_tables(key, "select"),
+            }
+            for key, meta in sorted(
+                table.roles.items(), key=lambda kv: -int((kv[1] or {}).get("rank") or 0)
+            )
+        ],
+        "matrix": table.matrix(),
+        "principals": table.principals,
+        "tool_actions": dict(table.config.get("tool_actions") or {}),
+        "audit": table.read_audit(limit=limit),
+    }
+
+
+def validate_question(question: str) -> dict[str, Any]:
+    """Web 演示的合法性判定：只走规则层（不调用 LLM），与阶段①共用同一套规则。"""
+    return question_guard.evaluate(question)
+
+
+def invalid_domain_payload() -> dict[str, Any]:
+    """“问题不合法”领域说明，用于页面提示与文档展示。"""
+    domain = (CONFIG.domains or {}).get("invalid") or {}
+    rules = question_guard.load_rules()
+    return {
+        "key": "invalid",
+        "name": str(domain.get("name") or "问题不合法"),
+        "reason": str(domain.get("reason") or ""),
+        "keywords": list(domain.get("keywords") or []),
+        "criteria": [
+            "问题过短、只有空泛动词，没有分析对象",
+            "缺少必填要素（对象 / 范围 / 输出指标）",
+            "包含越权、破坏性或提示词注入意图",
+            "完全与 GIS 业务无关",
+        ],
+        "required_slots": [
+            {
+                "key": str(s.get("key")),
+                "name": str(s.get("name")),
+                "required": bool(s.get("required")),
+                "prompt": str(s.get("prompt") or ""),
+            }
+            for s in rules.get("required_slots") or []
+        ],
+        "max_clarify_rounds": int(rules.get("max_clarify_rounds") or 3),
     }
 
 
@@ -703,8 +881,12 @@ def admin_payload() -> dict[str, Any]:
         "routing": CONFIG.routing,
         "tie_epsilon": float(CONFIG.routing.get("tie_epsilon", 0.1)),
         "routing_path": _path_label(AGENTS_CONFIG_PATH),
-        "memory": load_memory(),
+        "memory": load_memory("real"),
+        "demo_memory": load_memory("demo"),
+        "memory_sources": list(MEMORY_SOURCES),
         "memory_limits": MEMORY_LIMITS,
+        "permissions": permission_payload(),
+        "invalid_domain": invalid_domain_payload(),
     }
 
 
@@ -755,22 +937,34 @@ def _path_label(path: Path) -> str:
         return str(path)
 
 
-def _agent_memory_root(agent_id: str) -> Path:
-    """解析某智能体的记忆根目录，并限制在项目 data/memory 下，防止误删。"""
+def _normalize_memory_source(source: str | None) -> str:
+    value = str(source or "real").strip().lower()
+    if value not in MEMORY_SOURCES:
+        raise ValueError("记忆来源只能是 real / demo")
+    return value
+
+
+def _agent_memory_root(agent_id: str, source: str = "real") -> Path:
+    """解析某智能体的记忆根目录；real 限制在 data/memory，demo 限制在 web/data/memory。"""
     if agent_id not in CONFIG.agent_defs:
         raise ValueError(f"未知智能体: {agent_id}")
-    cfg = CONFIG.agent_defs.get(agent_id) or {}
-    raw = cfg.get("memory_dir")
-    if raw:
-        root = Path(str(raw))
-        if not root.is_absolute():
-            root = PROJECT_ROOT / root
+    source = _normalize_memory_source(source)
+    if source == "demo":
+        root = (DEMO_MEMORY_ROOT / agent_id).resolve()
+        allowed = DEMO_MEMORY_ROOT.resolve()
     else:
-        root = MEMORY_ROOT / agent_id
-    root = root.resolve()
-    allowed = MEMORY_ROOT.resolve()
+        cfg = CONFIG.agent_defs.get(agent_id) or {}
+        raw = cfg.get("memory_dir")
+        if raw:
+            root = Path(str(raw))
+            if not root.is_absolute():
+                root = PROJECT_ROOT / root
+        else:
+            root = MEMORY_ROOT / agent_id
+        root = root.resolve()
+        allowed = MEMORY_ROOT.resolve()
     if root != allowed and allowed not in root.parents:
-        raise ValueError(f"拒绝操作 data/memory 之外的目录: {root}")
+        raise ValueError(f"拒绝操作 {_path_label(allowed)} 之外的目录: {root}")
     return root
 
 
@@ -796,14 +990,15 @@ def _dir_size(path: Path) -> int:
     return total
 
 
-def load_memory() -> dict[str, Any]:
+def load_memory(source: str = "real") -> dict[str, Any]:
+    source = _normalize_memory_source(source)
     out: dict[str, Any] = {}
     cache_max = int(MEMORY_LIMITS["AGENT_MEMORY_CACHE_MAX"])
     record_max = int(MEMORY_LIMITS["AGENT_MEMORY_RECORD_MAX"])
     cache_top_k = int(MEMORY_LIMITS["AGENT_MEMORY_CACHE_TOP_K"])
     record_top_k = int(MEMORY_LIMITS["AGENT_MEMORY_RECORD_TOP_K"])
     for aid in sorted(CONFIG.agent_defs):
-        root = _agent_memory_root(aid)
+        root = _agent_memory_root(aid, source)
         records: list[dict[str, Any]] = []
         seen_ids: set[str] = set()
         # 长期记录统一落在 record/ 目录
@@ -833,6 +1028,7 @@ def load_memory() -> dict[str, Any]:
         out[aid] = {
             "agent_id": aid,
             "name": str((CONFIG.agent_defs.get(aid) or {}).get("name", aid)),
+            "source": source,
             "root": _path_label(root),
             # 原始文件内容 + 生效容量：文件可能来自旧版本配置，条数会暂时超过上限
             "records": records,
@@ -959,21 +1155,28 @@ def retrieve_skills(query: str, top_k: int = 4) -> list[dict[str, Any]]:
     return out
 
 
-def retrieve_tables(query: str, top_k: int = 5) -> list[dict[str, Any]]:
+def retrieve_tables(query: str, top_k: int = 5, role: str | None = None) -> list[dict[str, Any]]:
+    """按余弦相似度检索表结构；传入 role 时只返回该角色可查询的表。"""
     if not query.strip():
         return []
-    hits = _TABLE_INDEX.search(query, top_k=top_k, min_score=0.0)
+    allowed = set(PERMISSIONS.allowed_tables(role, "select")) if role else None
+    hits = _TABLE_INDEX.search(query, top_k=len(SCHEMA_TABLES), min_score=0.0)
     out = []
     for score, pos in _relative_cut(hits):
         table = SCHEMA_TABLES[pos]
+        if allowed is not None and table["name"] not in allowed:
+            continue
         out.append(
             {
                 "name": table["name"],
                 "note": table["note"],
                 "fields": table["fields"],
                 "score": round(float(score), 4),
+                "permissions": PERMISSIONS.allowed_actions(role, table["name"]) if role else [],
             }
         )
+        if len(out) >= top_k:
+            break
     return out
 
 
@@ -993,8 +1196,9 @@ def retrieve_experience(query: str, top_k: int = 3) -> list[dict[str, Any]]:
     return out
 
 
-def retrieve_memory(agent_id: str, query: str, top_k: int = 3) -> list[dict[str, Any]]:
-    memory = load_memory().get(agent_id) or {}
+def retrieve_memory(agent_id: str, query: str, top_k: int = 3,
+                    source: str = "real") -> list[dict[str, Any]]:
+    memory = load_memory(source).get(agent_id) or {}
     records = [r for r in memory.get("records") or [] if r.get("question_feat")]
     if not records or not query.strip():
         return []
@@ -1006,7 +1210,8 @@ def retrieve_memory(agent_id: str, query: str, top_k: int = 3) -> list[dict[str,
     return out
 
 
-def retrieval_playground(query: str, kind: str, agent: str = "agent_02") -> dict[str, Any]:
+def retrieval_playground(query: str, kind: str, agent: str = "agent_02",
+                         source: str = "real") -> dict[str, Any]:
     if kind == "skills":
         return {"kind": kind, "query": query, "items": retrieve_skills(query, top_k=6)}
     if kind == "tables":
@@ -1014,8 +1219,8 @@ def retrieval_playground(query: str, kind: str, agent: str = "agent_02") -> dict
     if kind == "experience":
         return {"kind": kind, "query": query, "items": retrieve_experience(query, top_k=5)}
     if kind == "memory":
-        return {"kind": kind, "query": query, "agent": agent,
-                "items": retrieve_memory(agent, query, top_k=5)}
+        return {"kind": kind, "query": query, "agent": agent, "source": source,
+                "items": retrieve_memory(agent, query, top_k=5, source=source)}
     return {"kind": kind, "query": query, "items": []}
 
 
@@ -1053,6 +1258,12 @@ def health() -> dict[str, Any]:
         },
         "mode": "demo",
         "mode_label": "本地演示会话",
+        "permissions": {
+            "enforce": PERMISSIONS.enforce,
+            "default_role": PERMISSIONS.default_role,
+            "roles": len(PERMISSIONS.roles),
+            "tables": len(PERMISSIONS.tables),
+        },
         "data_files": {
             "capability": (DATA_DIR / "agent_capabilities.json").exists(),
             "experience": (DATA_DIR / "experience.json").exists(),
@@ -1065,7 +1276,8 @@ def health() -> dict[str, Any]:
 def bootstrap() -> dict[str, Any]:
     demo = demo_capability()
     real = real_capability()
-    memory = load_memory()
+    memory = load_memory("real")
+    demo_memory = load_memory("demo")
     experience = load_experience()
     reports = report_index()
     runs = load_runs()
@@ -1078,9 +1290,13 @@ def bootstrap() -> dict[str, Any]:
         "experience": len(experience),
         "memory_records": sum(len(m["records"]) for m in memory.values()),
         "memory_cache": sum(len(m["cache"]) for m in memory.values()),
+        "demo_memory_records": sum(len(m["records"]) for m in demo_memory.values()),
+        "demo_memory_cache": sum(len(m["cache"]) for m in demo_memory.values()),
         "evolution_events": len(demo.get("history") or []),
         "runs": len(runs),
         "reports": len(reports),
+        "roles": len(PERMISSIONS.roles),
+        "permission_tables": len(PERMISSIONS.tables),
     }
     return {
         "generated_at": _now(),
@@ -1113,8 +1329,12 @@ def bootstrap() -> dict[str, Any]:
             "tables": SCHEMA_TABLES,
         },
         "tools": TOOL_CATALOG,
+        "permissions": permission_payload(),
+        "roles": role_options(),
+        "invalid_domain": invalid_domain_payload(),
         "experience": experience,
         "memory": memory,
+        "demo_memory": demo_memory,
         "reports": reports,
         "runs": runs[:10],
         "counts": counts,
@@ -1127,6 +1347,8 @@ def bootstrap() -> dict[str, Any]:
             "计算所有水管位于施工区 A003 实体部分内的总长度（米），排除孔洞，包含边界接触。",
             "对与 A001 相交且正常或告警的设备分别建立 300 米缓冲区，合并后裁剪到 A001，求覆盖面积及占 A001 面积的百分比。",
             "分别统计与施工区 A001、A002 相交且状态正常的设备数，再将两个施工区合并后统计联合去重数量。",
+            "帮我看看。",
+            "查询 invalid_geometry_cases 里的所有无效几何记录。",
         ],
     }
 

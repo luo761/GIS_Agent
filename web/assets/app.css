@@ -460,6 +460,7 @@ svg use { pointer-events: none; }
 .ask-toolbar { display: flex; align-items: center; gap: 10px; padding: 10px 12px; background: var(--panel-2); border-top: 1px solid var(--line); flex-wrap: wrap; }
 .ask-hint { font-size: 10.5px; color: var(--faint); display: flex; align-items: center; gap: 5px; }
 .ask-options { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 14px; }
+.ask-options .memory-field { grid-column: 1 / -1; }
 .field label { display: block; font-size: 10.5px; font-weight: 700; color: var(--muted); letter-spacing: .05em; margin-bottom: 5px; }
 .field input, .field select, .field textarea {
   width: 100%; height: 36px; padding: 0 10px; border-radius: 9px;
@@ -744,6 +745,7 @@ input[type="range"]::-webkit-slider-thumb {
   font-size: 12px; line-height: 1; padding: 1px 3px; border-radius: 4px;
 }
 .cache-del:hover { color: var(--err); background: var(--err-soft); }
+.cache-stage.unjudged { color: var(--warn); }
 .record-top .btn.sm { height: 24px; padding: 0 6px; }
 .record-top .btn.sm svg { width: 12px; height: 12px; }
 

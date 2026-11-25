@@ -48,6 +48,7 @@ def run_subtask(state: PipelineState, sub: SubTask) -> SubTask:
         f"{_capability_line(sub.assigned_agent)}\n\n"
         f"子问题：{sub.question}\n"
         f"该子问题所需能力维度：{sub.required_capabilities}\n"
+        f"{state.permission_context}\n"
         f"{own_memory}\n"
         f"{exp_text}\n"
         f"{state.injected_context}\n"
