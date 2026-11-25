@@ -13,7 +13,7 @@ DATA_DIR = BASE_DIR / "data"
 AGENT_MEMORY_BASE = DATA_DIR / "memory"      # 各智能体专属记忆空间根目录
 AGENT_MEMORY_CACHE_MAX = 5                  # 短期步骤缓存条数上限（FIFO 淘汰）
 AGENT_MEMORY_RECORD_MAX = 10              # 长期任务记录容量上限（FIFO 淘汰）
-AGENT_MEMORY_CACEH_TOP_K = 3                    # 注入 prompt 的最近缓存条数
+AGENT_MEMORY_CACHE_TOP_K = 3                    # 注入 prompt 的最近缓存条数
 AGENT_MEMORY_RECORD_TOP_K = 2                  # 相似任务检索返回的最大记录数
 
 # 经验池配置
