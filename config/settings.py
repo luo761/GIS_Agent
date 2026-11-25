@@ -57,7 +57,7 @@ SCHEMA_SOURCE = os.getenv("SCHEMA_SOURCE", "postgis")
 # 外部 PostGIS 工具集（dev20 项目的 app_development/tool.py）
 POSTGIS_TOOLKIT_ROOT = Path(os.getenv(
     "POSTGIS_TOOLKIT_ROOT",
-    str(BASE_DIR / "GIS_Agent-jiang_gis_tools_develop" / "GIS_Agent"),
+    str(BASE_DIR / "tools"),
 ))
 POSTGIS_TOOLSET = os.getenv("POSTGIS_TOOLSET", "advanced")
 

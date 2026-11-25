@@ -22,6 +22,10 @@ def _load_external():
     root = Path(settings.POSTGIS_TOOLKIT_ROOT)
     tool_file = root / "app_development" / "tool.py"
     if not tool_file.exists():
+        # 兜底：相对本文件（tools/）查找 app_development/tool.py
+        root = Path(__file__).resolve().parent
+        tool_file = root / 'app_development' / 'tool.py'
+    if not tool_file.exists():
         raise FileNotFoundError(f"找不到 PostGIS 工具集: {tool_file}")
     if str(root) not in sys.path:
         sys.path.insert(0, str(root))
