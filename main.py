@@ -131,8 +131,9 @@ def main() -> int:
     parser.add_argument("--truth", default=None, help="参考答案（测试模式，用于判定成功/失败）")
     parser.add_argument("--reset", action="store_true", help="先把所有能力值复位为 0.5")
     parser.add_argument("--no-chart", action="store_true", help="不重绘能力向量图")
-    parser.add_argument("--role", default="analyst",
-                        choices=["admin", "analyst", "operator", "viewer"],
+    role_keys = sorted(permissions.get_table().roles) or ["viewer"]
+    default_role = "analyst" if "analyst" in role_keys else role_keys[0]
+    parser.add_argument("--role", default=default_role, choices=role_keys,
                         help="用户类别（角色），决定表级增删改查权限")
     parser.add_argument("--user", default="",
                         help="用户标识，按权限表 principals 解析角色（优先于 --role）")

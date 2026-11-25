@@ -5,20 +5,28 @@
 "执行 → 成功/失败经验"逐步进化得到，并由一张动态能力向量图呈现。
 空间计算由 PostGIS 完成，工具集与 dev20 基准题共用。
 
+系统在阶段①内置两道安全闸门（都不新增流水线阶段）：
+
+- **问题不合法**：领域识别时多一个特殊领域 `invalid`，LLM 判定问题缺要素、
+  越权或与 GIS 无关时**直接中止**本次执行，返回追问让用户补充信息，补充后再从阶段①重跑；
+- **用户权限表**：`config/user_permissions.yaml` 按用户类别（管理员/分析员/运维/访客）
+  定义对具体数据表的增删改查权限，表结构注入与工具执行都按角色校验，越权调用写审计日志。
+
 ## 命名规则：按层次看项目
 
 目录 = 架构层次，文件名 = 该层做什么；`pipeline/` 下的 `stage1..stage5` 直接对应五阶段顺序。
 
 | 层次 | 目录 | 文件 | 职责 |
 | --- | --- | --- | --- |
-| 配置 | `config/` | `settings.py`、`agents_capability.yaml`、`domains_taxonomy.yaml` | 数据库/模型参数、初始能力向量、领域分类 |
+| 配置 | `config/` | `settings.py`、`agents_capability.yaml`、`domains_taxonomy.yaml`、`user_permissions.yaml` | 数据库/模型参数、初始能力向量、领域分类与合法性规则、用户权限表 |
+| 安全 | `security/` | `question_guard.py`、`permissions.py` | “问题不合法”判定与澄清、用户类别→表级增删改查权限 |
 | 检索 | `retrieval/` | `cosine_similarity.py` | 全项目统一的 TF-IDF + 余弦检索 |
-| 知识 | `knowledge/` | `db_schema_retriever.py`、`task_skill_library.py` | PostGIS 表结构检索、任务级 skill 库 |
+| 知识 | `knowledge/` | `db_schema_retriever.py`、`task_skill_library.py` | PostGIS 表结构检索（按角色过滤）、任务级 skill 库 |
 | 智能体 | `agents/` | `agent_registry.py`、`capability_store.py`、`capability_router.py` | 编号定义、能力进化、平局随机路由 |
-| 工具 | `tools/` | `tool_registry.py`、`postgis_tools.py` | 工具注册与 schema 绑定、PostGIS 工具适配 |
+| 工具 | `tools/` | `tool_registry.py`、`postgis_tools.py`、`permission_guard.py` | 工具注册与 schema 绑定、PostGIS 工具适配、调用前权限校验 |
 | 记忆 | `memory/` | `agent_memory.py` | 智能体专属记忆（长期记录 + 短期缓存） |
 | 经验 | `experience/` | `experience_pool.py`、`experience_retriever.py` | 共享经验池、经验检索 |
-| 流水线 | `pipeline/` | `pipeline_state.py`、`llm_client.py`、`pipeline_graph.py`、`stage1_understand.py` … `stage5_evaluate.py` | 五阶段实现与 LangGraph 主图 |
+| 流水线 | `pipeline/` | `pipeline_state.py`、`llm_client.py`、`pipeline_graph.py`、`stage1_understand.py` … `stage5_evaluate.py` | 五阶段实现与 LangGraph 主图（阶段① 含合法性短路） |
 | 可视化 | `visualization/` | `capability_radar_chart.py` | 动态能力向量图（HTML/PNG/文本表） |
 | 评测 | `benchmark/` | `dev20.py`、`report.py` | dev20 题集加载、判分与报告渲染 |
 | 脚本 | `scripts/` | `run_dev20_benchmark.py`、`show_capability_table.py`、`demo_capability_evolution.py`、`reset_agent_state.py` | 基准评测与运维入口 |
@@ -33,11 +41,74 @@
 | 进化 | 执行成功/失败后，只更新该子任务**所需维度**的经验值（成功升、失败降） |
 | 检索 | 表结构、skill、共享经验、专属记忆**全部用余弦相似度**检索 |
 | 工具 | 10 个 PostGIS 工具启动时 `bind_tools` 绑定到模型，提示词不罗列算子 |
+| 合法性 | 阶段① 与领域识别同一次 LLM 调用判定；命中即中止并追问，不写能力经验 |
+| 权限 | 每个用户类别对每张表有独立的查询/新增/修改/删除权限，未登记的表 fail-closed |
 | 结果传递 | 中间几何/要素集不进上下文，改用 `{"$ref": "t1.result.feature_set"}` 引用 |
 | 呈现 | `data/capability_vector_chart.html`（可回放动画的雷达图）+ `.png`（当前快照） |
 
 能力维度与业务领域正交：`spatial_compute`（空间计算）、`attribute_query`（属性查询）、
 `statistics`（统计分析）、`mapping`（制图可视化）。
+
+## 问题不合法：阶段① 的安全闸门
+
+`config/domains_taxonomy.yaml` 的 `domains.invalid` 是一个**特殊领域**（`special: true`），
+不是业务行业，也不参与候选表检索。阶段① 在同一次 LLM 调用里输出
+`domain` 与 `is_valid / invalid_reasons / missing_slots / clarification_question`；
+主图在 `understand` 之后加一条条件边：不合法 → `END`，合法 → `decompose`。
+**没有新增节点**，②~⑤ 不会执行，也不会写能力经验。
+
+判定分两层，**谁更严格听谁的**：
+
+| 层 | 位置 | 作用 |
+| --- | --- | --- |
+| 规则层 | `security/question_guard.py` | 空问题、过短/过长、纯空泛动词、越权/破坏性/提示词注入、完全没有 GIS 业务锚点 |
+| LLM 层 | `pipeline/stage1_understand.py` | 缺分析对象/范围/条件/指标/时间口径、与 GIS 无关、范围超出业务边界 |
+
+命中后返回给用户的追问包含：原问题、不合法原因、缺失信息清单（对象/范围/条件/指标/时间）
+和逐条提问；`clarification_template` 与 `required_slots` 都在 YAML 里可改。
+CLI 交互终端会自动进入补充循环（最多 `max_clarify_rounds` 轮，默认 3 轮）：
+
+```powershell
+python main.py "帮我看看"                 # 打印追问，交互终端可连续补充
+python main.py "帮我看看" --no-clarify    # 只打印追问，退出码 2
+python main.py "查燃气设备" --clarify-rounds 5
+```
+
+规则层先于 LLM 执行：明显的空泛/越权问题即使模型不可用也会被拦下。
+
+## 用户权限表：按用户类别控制表级增删改查
+
+`config/user_permissions.yaml` 把“用户类别（角色）× 数据表 × CRUD”写成一张显式权限表：
+
+| 角色 | 定位 | 典型权限 |
+| --- | --- | --- |
+| `admin` | 系统管理员 | 全部业务表可增删改查 |
+| `analyst` | 业务分析员 | 查询 + 新增 + 修改，不可删除 |
+| `operator` | 运维操作员 | 查询 + 修改（设备/管线状态） |
+| `viewer` | 访客（只读） | 只查询公开业务表 |
+
+- 表级权限逐张列出；**未登记的表一律拒绝**（fail-closed），敏感表（`import_batches`、
+  `invalid_geometry_cases`、`srid_input_examples`）只有管理员可读；
+- 三道防线：① 阶段① 只把当前角色可查询的表注入提示词；
+  ② 工具执行前 `tools/permission_guard.py` 按 `layer_name` 校验，越权不执行；
+  ③ Web 任务台可选择用户类别，演示引擎同样过滤表并拦截越权步骤；
+- 拒绝与写操作写入 `data/permission_audit.jsonl`，默认只保留最近 500 条，
+  拒绝事件优先保留；
+- `principals` 可把用户标识映射到角色（演示用），生产环境应替换为统一身份认证。
+
+```powershell
+python main.py "统计 A001 内正常燃气设备数量" --role viewer
+python main.py "查询导入批次" --user guest      # guest → viewer
+```
+
+权限查询/展示：
+
+```python
+from security import permissions
+t = permissions.get_table()
+t.check("viewer", "gas_devices", "delete")   # CheckResult(allowed=False, ...)
+t.render_matrix()                            # Markdown 权限矩阵
+```
 
 ## 能力进化规则
 
@@ -146,16 +217,18 @@ Word 版报告为 `reports/dev20/dev20_test_report.docx`。
 用户口语化问题
       │
       ▼
-① 任务理解 Understand：领域识别 + PostGIS 表结构余弦检索 + skill 余弦检索
+① 任务理解 Understand：领域识别（含“问题不合法”判定）+ 用户权限注入
+     + PostGIS 表结构余弦检索（按角色过滤）+ skill 余弦检索
       │
+      ├── 问题不合法 ──→ 立即结束：返回澄清追问（不拆分/不执行/不进化）
       ▼
 ② 精炼与拆解 Decompose：专业精炼 → 拆分 → 标注所需能力维度
       │                    → 代码按能力向量路由（均等 → 随机）
       ▼
-③ 规划 Plan（编号智能体）：专属记忆 + 共享经验 + 当前能力向量 + 相关 skill → 计划表 / DAG
+③ 规划 Plan（编号智能体）：专属记忆 + 共享经验 + 当前能力向量 + 相关 skill + 表级权限 → 计划表 / DAG
       │
       ▼
-④ 执行 Execute：模型直接发起绑定工具的 tool_calls，$ref 传递中间几何
+④ 执行 Execute：模型直接发起绑定工具的 tool_calls（调用前按角色校验），$ref 传递中间几何
       │
       ▼
 ⑤ 评估 Evaluate：与标准答案/正确答案对比 → 失败回溯重规划（可配置）
@@ -172,11 +245,15 @@ Test/
 ├── config/
 │   ├── settings.py                      # 路径、数据库、容量、检索参数
 │   ├── agents_capability.yaml           # 初始能力向量（全 0.5）+ 进化/路由参数
-│   └── domains_taxonomy.yaml            # 领域分类 + 任务类型→能力维度回退映射
+│   ├── domains_taxonomy.yaml            # 领域分类 + 合法性判定规则 + 任务类型→能力维度回退
+│   └── user_permissions.yaml            # 用户权限表：角色 × 数据表 × 增删改查
+├── security/
+│   ├── question_guard.py                # “问题不合法”规则层、缺失信息与澄清文本
+│   └── permissions.py                   # 权限表加载/校验/审计/矩阵渲染
 ├── retrieval/
 │   └── cosine_similarity.py             # TF-IDF + 余弦相似度（全项目统一检索）
 ├── knowledge/
-│   ├── db_schema_retriever.py           # PostGIS 表结构读取与检索
+│   ├── db_schema_retriever.py           # PostGIS 表结构读取与检索（按角色过滤）
 │   └── task_skill_library.py            # 任务级 skill 库（1~多算子）
 ├── agents/
 │   ├── agent_registry.py                # 编号智能体定义
@@ -184,20 +261,21 @@ Test/
 │   └── capability_router.py             # 能力打分路由 + 平局随机
 ├── tools/
 │   ├── tool_registry.py                 # 工具注册 + function-calling schema
-│   └── postgis_tools.py                 # dev20 PostGIS 工具集适配（10 个工具）
+│   ├── postgis_tools.py                 # dev20 PostGIS 工具集适配（10 个工具）
+│   └── permission_guard.py              # 工具调用前的表级权限校验
 ├── memory/
 │   └── agent_memory.py                  # 智能体专属记忆
 ├── experience/
 │   ├── experience_pool.py               # 共享经验池（余弦检索/同类更新/容量淘汰）
 │   └── experience_retriever.py          # 规划前的经验检索与渲染
 ├── pipeline/
-│   ├── pipeline_state.py                # 共享状态（含路由/进化/输出契约字段）
+│   ├── pipeline_state.py                # 共享状态（含合法性/权限/路由/进化/输出契约字段）
 │   ├── llm_client.py                    # LLM 封装（延迟建模型、bind_tools）
-│   ├── pipeline_graph.py                # LangGraph 主图（五阶段 + 失败回溯）
-│   ├── stage1_understand.py             # ① 领域识别 + 上下文注入 + skill 检索
+│   ├── pipeline_graph.py                # LangGraph 主图（五阶段 + 不合法短路 + 失败回溯）
+│   ├── stage1_understand.py             # ① 合法性判定 + 领域识别 + 权限注入 + skill 检索
 │   ├── stage2_decompose.py              # ② 精炼/拆解 + 标注能力维度 + 路由
 │   ├── stage3_plan.py                   # ③ 记忆/经验检索 + 计划表/DAG
-│   ├── stage4_execute.py                # ④ 工具调用 + $ref 结果传递
+│   ├── stage4_execute.py                # ④ 权限校验 + 工具调用 + $ref 结果传递
 │   └── stage5_evaluate.py               # ⑤ 评估 + 能力进化 + 经验入库
 ├── visualization/
 │   └── capability_radar_chart.py        # 动态能力向量图（HTML 雷达图 + PNG）
@@ -210,8 +288,9 @@ Test/
 │   ├── demo_capability_evolution.py     # 离线演示（不调 LLM）
 │   └── reset_agent_state.py             # 复位为初始均衡状态
 ├── tests/
-│   └── test_capability_evolution.py     # 34 项测试
-├── data/                                # agent_capabilities.json、capability_vector_chart.*
+│   ├── test_capability_evolution.py     # 能力/路由/进化/检索/端到端
+│   └── test_security_and_validity.py    # 问题合法性、权限表、检索过滤、越权拦截
+├── data/                                # agent_capabilities.json、capability_vector_chart.*、permission_audit.jsonl
 ├── docs/                                # 演示图表
 ├── reports/dev20/                       # 评测报告与原始结果
 └── web/                                 # Web 控制台（零依赖前端 + 本地演示服务）
@@ -225,6 +304,12 @@ cp .env.example .env   # 或按需填写 DATABASE_URL / LLM_MODEL / POSTGIS_TOOL
 
 # 普通模式
 python main.py "统计与施工区 A001 相交的燃气设备数量"
+
+# 指定用户类别（决定表级权限）
+python main.py "统计与施工区 A001 相交的燃气设备数量" --role viewer
+
+# 问题不合法：只打印追问
+python main.py "帮我看看" --no-clarify
 
 # 测试模式：给出参考答案（由 LLM 判定对错并进化）
 python main.py "问题" --truth "参考答案"
@@ -257,16 +342,25 @@ python web/server/app.py --open
 ```
 
 浏览器打开 `http://127.0.0.1:8765`，包含：总览、任务台、执行流回放、能力进化、
-技能库、知识库、记忆库、dev20 评测报告。执行流与工具返回值由本地模拟引擎生成，
-但检索（TF-IDF 余弦）、路由得分/并列随机、能力进化公式均直接复用项目实现；
-演示数据只写入 `web/data/`，不会修改 `data/` 下的能力、经验与记忆。
+技能库、知识库、记忆库、dev20 评测报告、系统管理。执行流与工具返回值由本地模拟引擎生成，
+但检索（TF-IDF 余弦）、路由得分/并列随机、能力进化公式、问题合法性规则、用户权限校验
+均直接复用项目实现；演示数据只写入 `web/data/`，不会修改 `data/` 下的能力、经验与记忆。
+
+- 任务台新增“用户类别”选择：只注入该角色有权查询的表，越权步骤会被拦截并标注；
+- 输入空泛/越权问题会直接展示“问题不合法”的判定原因与缺失信息清单；
+- 系统管理页新增权限矩阵与最近审计记录；
+- 新增接口：`GET /api/permissions?role=viewer`、`POST /api/validate`。
 详细说明见 [`web/README.md`](web/README.md)。
 
 ## 说明
 
 - 五阶段状态统一放在 `PipelineState`；节点返回字段更新字典；
+- `is_valid / invalid_reasons / missing_info / clarification` 是阶段① 的合法性字段，
+  `user_role / permission_context / permission_denials` 是权限字段；
 - 正确答案通过 `PipelineState.ground_truth` 传入；基准评测用确定性判分器
   （`stage5.set_verifier`）替代 LLM 判卷，保证分数可复现；
 - 经验值只存于 `data/agent_capabilities.json`，删掉即可回到全 0.5；
+- 权限表是 `config/user_permissions.yaml`，改完无需重启（`PermissionTable.reload()`）；
+  审计日志在 `data/permission_audit.jsonl`，可随时删除；
 - 外部 PostGIS 工具集只读调用，路径由 `POSTGIS_TOOLKIT_ROOT` 配置；
 - 运行环境：Python 3.11+、psycopg、langgraph、langchain-deepseek；数据库需 PostGIS。

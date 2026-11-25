@@ -197,15 +197,76 @@
       "</div>";
   }
 
+  function permissionCard() {
+    const perms = data().permissions || {};
+    const roles = perms.roles || [];
+    const matrix = perms.matrix || [];
+    const actions = perms.actions || [];
+    const labels = {};
+    actions.forEach((a) => { labels[a.key] = a.name; });
+    const roleKeys = roles.map((r) => r.key);
+    const head = "<tr><th>数据表</th><th>业务含义</th>" +
+      roleKeys.map((k) => "<th>" + esc((roles.find((r) => r.key === k) || {}).name || k) + "</th>").join("") + "</tr>";
+    const rows = matrix.map((row) => {
+      return "<tr><td class='mono small'>" + esc(row.table) + "</td><td class='small'>" + esc(row.name) +
+        (row.sensitivity && row.sensitivity !== "normal" ? " <span class='chip warn'>" + esc(row.sensitivity) + "</span>" : "") +
+        "</td>" +
+        roleKeys.map((role) => {
+          const allowed = (row.roles || {})[role] || [];
+          if (!allowed.length) return "<td class='tiny muted'>—</td>";
+          return "<td>" + allowed.map((a) =>
+            "<span class='chip " + (a === "delete" ? "err" : (a === "select" ? "muted" : "brand")) +
+            "' style='margin:1px 2px 1px 0'>" + esc(labels[a] || a) + "</span>").join("") + "</td>";
+        }).join("") + "</tr>";
+    }).join("");
+
+    const roleCards = roles.map((role) => {
+      const tables = Object.keys(role.tables || {});
+      const readable = tables.filter((t) => (role.tables[t] || []).length);
+      const writable = tables.filter((t) => (role.tables[t] || []).some((a) => a !== "select"));
+      return "<div class='kv'><dt>角色 · " + esc(role.name) + " <span class='mono tiny'>" + esc(role.key) + "</span></dt>" +
+        "<dd class='small' style='font-weight:400;line-height:1.75'>" + esc(role.description || "") +
+        "<div class='tiny faint' style='margin-top:4px'>可读 " + readable.length + " 张表 · 可写 " + writable.length + " 张表</div></dd></div>";
+    }).join("");
+
+    const audit = perms.audit || [];
+    const auditRows = audit.slice().reverse().map((item) =>
+      "<div class='admin-item'><div class='admin-item-main'>" +
+      "<div class='admin-item-title'>" + esc(item.table || "—") + " · " + esc(labels[item.action] || item.action || "") +
+      " · <span class='" + (item.allowed ? "chip ok" : "chip err") + "'>" +
+      (item.allowed ? "允许" : "拒绝") + "</span></div>" +
+      "<div class='tiny faint mono'>" + esc(item.ts || "") + " · " + esc(item.role_name || item.role || "") +
+      (item.tool ? " · " + esc(item.tool) : "") + (item.detail ? " · " + esc(item.detail) : "") + "</div>" +
+      "</div></div>").join("") || "<div class='tiny muted' style='padding:7px 0'>暂无审计记录（越权与写操作会记录在这里）。</div>";
+
+    return "<div class='card'><div class='card-head'><span class='card-title-icon'>" + GIS.ui.icon("shield") + "</span>" +
+      "<div><h2>用户权限表</h2><p class='sub'>按用户类别定义对具体数据表的增删改查权限；文件 <span class='mono'>" +
+      esc(perms.path || "config/user_permissions.yaml") + "</span></p></div>" +
+      "<div class='right'>" +
+      "<span class='chip " + (perms.enforce ? "ok" : "warn") + "'>" + (perms.enforce ? "强制校验" : "仅展示") + "</span>" +
+      "<span class='chip mono'>默认 " + esc(perms.default_role || "viewer") + "</span></div></div>" +
+
+      "<div class='kv-grid' style='margin-bottom:12px'>" + roleCards + "</div>" +
+      "<div class='reset-preview' style='margin-top:0;max-height:340px'><table class='reset-table'><thead>" +
+      head + "</thead><tbody>" + (rows || "<tr><td colspan='" + (roleKeys.length + 2) + "' class='v'>权限表为空</td></tr>") +
+      "</tbody></table></div>" +
+      "<div class='tiny muted' style='margin-top:7px;line-height:1.7'>未登记的表按 fail-closed 拒绝；" +
+      "读算子按「查询」校验 <span class='mono'>layer_name</span>，写算子按新增/修改/删除校验；越权调用不执行 SQL，只回填错误并写审计。</div>" +
+
+      "<details class='admin-mem-details' style='margin-top:10px'><summary>最近权限审计 <span class='chip mono'>" +
+      audit.length + " 条</span></summary><div class='admin-item-list'>" + auditRows + "</div></details>" +
+      "</div>";
+  }
+
   function render() {
     return "<div class='stack-lg' id='adminView'>" +
       "<div class='card' style='padding:13px 18px'><div class='row between wrap'>" +
-      "<div><b>系统管理</b><span class='small muted' style='margin-left:8px'>直接管理项目运行期的能力、路由与记忆文件</span></div>" +
+      "<div><b>系统管理</b><span class='small muted' style='margin-left:8px'>直接管理项目运行期的能力、路由、权限与记忆文件</span></div>" +
       "<div class='row' style='gap:6px'>" +
       "<span class='chip warn'>危险操作需二次确认</span>" +
       "<button class='btn sm ghost' id='adminRefresh'>" + GIS.ui.icon("refresh") + "重新读取</button></div>" +
       "</div></div>" +
-      capabilityCard() + routingCard() + memoryCard() +
+      capabilityCard() + routingCard() + permissionCard() + memoryCard() +
       "</div>";
   }
 
@@ -217,6 +278,7 @@
       GIS.state.data.routing = admin.routing;
       GIS.state.data.memory = admin.memory;
       GIS.state.data.demo_memory = admin.demo_memory || admin.memory;
+      if (admin.permissions) GIS.state.data.permissions = admin.permissions;
       GIS.state.data.admin = admin;
     } catch (e) { /* 管理页仍可使用已刷新的 bootstrap 数据 */ }
     const mem = GIS.state.data.memory || {};
@@ -424,6 +486,7 @@
         GIS.state.data.routing = admin.routing;
         GIS.state.data.memory = admin.memory;
         GIS.state.data.demo_memory = admin.demo_memory || admin.memory;
+        if (admin.permissions) GIS.state.data.permissions = admin.permissions;
       } catch (e) { /* 回退到 bootstrap 数据 */ }
     },
   };

@@ -324,8 +324,11 @@ class DemoEngine:
     def _detected_layers(self) -> list[str]:
         text = self.question.lower()
         layers: list[str] = []
-        for table in ("construction_areas", "gas_devices", "gas_pipelines", "water_pipelines", "demo_roads", "region_stat"):
-            if table in text:
+        # 先按权限表/内置表结构里出现的表名识别（长表名优先，避免前缀误匹配）
+        known = sorted(set(ds.PERMISSIONS.tables) | {t["name"] for t in ds.SCHEMA_TABLES},
+                       key=len, reverse=True)
+        for table in known:
+            if table in text and table not in layers:
                 layers.append(table)
         if re.search(r"\bA0\d{2}\b", self.question) and "construction_areas" not in layers:
             layers.insert(0, "construction_areas")

@@ -83,6 +83,24 @@ class AgentMemory:
             self.cache.pop(0)
         self._save_cache()
 
+    def push_cache(self, payload: dict | None = None, **extra: Any) -> None:
+        """兼容旧调用：`push_cache({"question": ..., "note": ...})`。
+
+        阶段③/④历史上用单个 dict 写短期缓存；这里统一转成 `push_step`，
+        保留 `question` → `step_question` 的映射，其余字段透传。
+        """
+        data = dict(payload or {})
+        data.update(extra)
+        step_question = str(data.pop("question", data.pop("step_question", "")) or "")
+        self.push_step(
+            step_question=step_question,
+            note=str(data.pop("note", "") or ""),
+            step_alias=str(data.pop("step_alias", "") or ""),
+            params=data.pop("params", None),
+            lesson=str(data.pop("lesson", "") or ""),
+            **data,
+        )
+
     def recent(self, k: int | None = None) -> list[dict]:
         """取最近 k 条缓存记录，供规划/执行 prompt 注入。
 

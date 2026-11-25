@@ -14,6 +14,7 @@
     truth: "",
     verdict: "auto",
     memoryTarget: "demo",
+    role: "analyst",
     running: false,
     lastRun: null,
     player: null,
@@ -22,6 +23,28 @@
 
   function examples() {
     return (GIS.state.data && GIS.state.data.examples) || [];
+  }
+
+  function roleList() {
+    const list = (GIS.state.data && GIS.state.data.roles) || [];
+    return list.length ? list : [
+      { key: "admin", name: "系统管理员" },
+      { key: "analyst", name: "业务分析员" },
+      { key: "operator", name: "运维操作员" },
+      { key: "viewer", name: "访客（只读）" },
+    ];
+  }
+
+  function roleField() {
+    const list = roleList();
+    const current = list.some((r) => r.key === VIEW.role) ? VIEW.role : list[0].key;
+    const item = list.find((r) => r.key === current) || {};
+    return "<div class='field role-field'><label>用户类别（数据权限）</label>" +
+      "<select id='roleSelect'>" + list.map((r) =>
+        "<option value='" + esc(r.key) + "'" + (r.key === current ? " selected" : "") + ">" +
+        esc(r.name) + "（" + esc(r.key) + "）</option>").join("") + "</select>" +
+      "<div class='tiny faint' style='margin-top:5px'>" + esc(item.description || "权限来自 config/user_permissions.yaml。") +
+      " 决定可查询的表与增删改查范围，越权调用会被拦截并审计。</div></div>";
   }
 
   function render() {
@@ -63,6 +86,7 @@
       "<button data-memory-target='real' class='" + (VIEW.memoryTarget === "real" ? "active" : "") + "'>真实记忆</button>" +
       "</div>" +
       "<div class='tiny faint' style='margin-top:5px'>演示记忆写 <span class='mono'>web/data/memory</span>；真实记忆写 <span class='mono'>data/memory</span>。运行后可在记忆库切换来源查看。</div></div>" +
+      roleField() +
       "</div>" +
       "<div class='notice-line'>" + GIS.ui.chip("不调用 LLM", "muted") +
       GIS.ui.chip("记忆写入可选", "muted") +
@@ -134,6 +158,10 @@
       "<span class='chip " + chipCls + "'>" + verdict.label + "</span>" +
       "<span class='chip mono'>" + esc(run.run_id) + "</span>" +
       "<span class='chip'>" + esc(run.domain_label || run.domain) + " / " + esc(run.task_type) + "</span>" +
+      "<span class='chip'>用户：" + esc(run.role_name || run.role || "—") + "</span>" +
+      (run.is_valid === false ? "<span class='chip err'>问题不合法</span>" : "") +
+      ((run.permission_denials || []).length
+        ? "<span class='chip err'>越权拦截 " + run.permission_denials.length + " 次</span>" : "") +
       "<span class='chip'>" + (meta.tool_calls || 0) + " 次工具调用</span>" +
       "<span class='chip'>" + (meta.subtasks || 1) + " 个子任务</span>" +
       "<span class='chip " + (run.memory_target === "real" ? "warn" : "") + "'>记忆：" +
@@ -235,7 +263,7 @@
       if (progEl) progEl.style.width = Math.min(94, 8 + step * 22) + "%";
     }, 760)];
     try {
-      const result = await GIS.api.run(question, VIEW.truth, VIEW.verdict, VIEW.memoryTarget);
+      const result = await GIS.api.run(question, VIEW.truth, VIEW.verdict, VIEW.memoryTarget, VIEW.role);
       VIEW.lastRun = result;
       GIS.state.lastRun = result;
       VIEW.timers.forEach(clearInterval);
@@ -244,11 +272,19 @@
       const player = GIS.flow.mount(out, result.flow, { run: result, speed: 1650 });
       VIEW.player = player;
       bindOutput(result);
+      if (result.is_valid === false) {
+        GIS.toast("问题被判定为「问题不合法」：本次未执行，请按追问补充信息后重跑", "warn",
+          "已中止 · 需要补充信息");
+      } else if ((result.permission_denials || []).length) {
+        GIS.toast("有 " + result.permission_denials.length + " 次工具调用因权限不足被拦截", "warn", "越权拦截");
+      }
       refreshCapability();
       refreshMemory(result.memory_target === "real" ? "real" : "demo");
       const verdict = GIS.flow.verdict(result.flow.evaluate);
       if (verdict.key === "unknown") {
         GIS.toast("执行完成 · 未提供参考答案，按未知处理，能力向量保持不变", "warn", "结果未判定");
+      } else if (verdict.key === "clarification") {
+        GIS.toast("问题不合法：未执行任何算子，请按追问补充信息后重新提交", "warn", "需要补充信息");
       } else if (verdict.key === "success") {
         GIS.toast("执行完成 · 能力向量已更新", "ok", "任务完成");
       } else {
@@ -350,6 +386,16 @@
         );
       });
     });
+    const roleSelect = document.getElementById("roleSelect");
+    if (roleSelect) {
+      roleSelect.addEventListener("change", () => {
+        VIEW.role = roleSelect.value;
+        const item = roleList().find((r) => r.key === VIEW.role) || {};
+        GIS.toast((item.description || "已切换用户类别") + " 可查询表：" +
+          Object.keys(item.tables || {}).filter((t) => (item.tables[t] || []).indexOf("select") >= 0).length + " 张",
+          "ok", "用户类别：" + (item.name || VIEW.role));
+      });
+    }
     document.querySelectorAll("[data-fill]").forEach((btn) => {
       btn.addEventListener("click", () => {
         VIEW.question = btn.dataset.fill;

@@ -149,6 +149,7 @@
 
   F.verdict = function (stage) {
     const ev = String((stage && stage.evaluation) || "");
+    if (ev === "clarification") return { key: "clarification", label: "问题不合法 · 待澄清", chip: "warn" };
     if (ev === "unknown") return { key: "unknown", label: "未判定", chip: "warn" };
     if (ev === "failed" || (stage && stage.correct === false)) return { key: "failed", label: "判定失败", chip: "err" };
     return { key: "success", label: "判定正确", chip: "ok" };
@@ -158,6 +159,7 @@
     const verdict = F.verdict(stage);
     const ok = verdict.key === "success";
     const unknown = verdict.key === "unknown";
+    const clarify = verdict.key === "clarification";
     const changes = stage.changes || [];
     const changeRows = changes.map((c) => {
       const dims = c.dims || [];
@@ -176,20 +178,27 @@
             "</div>";
         }).join("") + "</div>";
     }).join("");
-    const answerLabel = unknown
-      ? "最终答案 · 未判定（未提供参考答案）"
-      : (ok ? "最终答案 · 判定正确"
-        : ((stage.final_answer && !String(stage.final_answer).startsWith("执行失败")) ? "最终答案 · 判定未通过" : "执行失败 · 未生成答案"));
+    const answerLabel = clarify
+      ? "需要用户补充信息 · 本次未执行"
+      : unknown
+        ? "最终答案 · 未判定（未提供参考答案）"
+        : (ok ? "最终答案 · 判定正确"
+          : ((stage.final_answer && !String(stage.final_answer).startsWith("执行失败")) ? "最终答案 · 判定未通过" : "执行失败 · 未生成答案"));
+    const missing = stage.missing_info || [];
     return "<div class='stack'>" +
-      "<div class='answer-box " + (unknown ? "unknown" : (ok ? "" : "fail")) + "'>" +
+      "<div class='answer-box " + (clarify ? "unknown" : (unknown ? "unknown" : (ok ? "" : "fail"))) + "'>" +
       "<div class='ans-label'>" + answerLabel + "</div>" +
       "<pre>" + esc(stage.final_answer || "—") + "</pre></div>" +
       "<div class='kv-grid'>" +
       "<div class='kv'><dt>评估结论</dt><dd>" + esc(verdict.label) + "</dd></div>" +
       "<div class='kv'><dt>判定依据</dt><dd style='font-weight:500;font-size:11.5px'>" + esc(stage.reason || "—") + "</dd></div>" +
       "<div class='kv'><dt>结果类型</dt><dd>" + esc(stage.answer_kind || "—") + "</dd></div>" +
-      "<div class='kv'><dt>能力更新</dt><dd>" + (unknown ? "无（未判定）" : changes.length + " 个智能体") + "</dd></div>" +
+      "<div class='kv'><dt>能力更新</dt><dd>" + (clarify || unknown ? "无（未执行/未判定）" : changes.length + " 个智能体") + "</dd></div>" +
       "</div>" +
+      (clarify
+        ? "<div class='chip warn' style='white-space:normal;line-height:1.7'>问题被判定为「问题不合法」：本次没有拆解、规划、工具调用或数据库操作，能力向量保持不变。" +
+          (missing.length ? " 需要补充：" + esc(missing.map((m) => m.name).join("、")) + "。" : "") + "</div>"
+        : "") +
       (unknown
         ? "<div class='chip warn' style='white-space:normal;line-height:1.7'>未知结果：未提供参考答案，本次不写入成功/失败经验，能力向量保持不变。如需演示进化，可在判定方式中选择「判成功 / 判失败」，或填写参考答案。</div>"
         : "") +
@@ -209,6 +218,8 @@
     const exec = flow.execute || {};
     const ev = flow.evaluate || {};
 
+    const validity = u.validity || {};
+    const permission = u.permission || {};
     const understandBody = "<div class='stack'>" +
       "<div class='kv-grid'>" +
       "<div class='kv'><dt>业务领域</dt><dd>" + esc(u.domain_label || u.domain || "—") + "</dd></div>" +
@@ -216,6 +227,25 @@
       "<div class='kv'><dt>相关表</dt><dd>" + ((u.tables || []).length) + " 张</dd></div>" +
       "<div class='kv'><dt>相关 skill</dt><dd>" + ((u.skills || []).length) + " 个</dd></div>" +
       "</div>" +
+      "<div class='kv-grid'>" +
+      "<div class='kv'><dt>合法性判定</dt><dd>" +
+      (u.is_valid === false
+        ? "<span class='chip err'>问题不合法</span>"
+        : "<span class='chip ok'>合法</span>") +
+      " <span class='tiny muted'>来源 " + esc(validity.source || "rule") + "</span></dd></div>" +
+      "<div class='kv'><dt>用户类别</dt><dd>" +
+      esc(permission.role_name || "—") +
+      (permission.role ? " <span class='mono tiny'>" + esc(permission.role) + "</span>" : "") + "</dd></div>" +
+      "<div class='kv'><dt>可查询表</dt><dd>" + ((permission.allowed_tables || []).length) + " 张</dd></div>" +
+      "<div class='kv'><dt>越权拦截</dt><dd>" + ((run && (run.permission_denials || []).length) || 0) + " 次</dd></div>" +
+      "</div>" +
+      (validity.is_valid === false
+        ? "<div class='chip err' style='white-space:normal;line-height:1.7'>判定原因：" +
+          esc((validity.reasons || []).join("；") || "信息不足") +
+          (validity.missing_info && validity.missing_info.length
+            ? " ｜ 缺少：" + esc(validity.missing_info.map((m) => m.name).join("、"))
+            : "") + "</div>"
+        : "") +
       "<div><div class='tiny muted' style='margin-bottom:4px'>专业形式精炼</div><div class='small'>" + esc(u.refined_question || "—") + "</div></div>" +
       "<div class='grid grid-2' style='gap:12px'>" +
       "<div><div class='tiny muted' style='margin-bottom:5px'>表结构检索（余弦相似度）</div>" + hitList(u.tables, "table") + "</div>" +

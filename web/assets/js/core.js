@@ -164,12 +164,27 @@
         throw err;
       }
     },
-    run(question, truth, verdict, memoryTarget) {
+    run(question, truth, verdict, memoryTarget, role, user) {
       return request("/api/run", {
         method: "POST",
-        body: { question, truth, verdict, memory_target: memoryTarget || "demo" },
+        body: {
+          question, truth, verdict,
+          memory_target: memoryTarget || "demo",
+          role: role || "analyst",
+          user: user || "",
+        },
         timeout: 45000,
       });
+    },
+    validate(question) {
+      return request("/api/validate", {
+        method: "POST",
+        body: { question },
+        timeout: 8000,
+      });
+    },
+    permissions(role) {
+      return request("/api/permissions" + (role ? "?role=" + encodeURIComponent(role) : ""), { timeout: 10000 });
     },
     capability(source) {
       return request("/api/capability?source=" + encodeURIComponent(source || "demo"), { timeout: 10000 });

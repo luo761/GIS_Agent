@@ -59,10 +59,34 @@ def _permission_context(role: str) -> str:
     return "\n".join(parts)
 
 
+def _apply_invalid(state: PipelineState, verdict: dict) -> PipelineState:
+    """把“问题不合法”结论写入状态：不进入②~⑤，只返回追问文本。"""
+    state.is_valid = False
+    state.domain = INVALID_DOMAIN_KEY
+    state.task_type = INVALID_TASK_TYPE
+    state.validity_source = str(verdict.get("source") or "rule")
+    state.invalid_reasons = list(verdict.get("reasons") or [])
+    state.missing_info = list(verdict.get("missing_info") or [])
+    state.clarification = str(verdict.get("clarification") or "")
+    state.final_answer = state.clarification
+    state.evaluation = "clarification"   # 既不是 success 也不是 failed：本次未执行
+    state.refined_question = ""
+    state.injected_context = ""
+    state.loaded_knowledge = ""
+    state.permission_context = ""
+    return state
+
+
 def run(state: PipelineState) -> PipelineState:
     rules = question_guard.load_rules()
     domain_cfg = _TAXONOMY.get("domains") or {}
     invalid_name = str((domain_cfg.get(INVALID_DOMAIN_KEY) or {}).get("name") or "问题不合法")
+
+    # 0. 规则层先行：明显的空泛/越权/注入问题不必调用 LLM，
+    #    既省一次调用，也保证模型不可用时安全判定仍然生效。
+    precheck = question_guard.evaluate(state.raw_question, None, rules)
+    if not precheck["is_valid"]:
+        return _apply_invalid(state, precheck)
 
     # 1. LLM 领域识别 + 合法性判定（同一次调用，不新增阶段）
     domain_list = "\n".join(
@@ -95,17 +119,7 @@ def run(state: PipelineState) -> PipelineState:
 
     # 1a. 问题不合法：不进入②~⑤，直接给出追问文本并结束本次执行
     if not state.is_valid:
-        state.domain = INVALID_DOMAIN_KEY
-        state.task_type = INVALID_TASK_TYPE
-        state.invalid_reasons = list(verdict.get("reasons") or [])
-        state.missing_info = list(verdict.get("missing_info") or [])
-        state.clarification = str(verdict.get("clarification") or "")
-        state.final_answer = state.clarification
-        state.refined_question = ""
-        state.injected_context = ""
-        state.loaded_knowledge = ""
-        state.permission_context = ""
-        return state
+        return _apply_invalid(state, verdict)
 
     # 2. 合法：写入领域/任务类型，解析用户角色并注入表级权限说明
     domain = str(res.get("domain") or "").strip()

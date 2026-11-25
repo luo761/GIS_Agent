@@ -31,8 +31,8 @@
     "agent_02": {
       "name": "02",
       "capabilities": {
-        "spatial_compute": 0.549,
-        "attribute_query": 0.549,
+        "spatial_compute": 0.5091,
+        "attribute_query": 0.5091,
         "statistics": 0.549,
         "mapping": 0.5
       },
@@ -40,16 +40,16 @@
         "query_features"
       ],
       "stats": {
-        "attempts": 1,
+        "attempts": 2,
         "successes": 1,
-        "failures": 0
+        "failures": 1
       }
     },
     "agent_03": {
       "name": "03",
       "capabilities": {
-        "spatial_compute": 0.549,
-        "attribute_query": 0.5,
+        "spatial_compute": 0.5091,
+        "attribute_query": 0.464,
         "statistics": 0.5,
         "mapping": 0.5
       },
@@ -59,9 +59,9 @@
         "measure_features"
       ],
       "stats": {
-        "attempts": 1,
+        "attempts": 2,
         "successes": 1,
-        "failures": 0
+        "failures": 1
       }
     },
     "agent_04": {
@@ -321,8 +321,84 @@
       },
       "note": "",
       "index": 5
+    },
+    {
+      "ts": "2026-11-25 10:24:34",
+      "agent_id": "agent_03",
+      "agent_name": "03",
+      "dims": [
+        "spatial_compute",
+        "attribute_query"
+      ],
+      "outcome": "failure",
+      "question": "在 PostGIS 数据集上，基于 invalid_geometry_cases 图层完成：查询 invalid_geometry_cases 里的所有无效几何。（语义约束：平面坐标 EPSG:3857，长度 meter / 面积 square_meter。）",
+      "task_signature": "general/空间计算",
+      "before": {
+        "spatial_compute": 0.549,
+        "attribute_query": 0.5
+      },
+      "after": {
+        "spatial_compute": 0.5091,
+        "attribute_query": 0.464
+      },
+      "delta": {
+        "spatial_compute": -0.0399,
+        "attribute_query": -0.036
+      },
+      "vector_before": {
+        "spatial_compute": 0.549,
+        "attribute_query": 0.5,
+        "statistics": 0.5,
+        "mapping": 0.5
+      },
+      "vector_after": {
+        "spatial_compute": 0.5091,
+        "attribute_query": 0.464,
+        "statistics": 0.5,
+        "mapping": 0.5
+      },
+      "note": "权限拒绝：角色 访客（只读） 没有表 invalid_geometry_cases 的「查询」权限",
+      "index": 6
+    },
+    {
+      "ts": "2026-11-25 10:37:49",
+      "agent_id": "agent_02",
+      "agent_name": "02",
+      "dims": [
+        "spatial_compute",
+        "attribute_query"
+      ],
+      "outcome": "failure",
+      "question": "在 PostGIS 数据集上，基于 invalid_geometry_cases 图层完成：查询 invalid_geometry_cases 里的所有无效几何。（语义约束：平面坐标 EPSG:3857，长度 meter / 面积 square_meter。）",
+      "task_signature": "general/空间计算",
+      "before": {
+        "spatial_compute": 0.549,
+        "attribute_query": 0.549
+      },
+      "after": {
+        "spatial_compute": 0.5091,
+        "attribute_query": 0.5091
+      },
+      "delta": {
+        "spatial_compute": -0.0399,
+        "attribute_query": -0.0399
+      },
+      "vector_before": {
+        "spatial_compute": 0.549,
+        "attribute_query": 0.549,
+        "statistics": 0.549,
+        "mapping": 0.5
+      },
+      "vector_after": {
+        "spatial_compute": 0.5091,
+        "attribute_query": 0.5091,
+        "statistics": 0.549,
+        "mapping": 0.5
+      },
+      "note": "权限拒绝：角色 访客（只读） 没有表 invalid_geometry_cases 的「查询」权限",
+      "index": 7
     }
   ],
-  "updated_at": "2026-11-21 10:46:56",
+  "updated_at": "2026-11-25 10:37:49",
   "source": "initial"
 }

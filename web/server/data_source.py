@@ -24,6 +24,7 @@ import os
 import re
 import shutil
 import socket
+import sys
 import time
 import uuid
 from pathlib import Path
@@ -60,6 +61,8 @@ def _load_project_module(relative_path: str, name: str):
     spec = importlib.util.spec_from_file_location(name, path)
     module = importlib.util.module_from_spec(spec)
     assert spec and spec.loader
+    # 注册到 sys.modules：dataclass / 类型注解在导入期需要按模块名反查命名空间
+    sys.modules[name] = module
     spec.loader.exec_module(module)
     return module
 
@@ -825,6 +828,7 @@ def permission_payload(role: str | None = None, limit: int = 20) -> dict[str, An
                 "description": str((meta or {}).get("description") or ""),
                 "rank": int((meta or {}).get("rank") or 0),
                 "allowed_tables": table.allowed_tables(key, "select"),
+                "tables": {t: table.allowed_actions(key, t) for t in table.tables},
             }
             for key, meta in sorted(
                 table.roles.items(), key=lambda kv: -int((kv[1] or {}).get("rank") or 0)

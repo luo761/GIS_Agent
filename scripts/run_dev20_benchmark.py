@@ -48,6 +48,9 @@ def main() -> int:
     parser.add_argument("--max-replans", type=int, default=0,
                         help="失败后重规划次数（默认 0，单次作答）")
     parser.add_argument("--no-reset", action="store_true", help="保留当前能力/经验状态")
+    parser.add_argument("--role", default="analyst",
+                        choices=["admin", "analyst", "operator", "viewer"],
+                        help="评测使用的用户类别（决定表级权限，默认 analyst）")
     parser.add_argument("--out-dir", default=str(ROOT / "reports"), help="输出目录")
     args = parser.parse_args()
 
@@ -103,6 +106,7 @@ def main() -> int:
                 case.question,
                 ground_truth=case.id,
                 answer_format=format_requirement(case),
+                user=args.role,
             )
         except Exception as exc:  # 单题异常不打断整批
             state = None

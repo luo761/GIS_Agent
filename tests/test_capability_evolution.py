@@ -334,6 +334,8 @@ def test_evolution_creates_measured_advantage(sandbox, monkeypatch):
     """连续成功 → 该智能体在统计维度逐渐领先 → 之后固定路由到它。"""
     from pipeline.pipeline_graph import ask
 
+    # 平局随机用固定种子：避免“6 次里谁先攒够 3 次成功”本身的随机性导致偶发失败
+    capability_router.set_random_seed(17)
     stub = StubLLM(correct=True)
     _patch_llm(monkeypatch, stub)
 
