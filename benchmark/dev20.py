@@ -28,6 +28,11 @@ class Case:
 
 def load_suite(bench_dir: str | Path | None = None) -> dict[str, Any]:
     base = Path(bench_dir or settings.BENCHMARK_DIR)
+    if not (base / "dev20.json").exists():
+        # 兜底：相对项目根目录查找 data/benchmarks
+        base = Path(__file__).resolve().parent.parent / "data" / "benchmarks"
+    if not (base / "dev20.json").exists():
+        raise FileNotFoundError(f"找不到 dev20 题集目录: {base}")
     suite = json.loads((base / "dev20.json").read_text(encoding="utf-8"))
     expected = json.loads((base / "dev20_expected.json").read_text(encoding="utf-8"))
     return {"suite": suite, "expected": expected}

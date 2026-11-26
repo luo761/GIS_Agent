@@ -171,7 +171,8 @@
       "<div class='row' style='gap:6px'>" +
       "<button class='btn sm ghost' data-copy-answer>" + GIS.ui.icon("copy") + "复制答案</button>" +
       "<button class='btn sm ghost' data-export-run>" + GIS.ui.icon("download") + "导出运行</button>" +
-      "<button class='btn sm ghost' data-rerun>" + GIS.ui.icon("refresh") + "再运行</button>" +
+      "<button class='btn sm ghost' data-rerun>" + GIS.ui.icon("refresh") +
+      (run.is_valid === false ? "补充信息" : "再运行") + "</button>" +
       "</div></div>";
     return "<div class='card' style='padding:16px 18px'>" +
       "<div class='card-head'><span class='card-title-icon'>" + GIS.ui.icon("play") + "</span>" +
@@ -179,8 +180,44 @@
       "<div class='right'><span class='chip " + (GIS.state.mode === "live" ? "ok" : "warn") + "'>" +
       (GIS.state.mode === "live" ? "本地演示引擎" : "静态快照") + "</span></div></div>" +
       actions +
+      (run.is_valid === false ? clarifyCard(run) : "") +
       GIS.flow.render(run.flow, { run }) +
       "</div>";
+  }
+
+  const CLARIFY_SLOTS = [
+    { key: "object", name: "分析对象", hint: "燃气设备 / 管线 / 施工区 / 水表 / 行政区……" },
+    { key: "extent", name: "空间范围", hint: "施工区编号 A001、行政区、缓冲区半径……" },
+    { key: "condition", name: "筛选条件", hint: "状态=正常/告警、压力等级、管材……" },
+    { key: "metric", name: "输出指标", hint: "数量 / 长度 / 面积 / 占比 / 排序列表……" },
+    { key: "time", name: "时间口径", hint: "统计年份或数据版本，如 2023" },
+  ];
+
+  function clarifyCard(run) {
+    const u = (run && run.flow && run.flow.understand) || {};
+    const validity = (run && run.validity) || u.validity || {};
+    const missing = validity.missing_info || [];
+    const reasons = (validity.reasons || []).join("；") || "信息不足";
+    const rows = CLARIFY_SLOTS.map((slot) => {
+      const hit = missing.find((m) => m.key === slot.key);
+      return "<div class='field'><label>" + esc(slot.name) +
+        (hit
+          ? " <span class='chip warn' style='padding:1px 6px;transform:none'>缺失</span>"
+          : " <span class='tiny faint'>可选</span>") +
+        "</label>" +
+        "<input id='clarify_" + slot.key + "' placeholder='" + esc((hit && hit.prompt) || slot.hint) + "'></div>";
+    }).join("");
+    return "<div class='card' style='padding:14px 16px;border-left:3px solid var(--warn)'>" +
+      "<div class='card-head' style='margin-bottom:8px'>" +
+      "<span class='card-title-icon' style='background:var(--warn-soft);color:var(--warn)'>" + GIS.ui.icon("shield") + "</span>" +
+      "<div><h3 style='font-size:14px'>补充信息后重跑</h3><p class='sub'>" + esc(reasons) + "</p></div></div>" +
+      "<div class='small muted' style='margin-bottom:10px'>本次未拆解、未规划、未访问任何数据表。按五类槽位补全后点击下方按钮，系统会把补充说明追加到原问题，并从阶段① 重新判定。</div>" +
+      "<div class='grid grid-2' style='gap:10px'>" + rows + "</div>" +
+      "<div class='row wrap' style='gap:8px;margin-top:10px'>" +
+      "<button class='btn sm primary' data-clarify-apply>" + GIS.ui.icon("play") + "追加说明并重跑</button>" +
+      "<button class='btn sm ghost' data-copy-answer>" + GIS.ui.icon("copy") + "复制追问</button>" +
+      "<span class='tiny faint'>只填需要的槽位即可；全部留空不会重跑。</span>" +
+      "</div></div>";
   }
 
   function refreshSideCapability() {
@@ -312,22 +349,56 @@
     }
   }
 
-  function bindOutput(run) {
+  function bindOutput(result) {
     const out = document.getElementById("runOutput");
     if (!out) return;
     out.querySelectorAll("[data-copy-answer]").forEach((btn) => {
       btn.addEventListener("click", () => {
-        const answer = run.flow.evaluate.final_answer || "";
+        const answer = (result.flow && result.flow.evaluate && result.flow.evaluate.final_answer) || "";
         GIS.ui.copy(answer, "答案已复制");
       });
     });
     out.querySelectorAll("[data-export-run]").forEach((btn) => {
       btn.addEventListener("click", () => {
-        GIS.ui.download(run.run_id + ".json", JSON.stringify(run, null, 2));
+        GIS.ui.download(result.run_id + ".json", JSON.stringify(result, null, 2));
       });
     });
     out.querySelectorAll("[data-rerun]").forEach((btn) => {
-      btn.addEventListener("click", run);
+      btn.addEventListener("click", () => {
+        if (result.is_valid === false) {
+          const first = out.querySelector("[id^='clarify_']");
+          if (first) {
+            first.scrollIntoView({ behavior: "smooth", block: "center" });
+            first.focus();
+            return;
+          }
+        }
+        run();
+      });
+    });
+    out.querySelectorAll("[data-clarify-apply]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const parts = [];
+        CLARIFY_SLOTS.forEach((slot) => {
+          const el = document.getElementById("clarify_" + slot.key);
+          const value = (el && el.value || "").trim();
+          if (value) parts.push(slot.name + "=" + value);
+        });
+        if (!parts.length) { GIS.toast("请至少补充一项信息再重跑", "warn"); return; }
+        const input = document.getElementById("askInput");
+        const base = ((input && input.value) || VIEW.question || result.question || "").trim();
+        const merged = base + "（补充说明：" + parts.join("；") + "）";
+        if (merged.length > 2000) {
+          GIS.toast("补充后问题超过 2000 字，请精简后再提交", "err");
+          return;
+        }
+        VIEW.question = merged;
+        if (input) input.value = merged;
+        const count = document.getElementById("askCount");
+        if (count) count.textContent = merged.length + " / 2000";
+        GIS.toast("已追加：「" + parts.join("；") + "」", "ok", "从阶段① 重新判定");
+        run();
+      });
     });
   }
 

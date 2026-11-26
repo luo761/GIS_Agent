@@ -66,7 +66,7 @@ POSTGIS_TOOLSET = os.getenv("POSTGIS_TOOLSET", "advanced")
 # ---------------------------------------------------------------------------
 BENCHMARK_DIR = Path(os.getenv(
     "BENCHMARK_DIR",
-    str(BASE_DIR / "GIS_Agent-jiang_gis_tools_develop" / "GIS_Agent" / "data" / "benchmarks"),
+    str(DATA_DIR / "benchmarks"),
 ))
 BENCHMARK_ABS_TOL = 1e-6
 REPORTS_DIR = BASE_DIR / "reports"

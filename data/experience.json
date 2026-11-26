@@ -1,7 +1,7 @@
 [
   {
     "task_signature": "gas/统计分析",
-    "question_feat": "在施工区 A001 内，分别对 gas_pipelines 按 pressure_level 分组、对 water_pipelines 按 pipe_type 分组，统计裁剪到 A001 后的线长度之和（单位：米）；每组输出分组名称与总长度，按总长度降序、同长按分组名称升序排列，输出全部分组，保留零长度但非空接触的记录。",
+    "question_feat": "统计 gas_devices 表中 status = '正常' 且 geom 严格位于 construction_areas 表中 code = 'A001' 的施工区面要素内部的燃气设备数量（使用 ST_Within，边界上的设备不计入）。",
     "plan": {
       "t1": {
         "nodes": [
@@ -9,9 +9,12 @@
             "id": "s1",
             "action": "query_features",
             "params": {
-              "table": "construction_areas",
-              "filter": "code = 'A001'",
+              "layer_name": "construction_areas",
+              "filters": {
+                "code": "A001"
+              },
               "fields": [
+                "code",
                 "geom"
               ]
             },
@@ -21,12 +24,15 @@
             "id": "s2",
             "action": "query_features",
             "params": {
-              "table": "gas_pipelines",
-              "filter": "ST_Intersects(geom, A001.geom)",
+              "layer_name": "gas_devices",
+              "filters": {
+                "status": "正常"
+              },
+              "target": "s1.geom",
+              "relation": "ST_Within",
               "fields": [
                 "id",
                 "code",
-                "pressure_level",
                 "geom"
               ]
             },
@@ -36,132 +42,14 @@
           },
           {
             "id": "s3",
-            "action": "clip_features",
+            "action": "summarize_features",
             "params": {
               "input": "s2",
-              "clip_geom": "s1.geom",
-              "output_geom_field": "clipped_geom"
+              "aggregate": "count",
+              "distinct_by": "id"
             },
             "depends_on": [
               "s2"
-            ]
-          },
-          {
-            "id": "s4",
-            "action": "measure_geometry",
-            "params": {
-              "input": "s3",
-              "geom_field": "clipped_geom",
-              "unit": "meter",
-              "output_field": "length_m"
-            },
-            "depends_on": [
-              "s3"
-            ]
-          },
-          {
-            "id": "s5",
-            "action": "summarize_features",
-            "params": {
-              "input": "s4",
-              "aggregate": "sum",
-              "value_field": "length_m",
-              "group_by": "pressure_level",
-              "sort": [
-                [
-                  "sum_length_m",
-                  "desc"
-                ],
-                [
-                  "pressure_level",
-                  "asc"
-                ]
-              ],
-              "include_zero_length": true
-            },
-            "depends_on": [
-              "s4"
-            ]
-          },
-          {
-            "id": "s6",
-            "action": "query_features",
-            "params": {
-              "table": "water_pipelines",
-              "filter": "ST_Intersects(geom, A001.geom)",
-              "fields": [
-                "id",
-                "code",
-                "pipe_type",
-                "geom"
-              ]
-            },
-            "depends_on": [
-              "s1"
-            ]
-          },
-          {
-            "id": "s7",
-            "action": "clip_features",
-            "params": {
-              "input": "s6",
-              "clip_geom": "s1.geom",
-              "output_geom_field": "clipped_geom"
-            },
-            "depends_on": [
-              "s6"
-            ]
-          },
-          {
-            "id": "s8",
-            "action": "measure_geometry",
-            "params": {
-              "input": "s7",
-              "geom_field": "clipped_geom",
-              "unit": "meter",
-              "output_field": "length_m"
-            },
-            "depends_on": [
-              "s7"
-            ]
-          },
-          {
-            "id": "s9",
-            "action": "summarize_features",
-            "params": {
-              "input": "s8",
-              "aggregate": "sum",
-              "value_field": "length_m",
-              "group_by": "pipe_type",
-              "sort": [
-                [
-                  "sum_length_m",
-                  "desc"
-                ],
-                [
-                  "pipe_type",
-                  "asc"
-                ]
-              ],
-              "include_zero_length": true
-            },
-            "depends_on": [
-              "s8"
-            ]
-          },
-          {
-            "id": "s10",
-            "action": "merge_results",
-            "params": {
-              "inputs": [
-                "s5",
-                "s9"
-              ],
-              "output_format": "分组名称与总长度列表"
-            },
-            "depends_on": [
-              "s5",
-              "s9"
             ]
           }
         ],
@@ -173,48 +61,16 @@
           [
             "s2",
             "s3"
-          ],
-          [
-            "s3",
-            "s4"
-          ],
-          [
-            "s4",
-            "s5"
-          ],
-          [
-            "s1",
-            "s6"
-          ],
-          [
-            "s6",
-            "s7"
-          ],
-          [
-            "s7",
-            "s8"
-          ],
-          [
-            "s8",
-            "s9"
-          ],
-          [
-            "s5",
-            "s10"
-          ],
-          [
-            "s9",
-            "s10"
           ]
         ]
       }
     },
-    "trace": "在A001施工区，对gas_pipelines按pressure_level、water_pipelines按pipe_type分组，裁剪后统计线长度（米）。算子顺序：query_features×3→clip_features×2→measure_features×2→summarize_features×2。输出每组名称与总长度，按长度降序、同长名称升序，保留零长度非空接触记录。",
+    "trace": "统计gas_devices中status='正常'且geom严格位于construction_areas中code='A001'面内的设备数（ST_Within，边界不计）。依次调用query_features(None)两次、summarize_features(None)，均返回None，未获有效结果。",
     "outcome": "success",
     "error_lesson": "",
     "id": "766dc9b8",
-    "hits": 5,
-    "updated_at": "2026-11-06 15:52:18"
+    "hits": 6,
+    "updated_at": "2026-11-25 11:50:25"
   },
   {
     "task_signature": "general/空间计算",
@@ -404,7 +260,7 @@
     "outcome": "success",
     "error_lesson": "",
     "id": "80fa5212",
-    "hits": 12,
+    "hits": 13,
     "updated_at": "2026-11-06 15:52:36"
   },
   {
@@ -692,7 +548,7 @@
     "outcome": "error",
     "error_lesson": "$.device_groups[1].value: 3，期望 2；$.device_groups[1].feature_count: 3，期望 2",
     "id": "5188b4ff",
-    "hits": 0,
+    "hits": 1,
     "updated_at": "2026-11-06 15:52:58"
   }
 ]

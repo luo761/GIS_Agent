@@ -76,6 +76,10 @@ python main.py "查燃气设备" --clarify-rounds 5
 
 规则层先于 LLM 执行：明显的空泛/越权问题即使模型不可用也会被拦下。
 
+Web 任务台同样覆盖这条交互：判定不合法时，结果区会出现「补充信息后重跑」卡片，
+列出五类槽位（缺失项标红、其余可选）；填写后点击“追加说明并重跑”，
+系统把 `（补充说明：分析对象=…；空间范围=…）` 追加到原问题，从阶段① 重新判定。
+
 ## 用户权限表：按用户类别控制表级增删改查
 
 `config/user_permissions.yaml` 把“用户类别（角色）× 数据表 × CRUD”写成一张显式权限表：
@@ -300,7 +304,7 @@ Test/
 
 ```bash
 pip install -r requirements.txt
-cp .env.example .env   # 或按需填写 DATABASE_URL / LLM_MODEL / POSTGIS_TOOLKIT_ROOT
+cp .env.example .env   # 必填 DEEPSEEK_API_KEY；按需填写 DATABASE_URL / LLM_MODEL / POSTGIS_TOOLKIT_ROOT
 
 # 普通模式
 python main.py "统计与施工区 A001 相交的燃气设备数量"
@@ -362,5 +366,5 @@ python web/server/app.py --open
 - 经验值只存于 `data/agent_capabilities.json`，删掉即可回到全 0.5；
 - 权限表是 `config/user_permissions.yaml`，改完无需重启（`PermissionTable.reload()`）；
   审计日志在 `data/permission_audit.jsonl`，可随时删除；
-- 外部 PostGIS 工具集只读调用，路径由 `POSTGIS_TOOLKIT_ROOT` 配置；
+- 外部 PostGIS 工具集只读调用，路径由 `POSTGIS_TOOLKIT_ROOT` 配置（默认相对项目根 `tools/`，找不到时回退到 `tools/app_development`）；dev20 题集同理走 `BENCHMARK_DIR`（默认 `data/benchmarks`）；
 - 运行环境：Python 3.11+、psycopg、langgraph、langchain-deepseek；数据库需 PostGIS。
